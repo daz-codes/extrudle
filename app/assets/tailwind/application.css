@@ -180,8 +180,12 @@
   .card {
     @apply rounded-[18px] border border-ink-200 bg-surface shadow-xs;
   }
+  /* Clickable cards get a lime outline on hover. Static cards don't react, so nothing looks clickable that isn't. */
   a.card {
-    @apply transition-shadow hover:border-ink-300 hover:shadow-lg hover:shadow-ink-900/5;
+    @apply transition hover:border-lime-400 hover:shadow-lg hover:shadow-ink-900/5;
+  }
+  a.card:hover {
+    box-shadow: 0 0 0 1px var(--color-lime-400), 0 10px 24px rgb(24 24 27 / 0.06);
   }
   .data-table thead th {
     @apply border-b border-ink-200 bg-ink-50 font-mono text-xs font-medium tracking-wider text-ink-500 uppercase;
