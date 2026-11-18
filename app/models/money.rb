@@ -10,10 +10,9 @@ module Money
   # Money.parse("1,234.56") #=> 123_456
   def parse(input)
     return nil if input.nil? || input.to_s.strip.empty?
-    return input * 100 if input.is_a?(Integer)
 
-    (BigDecimal(input.to_s.delete(", _").strip) * 100).round(0, :half_up).to_i
-  rescue ArgumentError, TypeError
+    DecimalInput.to_scaled_integer(input, 100)
+  rescue DecimalInput::Invalid
     raise InvalidInput, "#{input.inspect} is not a valid amount"
   end
 

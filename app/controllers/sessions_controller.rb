@@ -24,8 +24,10 @@ class SessionsController < ApplicationController
 
   private
     def after_authentication_url
-      return session.delete(:return_to_after_authenticating) || floor_root_url if Current.user.floor?
+      url = super
+      return url unless Current.user.floor?
 
-      super
+      # Floor users only ever see /floor, so ignore a stored office URL (such as root).
+      URI(url).path.match?(%r{\A/floor(/|\z)}) ? url : floor_root_url
     end
 end

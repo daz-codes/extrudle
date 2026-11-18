@@ -6,7 +6,7 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
   test "index lists users" do
     get admin_users_path
     assert_response :success
-    assert_select "td", text: "Fred Floor"
+    assert_select "td", text: "Eric Kershaw"
   end
 
   test "office and floor users are kept out" do
@@ -40,9 +40,9 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
   test "updates without changing the password when left blank" do
     user = users(:office)
     digest = user.password_digest
-    patch admin_user_path(user), params: { user: { name: "Olivia O", role: "office", password: "", password_confirmation: "" } }
+    patch admin_user_path(user), params: { user: { name: "Jess O", role: "office", password: "", password_confirmation: "" } }
     assert_redirected_to admin_users_path
-    assert_equal "Olivia O", user.reload.name
+    assert_equal "Jess O", user.reload.name
     assert_equal digest, user.password_digest
   end
 
@@ -52,6 +52,21 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     patch admin_user_path(user), params: { user: { active: "0" } }
     assert_not user.reload.active?
     assert_empty user.sessions
+  end
+
+  test "changing a user's password ends their sessions" do
+    user = users(:floor)
+    user.sessions.create!
+    patch admin_user_path(user), params: { user: { password: "a-new-password", password_confirmation: "a-new-password" } }
+    assert_redirected_to admin_users_path
+    assert_empty user.reload.sessions
+  end
+
+  test "changing your own password keeps your current session" do
+    admin = users(:admin)
+    admin.sessions.create!
+    patch admin_user_path(admin), params: { user: { password: "a-new-password", password_confirmation: "a-new-password" } }
+    assert_equal [ Current.session ], admin.reload.sessions.to_a
   end
 
   test "admins cannot demote or deactivate themselves" do

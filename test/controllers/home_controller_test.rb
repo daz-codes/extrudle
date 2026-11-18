@@ -10,7 +10,7 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:office)
     get root_path
     assert_response :success
-    assert_select "h1", /Olivia/
+    assert_select "h1", /Jess/
     assert_select "nav a", text: "Users", count: 0
   end
 

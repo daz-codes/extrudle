@@ -33,7 +33,7 @@ class Admin::UsersController < ApplicationController
       @user.errors.add(:base, "You can't remove your own admin access or deactivate yourself.")
       render :edit, status: :unprocessable_content
     elsif @user.save
-      @user.sessions.destroy_all unless @user.active?
+      end_other_sessions
       redirect_to admin_users_path, notice: "#{@user.name} was updated."
     else
       render :edit, status: :unprocessable_content
@@ -43,6 +43,14 @@ class Admin::UsersController < ApplicationController
   private
     def set_user
       @user = User.find(params[:id])
+    end
+
+    # Deactivating a user or changing their password signs them out everywhere
+    # (except the admin's own current session when editing themselves).
+    def end_other_sessions
+      return unless !@user.active? || @user.saved_change_to_password_digest?
+
+      @user.sessions.where.not(id: Current.session.id).destroy_all
     end
 
     def locking_self_out?

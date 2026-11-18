@@ -16,13 +16,10 @@ module Weight
   # Blank input returns nil.
   def parse(input, unit: "kg")
     return nil if input.nil? || input.to_s.strip.empty?
-    return input * UNITS.fetch(unit.to_s) if input.is_a?(Integer)
 
     multiplier = UNITS.fetch(unit.to_s) { raise InvalidInput, "unknown unit #{unit.inspect}" }
-    decimal = BigDecimal(input.to_s.delete(", _").strip)
-    (decimal * multiplier).round(0, :half_up).to_i
-  rescue ArgumentError, TypeError => e
-    raise e if e.is_a?(InvalidInput)
+    DecimalInput.to_scaled_integer(input, multiplier)
+  rescue DecimalInput::Invalid
     raise InvalidInput, "#{input.inspect} is not a valid weight"
   end
 

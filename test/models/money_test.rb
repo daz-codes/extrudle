@@ -12,6 +12,12 @@ class MoneyTest < ActiveSupport::TestCase
     assert_raises(Money::InvalidInput) { Money.parse("ten pounds") }
   end
 
+  test "rejects a decimal comma, non-finite and exponent input" do
+    %w[1,5 12,50 NaN Infinity 1e3].each do |input|
+      assert_raises(Money::InvalidInput, input) { Money.parse(input) }
+    end
+  end
+
   test "currency symbols" do
     assert_equal "£", Money.symbol("GBP")
     assert_equal "€", Money.symbol("eur")

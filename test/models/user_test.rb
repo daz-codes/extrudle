@@ -39,6 +39,6 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "initials" do
-    assert_equal "FF", users(:floor).initials
+    assert_equal "EK", users(:floor).initials
   end
 end
