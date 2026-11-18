@@ -1,11 +1,14 @@
 # Demo data. Idempotent: safe to run more than once (bin/rails db:seed).
 # All company names are fictional.
 #
-# Production never gets the demo users (their password is in this repo).
-# Kamal runs db:prepare, which seeds a fresh database, so in production we only
-# create the first admin, and only from ADMIN_EMAIL / ADMIN_PASSWORD.
+# Production never gets the demo users unless DEMO_SEEDS=true (the stu.daz.codes
+# preview), and then their password comes from credentials (demo_password), not
+# this repo. Kamal runs db:prepare, which seeds a fresh database, so otherwise
+# production only gets the first admin, and only from ADMIN_EMAIL / ADMIN_PASSWORD.
 
-if Rails.env.production?
+demo_in_production = Rails.env.production? && ENV["DEMO_SEEDS"] == "true"
+
+if Rails.env.production? && !demo_in_production
   email, password = ENV["ADMIN_EMAIL"], ENV["ADMIN_PASSWORD"]
 
   if email.present? && password.present?
@@ -19,7 +22,11 @@ if Rails.env.production?
   return
 end
 
-DEMO_PASSWORD = "extrudle-demo"
+DEMO_PASSWORD = if demo_in_production
+  Rails.application.credentials.demo_password.presence || raise("DEMO_SEEDS needs demo_password in credentials")
+else
+  "extrudle-demo"
+end
 
 [
   { name: "Stu Kershaw",  email_address: "admin@extrudle.test",  role: "admin" },
@@ -180,6 +187,6 @@ if ScheduleBlock.none?
 end
 
 unless Rails.env.test?
-  puts "Seeded #{User.count} users (password: #{DEMO_PASSWORD}), #{Line.count} lines, #{Customer.count} customers, " \
+  puts "Seeded #{User.count} users (password: #{demo_in_production ? "demo_password in credentials" : DEMO_PASSWORD}), #{Line.count} lines, #{Customer.count} customers, " \
        "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{ScheduleBlock.count} plan blocks"
 end
