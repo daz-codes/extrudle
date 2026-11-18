@@ -1,0 +1,66 @@
+<%= form_with model: product_spec, class: "max-w-4xl space-y-6" do |form| %>
+  <% if @source %><%= hidden_field_tag :copy_from, @source.id %><% end %>
+  <%= form.error_summary %>
+
+  <section class="card space-y-5 p-6">
+    <h2 class="text-lg font-semibold text-ink-900">Spec</h2>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <%= form.text_row :code, required: true, autofocus: true, hint: "Our spec code. Upper case." %>
+      <%= form.select_row :customer_id, Customer.active.or(Customer.where(id: product_spec.customer_id)).by_name.map { [ _1.name, _1.id ] },
+            select_options: { include_blank: "Stock / any customer" } %>
+    </div>
+    <%= form.check_row :active, hint: "Inactive specs can't be put on new orders." %>
+  </section>
+
+  <section class="card space-y-5 p-6">
+    <h2 class="text-lg font-semibold text-ink-900">Film</h2>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <%= form.number_row :thickness_micron, required: true, min: 1, step: 1, suffix: "µm", hint: "The paper plan writes 250 µm as .250" %>
+      <%= form.number_row :width_mm, required: true, min: 1, step: 1, suffix: "mm" %>
+    </div>
+    <%= form.radio_row :material_type, ProductSpec.material_types.keys %>
+    <div class="flex flex-wrap gap-x-8">
+      <%= form.check_row :pe, label: "PE" %>
+      <%= form.check_row :antiblock %>
+    </div>
+    <div class="space-y-5 silicone-fields">
+      <%= form.radio_row :silicone, ProductSpec.silicones.keys %>
+      <%= form.text_row :silicone_pct, inputmode: "decimal", suffix: "%", wrapper: "js-silicone-pct max-w-48" %>
+    </div>
+  </section>
+
+  <section class="card space-y-5 p-6">
+    <h2 class="text-lg font-semibold text-ink-900">Reel and core</h2>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <%= form.radio_row :core_inches, ProductSpec::CORE_SIZES, labels: { "3" => "3 inch", "6" => "6 inch" } %>
+      <%= form.radio_row :core_orientation, ProductSpec.core_orientations.keys %>
+    </div>
+    <div class="space-y-5 reel-limit-fields">
+      <%= form.radio_row :reel_limit, ProductSpec.reel_limits.keys, labels: { "max_diameter" => "Limit by diameter", "max_roll_on_side" => "Max roll on side" } %>
+      <%= form.number_row :max_diameter_mm, min: 1, step: 1, suffix: "mm", hint: "e.g. 600 or 1000", wrapper: "js-max-diameter max-w-56" %>
+    </div>
+    <%= form.text_row :max_reel_kg, inputmode: "decimal", suffix: "kg", hint: "Optional weight limit per reel.", wrapper: "max-w-56" %>
+  </section>
+
+  <section class="card space-y-5 p-6">
+    <h2 class="text-lg font-semibold text-ink-900">Packing</h2>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <%= form.radio_row :pallet_type, ProductSpec.pallet_types.keys %>
+      <%= form.number_row :reels_per_pallet, min: 1, step: 1 %>
+    </div>
+    <%= form.check_row :label_inside_core %>
+    <%= form.text_area_row :packaging_notes, hint: "e.g. best-quality pallets, least adhesive tape on core" %>
+  </section>
+
+  <section class="card space-y-5 p-6">
+    <h2 class="text-lg font-semibold text-ink-900">Customer references</h2>
+    <div class="grid gap-5 sm:grid-cols-3">
+      <%= form.text_row :customer_part_no %>
+      <%= form.text_row :customer_tool_no %>
+      <%= form.text_row :customer_product_code %>
+    </div>
+    <%= form.text_row :customer_description %>
+  </section>
+
+  <%= render "master_data/form_actions", form: form, cancel_path: product_spec.persisted? ? product_spec : (@source || product_specs_path) %>
+<% end %>

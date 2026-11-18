@@ -1,0 +1,20 @@
+<%# locals: (placeholder: "Search", inactive: true) %>
+<%= form_with url: request.path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3", data: { turbo_action: "replace" } do |form| %>
+  <% request.query_parameters.except("q", "inactive").each do |key, value| %>
+    <%= hidden_field_tag key, value %>
+  <% end %>
+  <div class="min-w-64 flex-1">
+    <%= label_tag :q, "Search", class: "sr-only" %>
+    <%= search_field_tag :q, search_query, placeholder: placeholder, class: "field-input" %>
+  </div>
+  <% if inactive %>
+    <label class="flex min-h-12 cursor-pointer items-center gap-2">
+      <%= check_box_tag :inactive, "1", include_inactive?, class: "size-5 accent-brand-700" %>
+      <span>Include inactive</span>
+    </label>
+  <% end %>
+  <%= submit_tag "Filter", name: nil, class: "btn btn-secondary" %>
+  <% if search_query || include_inactive? %>
+    <%= link_to "Clear", request.path, class: "btn text-brand-700 underline" %>
+  <% end %>
+<% end %>

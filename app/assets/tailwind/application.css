@@ -101,3 +101,11 @@
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
 }
+
+/* Spec form: hide fields that don't apply, without JavaScript. The model clears their values too. */
+@layer components {
+  .silicone-fields:has(input[value="none"]:checked) .js-silicone-pct,
+  .reel-limit-fields:has(input[value="max_roll_on_side"]:checked) .js-max-diameter {
+    display: none;
+  }
+}

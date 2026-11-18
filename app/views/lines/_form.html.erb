@@ -1,0 +1,13 @@
+<%= form_with model: line, class: "card max-w-2xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.text_row :name, required: true, autofocus: true, hint: "As written on the plan, e.g. D1" %>
+    <%= form.text_row :machine_no %>
+  </div>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.number_row :default_changeover_minutes, step: 30, min: 0, suffix: "min", hint: "The planner suggests this between jobs." %>
+    <%= form.number_row :position, label: "Display order", step: 1 %>
+  </div>
+  <%= form.check_row :active, hint: "Inactive lines are hidden from the planner." %>
+  <%= render "master_data/form_actions", form: form, cancel_path: lines_path %>
+<% end %>

@@ -106,7 +106,8 @@ The result is full traceability from any reel to its supplier bags (and back), w
 Goal: replace the Word production plan and give a live stock figure.
 
 - [x] **Slice 0 – Setup**: `rails new --database=sqlite3 --css=tailwind`, auth generator, Tailwind theme tokens and layout with nav (see CLAUDE.md §Design), `Weight`/`Money` display helpers, roles (admin/office/floor), Kamal config with a persistent volume for `storage/`, CI running tests. Move `PLAN.md` and `CLAUDE.md` into the app root.
-- [ ] **Slice 1 – Master data**: Customers, Suppliers, MaterialCategories, Materials, Lines, ProductSpecs (with dropdowns for silicone/core/etc.), LineRates. CRUD screens + seeds. Spec "duplicate as new" button.
+- [x] **Slice 1 – Master data**: Customers, Suppliers, MaterialCategories, Materials, Lines, ProductSpecs (with dropdowns for silicone/core/etc.), LineRates. CRUD screens + seeds. Spec "duplicate as new" button.
+  - Deferred: `SpecIngredient` recipes (waiting on stream % from §11 Q6, needed by Slice 7c) and locking used specs into new revisions (Slice 2, once orders reference specs).
 - [ ] **Slice 2 – Sales orders**: orders with lines (spec dropdown pre-fills spec details read-only, quantity in kg/tonnes toggle), status, list filtered by required date.
 - [ ] **Slice 3 – Planner model**: `ScheduleBlock`, duration calc, `Schedule::Reflow` service, locked blocks, warnings. Heavy unit tests here.
 - [ ] **Slice 4 – Planner UI**: per-line week timeline (48 slots/day), add job from an unscheduled order line, add changeover/maintenance/no-orders blocks, move up/down buttons (Turbo Streams), print view.

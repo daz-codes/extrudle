@@ -1,0 +1,17 @@
+<%= form_with model: supplier, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <div class="grid gap-5 sm:grid-cols-3">
+    <%= form.text_row :name, required: true, autofocus: true, wrapper: "sm:col-span-2" %>
+    <%= form.text_row :country %>
+  </div>
+  <div class="grid gap-5 sm:grid-cols-3">
+    <%= form.text_row :contact_name %>
+    <%= form.email_row :email %>
+    <%= form.telephone_row :phone %>
+  </div>
+  <%= form.radio_row :currency, Currency::CODES %>
+  <%= form.select_row :incoterm, Currency::INCOTERMS, select_options: { include_blank: "None" }, hint: "Pre-filled on new purchase orders.", wrapper: "max-w-xs" %>
+  <%= form.text_area_row :notes %>
+  <%= form.check_row :active %>
+  <%= render "master_data/form_actions", form: form, cancel_path: suppliers_path %>
+<% end %>

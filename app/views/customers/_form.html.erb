@@ -1,0 +1,14 @@
+<%= form_with model: customer, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <%= form.text_row :name, required: true, autofocus: true %>
+  <div class="grid gap-5 sm:grid-cols-3">
+    <%= form.text_row :contact_name %>
+    <%= form.email_row :email %>
+    <%= form.telephone_row :phone %>
+  </div>
+  <%= form.text_area_row :address %>
+  <%= form.radio_row :currency, Currency::CODES, hint: "Prices and invoices for this customer use this currency." %>
+  <%= form.text_area_row :notes %>
+  <%= form.check_row :active, hint: "Inactive customers are hidden from new orders." %>
+  <%= render "master_data/form_actions", form: form, cancel_path: customer.persisted? ? customer : customers_path %>
+<% end %>

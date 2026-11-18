@@ -1,0 +1,29 @@
+bf_700:
+  code: BF-700-250
+  revision: 1
+  customer: brightform
+  width_mm: 700
+  thickness_micron: 250
+  material_type: clear
+  silicone: underside
+  silicone_bp: 50
+  antiblock: true
+  core_inches: 6
+  core_orientation: horizontal
+  reel_limit: max_diameter
+  max_diameter_mm: 1000
+  max_reel_g: 1100000
+  pallet_type: euro
+  reels_per_pallet: 1
+  customer_part_no: BF-2231
+
+stock:
+  code: STK-1000-500
+  revision: 1
+  width_mm: 1000
+  thickness_micron: 500
+  silicone: none
+  core_inches: 6
+  core_orientation: vertical
+  reel_limit: max_roll_on_side
+  pallet_type: standard

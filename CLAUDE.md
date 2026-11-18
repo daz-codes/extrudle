@@ -56,6 +56,13 @@ Define semantic colour tokens once in `app/assets/tailwind/application.css` with
 
 Shared building blocks live in `application.css` under `@layer components`: `.btn` (+ `.btn-primary`, `.btn-secondary`, `.btn-accent`, `.btn-danger`), `.field-label`, `.field-input`, `.field-hint`, `.card`, `.badge`. Layouts: `application` (office), `floor` (large type) and `auth` (sign-in pages).
 
+Forms use `ExtrudleFormBuilder` (the default builder): `text_row`, `number_row`, `email_row`, `telephone_row`, `text_area_row`, `select_row`, `radio_row` (big tappable options for enums), `check_row` and `error_summary`. Each row renders the label, hint and inline errors. Use `suffix: "kg"` for units.
+
+## Reusable model pieces
+- `ScaledAttributes`: `scaled_attribute :max_reel_kg, column: :max_reel_g, scale: 1_000` gives forms a kg (or %) attribute over an integer column. Invalid input becomes a validation error.
+- `Deactivatable`: `active` and `including_inactive(bool)` scopes. Master data is deactivated, never deleted.
+- `MasterData` controller concern: office/admin only, plus `search_query` and `include_inactive?` for index filters.
+
 ## Roles
 `User#role` is `admin`, `office` or `floor`. Use `require_role :admin, :office` in controllers (`Authorization` concern). Floor users only see `/floor` and are redirected there from office pages. Deactivated users can't sign in.
 

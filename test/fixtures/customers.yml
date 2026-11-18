@@ -1,0 +1,13 @@
+brightform:
+  name: Brightform Packaging Ltd
+  contact_name: Hannah Cole
+  currency: GBP
+
+rhine:
+  name: Rhine Valley Verpackung GmbH
+  currency: EUR
+
+dormant:
+  name: Dormant Trays Ltd
+  currency: GBP
+  active: false

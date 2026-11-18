@@ -1,0 +1,37 @@
+<%# locals: (product_specs:, show_customer: true) %>
+<table class="w-full text-left">
+  <thead class="border-b border-ink-200 bg-ink-50 text-sm text-ink-600">
+    <tr>
+      <th scope="col" class="px-4 py-3 font-semibold">Spec</th>
+      <% if show_customer %><th scope="col" class="px-4 py-3 font-semibold">Customer</th><% end %>
+      <th scope="col" class="px-4 py-3 text-right font-semibold">Micron</th>
+      <th scope="col" class="px-4 py-3 text-right font-semibold">Width</th>
+      <th scope="col" class="px-4 py-3 font-semibold">Silicone</th>
+      <th scope="col" class="px-4 py-3 font-semibold">Rates (kg/h)</th>
+      <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+    </tr>
+  </thead>
+  <tbody class="divide-y divide-ink-100">
+    <% product_specs.each do |spec| %>
+      <tr id="<%= dom_id(spec) %>" class="<%= "text-ink-500" unless spec.active? %>">
+        <td class="px-4 py-3">
+          <%= link_to spec.to_s, spec, class: "font-semibold text-brand-700 underline-offset-2 hover:underline" %>
+          <% if spec.customer_description.present? %><div class="text-sm text-ink-500"><%= spec.customer_description %></div><% end %>
+        </td>
+        <% if show_customer %><td class="px-4 py-3"><%= spec.customer&.name || "Stock / any" %></td><% end %>
+        <td class="px-4 py-3 text-right tabular-nums"><%= spec.thickness_micron %></td>
+        <td class="px-4 py-3 text-right tabular-nums"><%= mm(spec.width_mm) %></td>
+        <td class="px-4 py-3"><%= silicone_summary(spec) %></td>
+        <td class="px-4 py-3 tabular-nums">
+          <% if spec.line_rates.any? %>
+            <%= safe_join(spec.line_rates.sort_by { _1.line.position }.map { |rate| "#{rate.line.name} #{rate.kg_per_hour}" }, " · ") %>
+          <% else %>
+            <span class="badge bg-ginger-100 text-ginger-800">No rates</span>
+          <% end %>
+        </td>
+        <td class="px-4 py-3"><%= status_badge(spec) %></td>
+      </tr>
+    <% end %>
+    <% if product_specs.empty? %><%= render "master_data/empty", message: "No specs yet.", colspan: show_customer ? 7 : 6 %><% end %>
+  </tbody>
+</table>

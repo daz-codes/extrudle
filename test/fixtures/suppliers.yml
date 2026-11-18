@@ -1,0 +1,11 @@
+albion:
+  name: Albion Polymers
+  country: United Kingdom
+  currency: GBP
+  incoterm: DAP
+
+pacific:
+  name: Pacific Resin Exports
+  country: Malaysia
+  currency: USD
+  incoterm: CIF

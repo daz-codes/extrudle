@@ -1,0 +1,22 @@
+<% content_for :title, "Lines" %>
+<%= render "master_data/header", title: "Extrusion lines", action: "Add line", action_path: new_line_path %>
+
+<div class="grid gap-4 sm:grid-cols-2">
+  <% @lines.each do |line| %>
+    <section id="<%= dom_id(line) %>" class="card p-5 <%= "opacity-70" unless line.active? %>">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-2xl font-bold text-ink-900"><%= line.name %></h2>
+          <p class="text-ink-600">Machine no. <%= line.machine_no.presence || "—" %></p>
+        </div>
+        <%= status_badge(line) %>
+      </div>
+      <dl class="mt-4 grid grid-cols-2 gap-3">
+        <div><dt class="text-sm text-ink-600">Default changeover</dt><dd class="text-lg font-semibold tabular-nums"><%= line.default_changeover_minutes %> min</dd></div>
+        <div><dt class="text-sm text-ink-600">Specs with a rate</dt><dd class="text-lg font-semibold tabular-nums"><%= line.line_rates.size %></dd></div>
+      </dl>
+      <div class="mt-4"><%= link_to "Edit", edit_line_path(line), class: "btn btn-secondary", aria: { label: "Edit line #{line.name}" } %></div>
+    </section>
+  <% end %>
+</div>
+<% if @lines.empty? %><p class="card p-10 text-center text-ink-500">No lines yet.</p><% end %>

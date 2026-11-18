@@ -1,0 +1,29 @@
+<% content_for :title, "Suppliers" %>
+<%= render "master_data/header", title: "Suppliers", action: "Add supplier", action_path: new_supplier_path %>
+<%= render "master_data/filters", placeholder: "Search name, country or contact" %>
+
+<div class="card overflow-x-auto">
+  <table class="w-full text-left">
+    <thead class="border-b border-ink-200 bg-ink-50 text-sm text-ink-600">
+      <tr>
+        <th scope="col" class="px-4 py-3 font-semibold">Name</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Country</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Contact</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Terms</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-ink-100">
+      <% @suppliers.each do |supplier| %>
+        <tr id="<%= dom_id(supplier) %>" class="<%= "text-ink-500" unless supplier.active? %>">
+          <td class="px-4 py-3"><%= link_to supplier.name, edit_supplier_path(supplier), class: "font-semibold text-brand-700 underline-offset-2 hover:underline" %></td>
+          <td class="px-4 py-3"><%= supplier.country.presence || "—" %></td>
+          <td class="px-4 py-3"><%= [supplier.contact_name, supplier.email].compact_blank.join(" · ").presence || "—" %></td>
+          <td class="px-4 py-3"><%= [supplier.currency, supplier.incoterm].compact.join(" · ") %></td>
+          <td class="px-4 py-3"><%= status_badge(supplier) %></td>
+        </tr>
+      <% end %>
+      <% if @suppliers.empty? %><%= render "master_data/empty", message: "No suppliers match.", colspan: 5 %><% end %>
+    </tbody>
+  </table>
+</div>

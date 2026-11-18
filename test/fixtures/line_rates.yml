@@ -1,0 +1,9 @@
+bf_700_d1:
+  line: d1
+  product_spec: bf_700
+  kg_per_hour: 190
+
+bf_700_d2:
+  line: d2
+  product_spec: bf_700
+  kg_per_hour: 175

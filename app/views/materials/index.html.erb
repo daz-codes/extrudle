@@ -1,0 +1,43 @@
+<% content_for :title, "Materials" %>
+<%= render "master_data/header", title: "Materials", action: "Add material", action_path: new_material_path(category: params[:category]) %>
+<%= render "master_data/filters", placeholder: "Search name or grade" %>
+
+<div class="mb-4 flex flex-wrap gap-2" aria-label="Filter by category">
+  <%= link_to "All categories", materials_path(request.query_parameters.except("category")),
+        class: "btn #{params[:category].blank? ? 'btn-primary' : 'btn-secondary'}" %>
+  <% MaterialCategory.ordered.each do |category| %>
+    <%= link_to category.name, materials_path(request.query_parameters.merge("category" => category.id)),
+          class: "btn #{params[:category] == category.id.to_s ? 'btn-primary' : 'btn-secondary'}" %>
+  <% end %>
+</div>
+
+<div class="card overflow-x-auto">
+  <table class="w-full text-left">
+    <thead class="border-b border-ink-200 bg-ink-50 text-sm text-ink-600">
+      <tr>
+        <th scope="col" class="px-4 py-3 font-semibold">Name</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Grade</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Category</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Origin</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Supplier</th>
+        <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-ink-100">
+      <% @materials.each do |material| %>
+        <tr id="<%= dom_id(material) %>" class="<%= "text-ink-500" unless material.active? %>">
+          <td class="px-4 py-3"><%= link_to material.name, edit_material_path(material), class: "font-semibold text-brand-700 underline-offset-2 hover:underline" %></td>
+          <td class="px-4 py-3"><%= material.grade.presence || "—" %></td>
+          <td class="px-4 py-3"><%= material.material_category.name %></td>
+          <td class="px-4 py-3">
+            <span class="badge <%= material.recycled? ? 'bg-ok-50 text-ok-700' : 'bg-brand-50 text-brand-800' %>"><%= material.origin.humanize %></span>
+            <% if material.internal? %><span class="badge bg-ink-100 text-ink-700">In-house</span><% end %>
+          </td>
+          <td class="px-4 py-3"><%= material.supplier&.name || (material.internal? ? "Made in-house" : "—") %></td>
+          <td class="px-4 py-3"><%= status_badge(material) %></td>
+        </tr>
+      <% end %>
+      <% if @materials.empty? %><%= render "master_data/empty", message: "No materials match.", colspan: 6 %><% end %>
+    </tbody>
+  </table>
+</div>
