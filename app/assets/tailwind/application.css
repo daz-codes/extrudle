@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Geist and Geist Mono (SIL OFL), served by the app so pages never wait on an outside host.
+   Variable woff2, Latin subset (covers £, € and µ). Licences sit next to the files. */
+@font-face {
+  font-family: "Geist";
+  src: url("geist-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("geist-mono-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
   Extrudle design: "Lemon and Lime".
   Crisp zinc greys on a light grey canvas, with two fluorescent highlights.
@@ -42,6 +59,11 @@
   --color-lime-300: #d4f53c;
   --color-lime-400: #c2e41f;
   --color-lime-500: #a4c412;
+  --color-lime-600: #83a00b;
+  --color-lime-700: #637a0c;
+  --color-lime-800: #4e600f;
+  --color-lime-900: #414f12;
+  --color-lime-950: #222c04;
 
   --color-lemon-50: #fefff0;
   --color-lemon-100: #fcffd1;
@@ -49,6 +71,11 @@
   --color-lemon-300: #f5ff70;
   --color-lemon-400: #e8f24a;
   --color-lemon-500: #cdd52a;
+  --color-lemon-600: #a3a81c;
+  --color-lemon-700: #7b7e19;
+  --color-lemon-800: #62631b;
+  --color-lemon-900: #53531c;
+  --color-lemon-950: #2e2e0b;
 
   --color-ok-50: var(--color-emerald-50);
   --color-ok-600: var(--color-emerald-600);
@@ -57,6 +84,7 @@
   --color-bad-600: var(--color-red-600);
   --color-bad-700: var(--color-red-700);
   --color-bad-800: var(--color-red-800);
+  --color-bad-900: var(--color-red-900);
 }
 
 @layer base {
@@ -78,7 +106,7 @@
 @layer components {
   /* Headings: a fat lime underline on page titles, a slimmer one on section titles. */
   .page-title {
-    @apply font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl;
+    @apply font-display text-3xl font-semibold text-ink-900 sm:text-4xl;
     width: fit-content;
     line-height: 1.15;
     letter-spacing: -0.04em;
@@ -124,7 +152,7 @@
     @apply border-b border-ink-200 bg-surface text-ink-900;
   }
   .nav-link {
-    @apply inline-flex min-h-12 cursor-pointer items-center rounded-full px-3.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900;
+    @apply inline-flex min-h-12 cursor-pointer items-center rounded-full px-3.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200 active:text-ink-900;
   }
   .nav-link[aria-current="page"] {
     @apply bg-ink-900 text-white hover:bg-ink-900;
@@ -133,6 +161,9 @@
   .wordmark {
     @apply inline-flex items-center gap-2.5 font-display text-xl font-bold text-ink-900;
     letter-spacing: -0.04em;
+  }
+  .wordmark-lg {
+    @apply text-2xl;
   }
   .wordmark-mark {
     @apply grid size-9 place-items-center rounded-[10px] bg-lime-300;
@@ -151,7 +182,7 @@
     @apply inline-flex min-w-max gap-0.5 rounded-[14px] bg-ink-200/60 p-1;
   }
   .tab {
-    @apply inline-flex min-h-11 cursor-pointer items-center rounded-[10px] px-4 font-medium text-ink-700 transition;
+    @apply inline-flex min-h-12 cursor-pointer items-center rounded-[10px] px-4 font-medium text-ink-700 transition;
   }
   /* Hover previews the selected look: raised white with a light lime edge. */
   .tab:hover:not([aria-current="page"]) {
@@ -166,34 +197,39 @@
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), inset 0 -3px 0 var(--color-lime-300);
   }
 
-  /* Buttons */
+  /* Buttons. Every button has a pressed (:active) state: touch screens never hover. */
   .btn {
     @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[11px] px-5 text-base font-semibold whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-ink-900 text-white hover:bg-ink-700;
+    @apply bg-ink-900 text-white hover:bg-ink-700 active:bg-ink-950;
   }
   .btn-secondary {
-    @apply border border-ink-200 bg-surface text-ink-900 shadow-xs hover:bg-ink-50;
+    @apply border border-ink-200 bg-surface text-ink-900 shadow-xs hover:bg-ink-50 active:bg-ink-100;
   }
   .btn-accent {
-    @apply bg-lime-300 text-ink-900 hover:bg-lime-400;
+    @apply bg-lime-300 text-ink-900 hover:bg-lime-400 active:bg-lime-500;
     box-shadow: inset 0 0 0 1px rgb(24 24 27 / 0.15);
   }
   .btn-danger {
-    @apply bg-bad-700 text-white hover:bg-bad-800;
+    @apply bg-bad-700 text-white hover:bg-bad-800 active:bg-bad-900;
   }
 
   /* Cards and tables */
   .card {
     @apply rounded-[18px] border border-ink-200 bg-surface shadow-xs;
   }
-  /* Clickable cards get a lime outline on hover. Static cards don't react, so nothing looks clickable that isn't. */
+  /* Clickable cards get a lime outline on hover and when pressed (touch). Static cards don't react. */
   a.card {
-    @apply transition hover:border-lime-400 hover:shadow-lg hover:shadow-ink-900/5;
+    @apply transition;
   }
-  a.card:hover {
+  a.card:hover,
+  a.card:active {
+    border-color: var(--color-lime-400);
     box-shadow: 0 0 0 1px var(--color-lime-400), 0 10px 24px rgb(24 24 27 / 0.06);
+  }
+  a.card:active {
+    @apply bg-lime-50;
   }
   .data-table thead th {
     @apply border-b border-ink-200 bg-ink-50 font-mono text-xs font-medium tracking-wider text-ink-500 uppercase;
@@ -252,10 +288,14 @@
   .field-group:has(.field-input:focus) .field-suffix {
     @apply border-ink-900;
   }
+  /* An invalid input and its unit stay red together, focused or not. */
+  .field-group:has(.field-input[aria-invalid="true"]) .field-suffix {
+    @apply border-bad-600 text-bad-700;
+  }
 
   /* Big tappable options for enums */
   .choice {
-    @apply inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-[11px] border border-ink-200 bg-surface px-4 transition hover:border-ink-300;
+    @apply inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-[11px] border border-ink-200 bg-surface px-4 transition hover:border-ink-300 active:border-ink-500 active:bg-ink-50;
   }
   .choice:has(:checked) {
     @apply border-ink-900 bg-lime-100 font-semibold text-ink-900;

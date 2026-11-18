@@ -48,16 +48,24 @@ Clean and modern: zinc greys on a light grey canvas, with two fluorescent highli
 | `lemon-*` | Secondary highlight (`lemon-300 #f5ff70`): link underlines, table row hover, warnings ("No rates"), notices |
 | `ok` / `bad` | QA pass/fail, target vs actual (emerald / red) |
 
-- Fonts: **Geist** for text and headings, **Geist Mono** for numbers in tables, table headers, eyebrows and units (Google Fonts).
+- Fonts: **Geist** for text and headings, **Geist Mono** for numbers in tables, table headers, eyebrows and units. Both are self-hosted in `app/assets/fonts` (no external font requests: floor terminals may be offline).
+- Use `tabular-nums` for every weight, quantity and time, in tables, cards and `/floor/*` pages alike.
+- Check contrast (WCAG AA, 4.5:1 for body text) for all text. On white, `ink-500` is the lightest grey for readable text; `ink-400` is for placeholders and decoration only.
 - Highlights are for emphasis, not decoration. Text on lime or lemon is always `ink-900`, never white. Errors are always `bad`, never lemon.
 - Headings: `.page-title` (fat lime underline) and `.section-title` / `.section-title-lg` (slimmer lime underline). Small caps labels use `.eyebrow`.
 - Primary actions are `btn-primary` (ink). Use `btn-accent` (lime) for one standout action per page, and `btn-secondary` for the rest.
+- Touch targets (buttons, tabs, nav links, choices) are at least 48px tall (`min-h-12`), and every interactive style that changes on `:hover` also changes on `:active`, since touch screens never hover.
 - Office pages: dense but readable tables (`.data-table`). `/floor/*` pages: large type (≥ 20px body), big targets, high contrast.
 - Light theme only for MVP.
 
 Semantic classes: `.btn` (+ `-primary`, `-secondary`, `-accent`, `-danger`), `.card`, `.data-table`, `.badge` (+ `-quiet`, `-lime`, `-lemon`), `.link`, `.nav-link`, `.tabs`/`.tab`, `.choice`, `.field-label`, `.field-input`, `.field-hint`, `.field-group` + `.field-suffix`, `.eyebrow`. Layouts: `application` (office), `floor` (large type) and `auth` (sign-in pages).
 
 Forms use `ExtrudleFormBuilder` (the default builder): `text_row`, `number_row`, `email_row`, `telephone_row`, `text_area_row`, `select_row`, `radio_row` (big tappable options for enums), `check_row` and `error_summary`. Each row renders the label, hint and inline errors. Use `suffix: "kg"` for units.
+
+## Reusable model pieces
+- `ScaledAttributes`: `scaled_attribute :max_reel_kg, column: :max_reel_g, scale: 1_000` gives forms a kg (or %) attribute over an integer column. Invalid input becomes a validation error.
+- `Deactivatable`: `active` and `including_inactive(bool)` scopes. Master data is deactivated, never deleted.
+- `MasterData` controller concern: office/admin only, plus `search_query` and `include_inactive?` for index filters.
 
 ## Roles
 `User#role` is `admin`, `office` or `floor`. Use `require_role :admin, :office` in controllers (`Authorization` concern). Floor users only see `/floor` and are redirected there from office pages. Deactivated users can't sign in.

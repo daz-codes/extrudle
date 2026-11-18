@@ -31,7 +31,7 @@
           <td class="px-4 py-3"><%= material.material_category.name %></td>
           <td class="px-4 py-3">
             <span class="badge <%= material.recycled? ? 'bg-ok-50 text-ok-700' : 'badge-quiet' %>"><%= material.origin.humanize %></span>
-            <% if material.internal? %><span class="badge bg-ink-100 text-ink-700">In-house</span><% end %>
+            <% if material.internal? %><span class="badge badge-quiet">In-house</span><% end %>
           </td>
           <td class="px-4 py-3"><%= material.supplier&.name || (material.internal? ? "Made in-house" : "—") %></td>
           <td class="px-4 py-3"><%= status_badge(material) %></td>

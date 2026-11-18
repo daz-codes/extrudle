@@ -18,7 +18,7 @@
     </thead>
     <tbody>
       <% @users.each do |user| %>
-        <tr id="<%= dom_id(user) %>" class="<%= "text-ink-400" unless user.active? %>">
+        <tr id="<%= dom_id(user) %>" class="<%= "text-ink-500" unless user.active? %>">
           <td class="px-4 py-3 font-medium"><%= user.name %></td>
           <td class="px-4 py-3"><%= user.email_address %></td>
           <td class="px-4 py-3"><span class="badge badge-quiet"><%= user.role.humanize %></span></td>
