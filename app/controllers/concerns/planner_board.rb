@@ -13,6 +13,7 @@ module PlannerBoard
       @week_start = week_start
       @blocks = line.schedule_blocks.ordered
         .includes(sales_order_line: [ :schedule_blocks, { sales_order: :customer }, { product_spec: :line_rates } ]).to_a
+      @queue_empty = @blocks.none? { !_1.locked? }
       @warnings = Schedule::Warnings.for_line(line, @blocks)
       @timeline = Schedule::Timeline.new(@blocks, week_start: week_start)
       @unplanned = unplanned_order_lines

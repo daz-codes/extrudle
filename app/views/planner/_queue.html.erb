@@ -24,7 +24,7 @@
           <td class="px-4 py-3 font-mono text-ink-500 tabular-nums"><%= block.position %></td>
           <td class="px-4 py-3 text-sm tabular-nums">
             <div class="whitespace-nowrap"><%= plan_time(block.starts_at) %></div>
-            <div class="whitespace-nowrap text-ink-500">→ <%= block.starts_at.to_date == block.ends_at.to_date ? l(block.ends_at, format: "%H:%M") : plan_time(block.ends_at) %></div>
+            <div class="whitespace-nowrap text-ink-500">→ <%= plan_finish(block) %></div>
             <% if block.locked? %><div class="mt-1"><span class="badge badge-quiet gap-1"><%= lock_icon %>Locked</span></div><% end %>
           </td>
           <td class="px-4 py-3">

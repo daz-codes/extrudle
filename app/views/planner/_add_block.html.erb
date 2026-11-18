@@ -7,10 +7,10 @@
     <fieldset>
       <legend class="field-label">What</legend>
       <div class="flex flex-wrap gap-2">
-        <% ScheduleBlocksController::BLOCK_KINDS.each_with_index do |kind, index| %>
+        <% ScheduleBlock::ADDABLE_KINDS.each_with_index do |kind, index| %>
           <label class="choice">
             <%= radio_button_tag :kind, kind, index.zero?, class: "size-5" %>
-            <span><%= PlannerHelper::KIND_LABELS.fetch(kind) %></span>
+            <span><%= kind.humanize %></span>
           </label>
         <% end %>
       </div>

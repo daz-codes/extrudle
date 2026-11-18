@@ -1,4 +1,4 @@
-<% if @line.schedule_blocks.where(locked: false).none? %>
+<% if @queue_empty %>
   <div>
     <%= label_tag "#{prefix}_queue_starts_at", "Line #{@line.name} plan starts", class: "field-label" %>
     <%= datetime_field_tag :queue_starts_at, datetime_local_value(default_queue_start), id: "#{prefix}_queue_starts_at", step: 1800, class: "field-input" %>

@@ -5,8 +5,6 @@ class ScheduleBlocksController < ApplicationController
   require_role :admin, :office
   before_action :set_block, only: %i[ edit update destroy move ]
 
-  BLOCK_KINDS = %w[ changeover planned_maintenance unplanned_maintenance no_orders ].freeze
-
   def create
     @line = Line.active.find(params[:line_id])
     editor = Schedule::Editor.new(@line)
@@ -28,18 +26,9 @@ class ScheduleBlocksController < ApplicationController
     @warnings = Schedule::Warnings.for_line(@line)[@block] || []
   end
 
+  # Everything on the edit form is applied in one Schedule::Editor edit (one reflow).
   def update
-    editor = Schedule::Editor.new(@line)
-    ScheduleBlock.transaction do
-      editor.replan(@block, weight_param(:planned_kg)) if @block.job? && params[:planned_kg].present? && weight_param(:planned_kg) != @block.planned_g
-      editor.resize(@block, hours_param) if hours_param && hours_param != @block.reload.duration_minutes
-      if params[:locked] == "1"
-        editor.lock(@block, starts_at: time_param(:starts_at)) if !@block.locked? || time_param(:starts_at) != @block.starts_at
-      elsif params[:locked] == "0" && @block.reload.locked?
-        editor.unlock(@block)
-      end
-      @block.reload.update!(notes: params[:notes]) if params.key?(:notes) && params[:notes] != @block.notes
-    end
+    Schedule::Editor.new(@line).update(@block, **block_changes)
     redirect_to planner_path_for(@line, Schedule::Timeline.week_start_for(@block.reload.starts_at.to_date)), notice: "#{@block} was updated."
   rescue Schedule::Error, ArgumentError, ActiveRecord::RecordInvalid => e
     @block.reload
@@ -68,9 +57,20 @@ class ScheduleBlocksController < ApplicationController
       @line = @block.line
     end
 
+    # Only what the form sent. Unchanged values are no-ops in the editor.
+    def block_changes
+      changes = {}
+      changes[:planned_g] = weight_param(:planned_kg) if @block.job? && params[:planned_kg].present?
+      changes[:duration_minutes] = hours_param if params[:duration_hours].present?
+      changes[:locked] = params[:locked] == "1" if params.key?(:locked)
+      changes[:starts_at] = time_param(:starts_at) if params[:locked] == "1" && params[:starts_at].present?
+      changes[:notes] = params[:notes] if params.key?(:notes)
+      changes
+    end
+
     def new_block
       kind = params[:kind].to_s
-      raise ArgumentError, "Choose what kind of block to add" unless BLOCK_KINDS.include?(kind)
+      raise ArgumentError, "Choose what kind of block to add" unless ScheduleBlock::ADDABLE_KINDS.include?(kind)
 
       minutes = hours_param || raise(ArgumentError, "Enter how long it takes")
       locked = params[:locked] == "1"

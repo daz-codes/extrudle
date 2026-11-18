@@ -1,12 +1,4 @@
 module PlannerHelper
-  KIND_LABELS = {
-    "job" => "Job",
-    "changeover" => "Changeover",
-    "planned_maintenance" => "Planned maintenance",
-    "unplanned_maintenance" => "Unplanned maintenance",
-    "no_orders" => "No orders"
-  }.freeze
-
   # Timeline colours by kind. Urgent jobs are lemon; late ones get a red edge.
   def block_classes(block, warnings = [])
     base = case block.kind
@@ -24,7 +16,7 @@ module PlannerHelper
     if block.job?
       "#{block.sales_order.number} · #{block.product_spec}"
     else
-      KIND_LABELS.fetch(block.kind)
+      block.kind.humanize
     end
   end
 
@@ -36,19 +28,19 @@ module PlannerHelper
     end
   end
 
-  def duration_text(minutes)
-    hours, mins = minutes.divmod(60)
-    [ ("#{hours}h" if hours.positive?), ("#{mins}m" if mins.positive?) ].compact.join(" ").presence || "0m"
-  end
+  def duration_text(minutes) = Schedule.duration_text(minutes)
 
   def plan_time(time)
     l(time, format: "%a %-d %b %H:%M")
   end
 
+  # The end time, with the day only when it's not the start day.
+  def plan_finish(block)
+    block.starts_at.to_date == block.ends_at.to_date ? l(block.ends_at, format: "%H:%M") : plan_time(block.ends_at)
+  end
+
   def plan_range(block)
-    same_day = block.starts_at.to_date == block.ends_at.to_date
-    finish = same_day ? l(block.ends_at, format: "%H:%M") : plan_time(block.ends_at)
-    "#{plan_time(block.starts_at)} – #{finish}"
+    "#{plan_time(block.starts_at)} – #{plan_finish(block)}"
   end
 
   def hours_value(minutes)

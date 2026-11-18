@@ -124,4 +124,63 @@ class ScheduleBlocksControllerTest < ActionDispatch::IntegrationTest
     assert_select "#alert", /multiple of 30/
     assert_equal 60, gap.reload.duration_minutes
   end
+
+  # --- Review fixes ---
+
+  test "a job for an order in production can't be locked, unlocked or re-noted from the form" do
+    job = Schedule::Editor.new(@d1).add_job(@order_line, planned_g: 1_900_000, starts_at: at(MONDAY_6AM))
+    @order_line.sales_order.update_column(:status, "in_production")
+
+    get edit_schedule_block_path(job)
+    assert_select "input[name=locked][disabled]", count: 2
+    assert_select "textarea[name=notes][disabled]"
+    assert_select "input[type=submit]", count: 0
+
+    patch schedule_block_path(job), params: { locked: "1", starts_at: "2026-11-17T08:00", notes: "Moved" }
+    assert_response :unprocessable_content
+    assert_select "#alert", /in production, so its plan can't change/
+    job.reload
+    assert_not job.locked?
+    assert_nil job.notes
+    assert_equal at(MONDAY_6AM), job.starts_at
+  end
+
+  test "weight and lock saved together land where asked, in one edit" do
+    editor = Schedule::Editor.new(@d1)
+    job = editor.add_job(@order_line, planned_g: 1_900_000, starts_at: at(MONDAY_6AM)) # 10 h
+    editor.add(block("planned_maintenance", 60, locked: true, starts_at: at("2026-11-16 20:00")))
+
+    patch schedule_block_path(job), params: { planned_kg: "3800", locked: "1", starts_at: "2026-11-17T08:00" }
+    assert_redirected_to planner_path(line: "D1", week: "2026-11-16")
+    assert_equal [ at("2026-11-17 08:00"), at("2026-11-18 04:00") ], [ job.reload.starts_at, job.ends_at ]
+  end
+
+  test "a new locked block at an off-slot time is snapped, like locking an existing one" do
+    stream_post schedule_blocks_path, { line_id: @d1.id, kind: "planned_maintenance", duration_hours: "1", locked: "1",
+                                        starts_at: "2026-11-17T14:15" }
+    assert_response :success
+    assert_equal at("2026-11-17 14:30"), @d1.schedule_blocks.sole.starts_at
+  end
+
+  test "a planned weight of 0 says so" do
+    stream_post schedule_blocks_path, { line_id: @d1.id, sales_order_line_id: @order_line.id, planned_kg: "0" }
+    assert_response :unprocessable_content
+    assert_match(/Planned weight must be more than 0/, response.body)
+  end
+
+  test "a failed add shows the line's real queue start" do
+    Schedule::Editor.new(@d1).add(block("planned_maintenance", 60, locked: true, starts_at: at("2026-11-16 06:00")))
+    stream_post schedule_blocks_path, { line_id: @d1.id, kind: "no_orders", duration_hours: "0.75",
+                                        queue_starts_at: "2026-11-23T06:00", week: "2026-11-16" }
+    assert_response :unprocessable_content
+    assert_nil @d1.reload.queue_starts_at
+    assert_no_match(/Starts Mon 23 Nov/, response.body)
+  end
+
+  test "the timeline lists this week's warnings in full, for touch screens" do
+    Schedule::Editor.new(@d1).add_job(stock_order_line, starts_at: at(MONDAY_6AM)) # no rate on D1
+    get planner_path(line: "D1", week: "2026-11-16")
+    assert_select "h3", text: "Warnings this week"
+    assert_select "h3 + ul a", text: /No rate.*so 30m is an estimate/m
+  end
 end

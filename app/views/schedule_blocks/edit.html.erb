@@ -33,25 +33,25 @@
     <% end %>
 
     <% unless block.automatic? %>
-      <%= hidden_field_tag :locked, "0", id: nil %>
+      <%= hidden_field_tag :locked, "0", id: nil, disabled: order_locked %>
       <label class="flex min-h-12 cursor-pointer items-center gap-3">
-        <%= check_box_tag :locked, "1", block.locked?, class: "size-5" %>
+        <%= check_box_tag :locked, "1", block.locked?, class: "size-5", disabled: order_locked %>
         <span class="font-semibold">Fix at a time</span>
         <span class="text-sm text-ink-600">Locked blocks never move; the queue flows round them.</span>
       </label>
       <div class="js-lock-time max-w-xs">
         <%= label_tag :starts_at, "Starts", class: "field-label" %>
-        <%= datetime_field_tag :starts_at, datetime_local_value(block.starts_at), step: 1800, class: "field-input" %>
+        <%= datetime_field_tag :starts_at, datetime_local_value(block.starts_at), step: 1800, class: "field-input", disabled: order_locked %>
       </div>
     <% end %>
 
     <div>
       <%= label_tag :notes, "Notes", class: "field-label" %>
-      <%= text_area_tag :notes, block.notes, rows: 3, class: "field-input py-2" %>
+      <%= text_area_tag :notes, block.notes, rows: 3, class: "field-input py-2", disabled: order_locked %>
     </div>
 
     <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
-      <%= form.submit "Save", class: "btn btn-primary" %>
+      <%= form.submit "Save", class: "btn btn-primary" unless order_locked %>
       <%= link_to "Cancel", planner_path_for(@line, week), class: "btn btn-secondary" %>
     </div>
   <% end %>

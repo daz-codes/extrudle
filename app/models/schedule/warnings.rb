@@ -60,8 +60,5 @@ class Schedule::Warnings
       Warning.new(:idle, "Line #{@line.name} is idle for #{duration(minutes)} before this #{block.kind.humanize.downcase}")
     end
 
-    def duration(minutes)
-      hours, mins = minutes.divmod(60)
-      [ ("#{hours}h" if hours.positive?), ("#{mins}m" if mins.positive?) ].compact.join(" ").presence || "0m"
-    end
+    def duration(minutes) = Schedule.duration_text(minutes)
 end

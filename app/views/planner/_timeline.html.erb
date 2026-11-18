@@ -56,4 +56,25 @@
       </div>
     <% end %>
   </div>
+
+  <%# Warnings in full, readable on a touch screen without hovering (short blocks only show a dot). %>
+  <% flagged = @timeline.days.flat_map(&:segments).map(&:block).uniq.select { (@warnings[_1] || []).any? } %>
+  <% if flagged.any? %>
+    <div class="mt-4 border-t border-ink-200 pt-3">
+      <h3 class="eyebrow mb-2">Warnings this week</h3>
+      <ul class="space-y-1">
+        <% flagged.each do |block| %>
+          <li>
+            <%= link_to edit_schedule_block_path(block, week: @week_start.iso8601), class: "flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 rounded-[11px] px-2 py-1 hover:bg-lemon-50 active:bg-lemon-100", data: { turbo_frame: "_top" } do %>
+              <span class="font-semibold text-ink-900"><%= block_title(block) %></span>
+              <span class="font-mono text-sm text-ink-600 tabular-nums"><%= plan_range(block) %></span>
+              <% @warnings[block].each do |warning| %>
+                <span class="text-sm"><span class="badge <%= warning.code == :late ? "bg-bad-50 text-bad-700" : "badge-lemon" %> mr-1"><%= warning.code.to_s.humanize %></span><%= warning.message %></span>
+              <% end %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
 </section>
