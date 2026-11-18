@@ -1,12 +1,12 @@
-# CLAUDE.md — Recycling ERP (working name: "ExtrudeOps", final name TBC)
+# CLAUDE.md — Extrudle
 
 ## What this is
-A small ERP for a plastic sheet/film extrusion plant that runs recycled and virgin polymers. Two extrusion lines run 24/7. ~12 customers, ~40 product specs, ~15 suppliers. Single site, one company, ~5–20 users. Touch screens on the plant floor.
+Extrudle is a small ERP for a plastic sheet/film extrusion plant that runs recycled and virgin polymers. Two extrusion lines run 24/7. ~12 customers, ~40 product specs, ~15 suppliers. Single site, one company, ~5–20 users. Touch screens on the plant floor.
 
 Full plan and phases: `PLAN.md` (in the repo root, next to this file). Work through it one slice at a time.
 
 ## Stack (keep it boring)
-- Rails 8, Ruby 3.3+, **SQLite** (WAL mode; separate SQLite files for the app, Solid Queue, Solid Cache and Solid Cable)
+- Rails 8.1, Ruby 3.4 (see `.ruby-version`), **SQLite** (WAL mode; separate SQLite files for the app, Solid Queue, Solid Cache and Solid Cable)
 - Hotwire (Turbo + Stimulus), importmap, Tailwind CSS (v4, via tailwindcss-rails)
 - Rails 8 built-in authentication generator (`bin/rails generate authentication`)
 - Solid Queue / Solid Cache / Solid Cable
@@ -49,15 +49,21 @@ Define semantic colour tokens once in `app/assets/tailwind/application.css` with
 
 - Use ginger sparingly, like the highlighter pen on the paper plan. If everything is orange, nothing stands out. It is never the colour for errors (that's `bad`).
 - The page background is `slate-50` with white cards. The nav is `brand-900` with white text.
-- Body text is `slate-800` on white. Check contrast (WCAG AA) for all text, including white text on ginger buttons (use `ginger-600` or darker).
+- Body text is `slate-800` on white. Check contrast (WCAG AA) for all text, including white text on ginger buttons (use `ginger-700` or darker; `ginger-600` fails AA for body text).
 - Typography: system font stack, tabular numbers (`tabular-nums`) for every weight, quantity and time column.
 - Office pages: dense but readable tables. `/floor/*` pages: large type (≥ 20px body), big targets, high contrast.
 - Light theme only for MVP.
+
+Shared building blocks live in `application.css` under `@layer components`: `.btn` (+ `.btn-primary`, `.btn-secondary`, `.btn-accent`, `.btn-danger`), `.field-label`, `.field-input`, `.field-hint`, `.card`, `.badge`. Layouts: `application` (office), `floor` (large type) and `auth` (sign-in pages).
+
+## Roles
+`User#role` is `admin`, `office` or `floor`. Use `require_role :admin, :office` in controllers (`Authorization` concern). Floor users only see `/floor` and are redirected there from office pages. Deactivated users can't sign in.
 
 ## Conventions
 - RESTful controllers, thin. Business logic in plain Ruby objects in app/models (e.g. `Schedule::Reflow`, `Stock::Receive`).
 - Enums as Rails string-backed enums.
 - Every model change ships with a test. Run `bin/rails test` and `bin/rails test:system` before saying a task is done.
+- In system tests, sign in with the `sign_in` helper and call `wait_for_turbo` before clicking straight after a Turbo navigation.
 - Touch-first UI: buttons ≥ 48px tall, no hover-only interactions, large type on `/floor/*` pages.
 - Keep `db/seeds.rb` realistic (2 lines, 12 customers, ~10 specs, 5 material categories, suppliers, some POs and lots) so screens can be demoed.
 

@@ -1,24 +1,26 @@
-# README
+# Extrudle
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A small ERP for a plastic sheet/film extrusion plant: production planning, lot-tracked stock, purchasing, production logs and dispatch.
 
-Things you may want to cover:
+- `PLAN.md` has the build plan, with a checklist of slices.
+- `CLAUDE.md` has the stack, domain rules and design rules.
 
-* Ruby version
+## Running locally
 
-* System dependencies
+```sh
+bin/setup        # installs gems, prepares the SQLite databases, seeds demo users
+bin/dev          # Rails + Tailwind watcher on http://localhost:3000
+```
 
-* Configuration
+Demo users (password `extrudle-demo`): `admin@extrudle.test`, `office@extrudle.test`, `floor@extrudle.test`.
 
-* Database creation
+## Tests
 
-* Database initialization
+```sh
+bin/rails test
+bin/rails test:system
+```
 
-* How to run the test suite
+## Deploying
 
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+Kamal deploys to a single ARM VPS, with images on GHCR (`config/deploy.yml`). SQLite databases live on the `extrudle_storage` volume. Set the server IP and export `KAMAL_REGISTRY_PASSWORD` before running `bin/kamal setup`.
