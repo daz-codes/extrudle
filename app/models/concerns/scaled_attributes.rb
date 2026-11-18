@@ -4,8 +4,8 @@
 #   scaled_attribute :max_reel_kg,  column: :max_reel_g,  scale: 1_000  # kg  <-> grams
 #   scaled_attribute :silicone_pct, column: :silicone_bp, scale: 100    # %   <-> basis points
 #
-# Input is parsed with BigDecimal. Invalid input keeps the raw text for the form
-# and adds a validation error instead of raising.
+# Input is parsed with DecimalInput (BigDecimal, UK thousands commas only).
+# Invalid input keeps the raw text for the form and adds a validation error instead of raising.
 module ScaledAttributes
   extend ActiveSupport::Concern
 
@@ -25,14 +25,8 @@ module ScaledAttributes
 
       define_method("#{name}=") do |input|
         scaled_attribute_raw_input.delete(name)
-        text = input.to_s.delete(", _").strip
-
-        if text.empty?
-          self[column] = nil
-        else
-          self[column] = (BigDecimal(text) * scale).round(0, :half_up).to_i
-        end
-      rescue ArgumentError
+        self[column] = input.to_s.strip.empty? ? nil : DecimalInput.to_scaled_integer(input, scale)
+      rescue DecimalInput::Invalid
         scaled_attribute_raw_input[name] = input.to_s
       end
     end

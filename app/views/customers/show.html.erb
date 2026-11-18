@@ -3,7 +3,7 @@
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
   <div class="flex items-center gap-3">
-    <h1 class="text-3xl font-bold text-slate-900"><%= @customer.name %></h1>
+    <h1 class="text-3xl font-bold text-ink-900"><%= @customer.name %></h1>
     <%= status_badge(@customer) %>
   </div>
   <div class="flex flex-wrap gap-3">
@@ -17,15 +17,15 @@
     <h2 class="mb-3 text-lg font-semibold">Details</h2>
     <dl class="space-y-2">
       <% { "Contact" => @customer.contact_name, "Email" => @customer.email, "Phone" => @customer.phone, "Currency" => @customer.currency }.each do |label, value| %>
-        <div class="flex justify-between gap-4"><dt class="text-slate-600"><%= label %></dt><dd class="text-right font-medium"><%= value.presence || "—" %></dd></div>
+        <div class="flex justify-between gap-4"><dt class="text-ink-600"><%= label %></dt><dd class="text-right font-medium"><%= value.presence || "—" %></dd></div>
       <% end %>
     </dl>
     <% if @customer.address.present? %>
-      <h3 class="mt-4 text-sm font-semibold text-slate-600">Address</h3>
+      <h3 class="mt-4 text-sm font-semibold text-ink-600">Address</h3>
       <p class="whitespace-pre-line"><%= @customer.address %></p>
     <% end %>
     <% if @customer.notes.present? %>
-      <h3 class="mt-4 text-sm font-semibold text-slate-600">Notes</h3>
+      <h3 class="mt-4 text-sm font-semibold text-ink-600">Notes</h3>
       <p class="whitespace-pre-line"><%= @customer.notes %></p>
     <% end %>
   </section>

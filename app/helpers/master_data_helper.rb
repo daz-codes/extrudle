@@ -28,7 +28,7 @@ module MasterDataHelper
     if record.active?
       tag.span("Active", class: "badge bg-ok-50 text-ok-700")
     else
-      tag.span("Inactive", class: "badge bg-slate-100 text-slate-600")
+      tag.span("Inactive", class: "badge bg-ink-100 text-ink-600")
     end
   end
 

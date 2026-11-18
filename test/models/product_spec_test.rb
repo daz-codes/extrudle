@@ -63,6 +63,13 @@ class ProductSpecTest < ActiveSupport::TestCase
     assert_equal "heavy", spec.max_reel_kg
   end
 
+  test "a European decimal comma is rejected rather than read as thousands" do
+    spec = valid_spec(max_reel_kg: "1,5")
+    assert_not spec.valid?
+    assert spec.errors.of_kind?(:max_reel_kg, :not_a_number)
+    assert_nil spec.max_reel_g
+  end
+
   test "max diameter is required for a diameter limit and dropped for max roll on side" do
     assert_not valid_spec(max_diameter_mm: nil).valid?
 

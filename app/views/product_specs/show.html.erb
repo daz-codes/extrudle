@@ -5,10 +5,10 @@
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
   <div>
     <div class="flex items-center gap-3">
-      <h1 class="text-3xl font-bold text-slate-900">Spec <%= spec %></h1>
+      <h1 class="text-3xl font-bold text-ink-900">Spec <%= spec %></h1>
       <%= status_badge(spec) %>
     </div>
-    <p class="mt-1 text-slate-600">
+    <p class="mt-1 text-ink-600">
       <%= spec.customer ? link_to(spec.customer.name, spec.customer, class: "text-brand-700 underline") : "Stock / any customer" %>
       <% if spec.customer_description.present? %> · <%= spec.customer_description %><% end %>
     </p>
@@ -21,9 +21,9 @@
 
 <%# Same columns as the paper Extrusion Production Plan (form 5.4.1.1) so it reads familiarly. %>
 <section class="card mb-6 overflow-x-auto" aria-labelledby="plan-row-heading">
-  <h2 id="plan-row-heading" class="px-5 pt-4 text-sm font-semibold uppercase tracking-wide text-slate-500">As it appears on the production plan</h2>
+  <h2 id="plan-row-heading" class="px-5 pt-4 text-sm font-semibold uppercase tracking-wide text-ink-500">As it appears on the production plan</h2>
   <table class="mt-2 w-full text-left">
-    <thead class="border-y border-slate-200 bg-slate-50 text-sm text-slate-600">
+    <thead class="border-y border-ink-200 bg-ink-50 text-sm text-ink-600">
       <tr>
         <th scope="col" class="px-4 py-2 font-semibold">Customer refs</th>
         <th scope="col" class="px-4 py-2 font-semibold">Micron</th>
@@ -39,7 +39,7 @@
       <tr class="align-top">
         <td class="px-4 py-3 text-sm">
           <% { "Part" => spec.customer_part_no, "Tool" => spec.customer_tool_no, "Product" => spec.customer_product_code }.each do |label, value| %>
-            <% if value.present? %><div><span class="text-slate-500"><%= label %>:</span> <%= value %></div><% end %>
+            <% if value.present? %><div><span class="text-ink-500"><%= label %>:</span> <%= value %></div><% end %>
           <% end %>
         </td>
         <td class="px-4 py-3 text-lg font-semibold tabular-nums"><%= spec.paper_gauge %></td>
@@ -62,7 +62,7 @@
 <div class="grid gap-6 lg:grid-cols-2">
   <section class="card p-5">
     <h2 class="mb-3 text-lg font-semibold">Details</h2>
-    <dl class="divide-y divide-slate-100">
+    <dl class="divide-y divide-ink-100">
       <% {
            "Thickness" => micron(spec.thickness_micron),
            "Width" => mm(spec.width_mm),
@@ -71,19 +71,19 @@
            "Max reel weight" => kg(spec.max_reel_g),
            "Revision" => spec.revision
          }.each do |label, value| %>
-        <div class="flex justify-between gap-4 py-2"><dt class="text-slate-600"><%= label %></dt><dd class="font-medium tabular-nums"><%= value %></dd></div>
+        <div class="flex justify-between gap-4 py-2"><dt class="text-ink-600"><%= label %></dt><dd class="font-medium tabular-nums"><%= value %></dd></div>
       <% end %>
     </dl>
   </section>
 
   <section class="card p-5" aria-labelledby="line-rates-heading">
     <h2 id="line-rates-heading" class="text-lg font-semibold">Line rates</h2>
-    <p class="mb-4 text-sm text-slate-600">Output on each line. The planner uses this to work out how long a job takes.</p>
+    <p class="mb-4 text-sm text-ink-600">Output on each line. The planner uses this to work out how long a job takes.</p>
 
     <div class="space-y-3">
       <% @lines.each do |line| %>
         <% rate = spec.rate_for(line) %>
-        <div id="<%= dom_id(line, :rate) %>" class="flex flex-wrap items-center gap-3 rounded-md border border-slate-200 p-3">
+        <div id="<%= dom_id(line, :rate) %>" class="flex flex-wrap items-center gap-3 rounded-md border border-ink-200 p-3">
           <div class="w-16 text-xl font-bold"><%= line.name %></div>
           <%= form_with model: rate || LineRate.new(line: line), url: rate ? product_spec_line_rate_path(spec, rate) : product_spec_line_rates_path(spec),
                 class: "flex flex-1 flex-wrap items-center gap-3" do |form| %>
@@ -92,7 +92,7 @@
               <%= form.label :kg_per_hour, "Rate on #{line.name}", class: "sr-only" %>
               <div class="flex">
                 <%= form.number_field :kg_per_hour, min: 1, step: 1, required: true, placeholder: "Not set", class: "field-input rounded-r-none tabular-nums" %>
-                <span class="-ml-px inline-flex items-center rounded-r-md border border-slate-300 bg-slate-100 px-3 text-slate-600">kg/h</span>
+                <span class="-ml-px inline-flex items-center rounded-r-md border border-ink-300 bg-ink-100 px-3 text-ink-600">kg/h</span>
               </div>
             </div>
             <%= form.submit "Save", class: "btn btn-primary", aria: { label: "Save rate for #{line.name}" } %>
@@ -104,7 +104,7 @@
         </div>
       <% end %>
       <% if @lines.empty? %>
-        <p class="text-slate-500">No active lines. <%= link_to "Add a line", new_line_path, class: "text-brand-700 underline" %>.</p>
+        <p class="text-ink-500">No active lines. <%= link_to "Add a line", new_line_path, class: "text-brand-700 underline" %>.</p>
       <% end %>
     </div>
   </section>
