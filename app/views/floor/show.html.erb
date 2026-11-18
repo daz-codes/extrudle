@@ -1,0 +1,14 @@
+<% content_for :title, "Floor" %>
+
+<h1 class="mb-6 text-4xl font-bold text-slate-900">Plant floor</h1>
+
+<div class="grid gap-4 sm:grid-cols-2">
+  <% ["Start run", "Load material", "Finish reel", "Goods in"].each do |action| %>
+    <button type="button" disabled class="btn btn-secondary min-h-28 w-full text-2xl">
+      <%= action %>
+      <span class="sr-only">(coming soon)</span>
+    </button>
+  <% end %>
+</div>
+
+<p class="mt-6 text-lg text-slate-600">These screens arrive with the production log slices.</p>
