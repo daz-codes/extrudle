@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_090002) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_090003) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -116,6 +116,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_090002) do
     t.integer "price_per_tonne_cents"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "currency", default: "GBP", null: false
+    t.string "quantity_unit", default: "kg", null: false
     t.index ["product_spec_id"], name: "index_sales_order_lines_on_product_spec_id"
     t.index ["sales_order_id"], name: "index_sales_order_lines_on_sales_order_id"
     t.check_constraint "price_per_tonne_cents IS NULL OR price_per_tonne_cents >= 0", name: "sales_order_lines_price_non_negative"

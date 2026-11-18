@@ -13,13 +13,14 @@
 
   <div class="grid gap-5 sm:grid-cols-[1fr_auto]">
     <%= form.text_row :quantity, required: true, inputmode: "decimal", autocomplete: "off" %>
-    <%= form.radio_row :quantity_unit, SalesOrderLine::QUANTITY_UNITS, labels: { "kg" => "kg", "t" => "tonnes" } %>
+    <%= form.radio_row :quantity_unit, SalesOrderLine::QUANTITY_UNITS.keys, labels: { "kg" => "kg", "t" => "tonnes" } %>
   </div>
 
   <div class="grid gap-5 sm:grid-cols-2">
     <%= form.text_row :customer_batch_no, hint: "If the customer sends one." %>
-    <%= form.text_row :price_per_tonne, inputmode: "decimal", suffix: "#{Money.symbol(order.customer.currency)}/t",
-          hint: "Optional. In #{order.customer.currency}." %>
+    <% currency = line.persisted? ? line.currency : order.customer.currency %>
+    <%= form.text_row :price_per_tonne, inputmode: "decimal", suffix: "#{Money.symbol(currency)}/t",
+          hint: "Optional. In #{currency}." %>
   </div>
 
   <div class="flex flex-wrap gap-3">

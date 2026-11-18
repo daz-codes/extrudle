@@ -70,7 +70,7 @@
           </td>
           <td class="px-4 py-3 text-right tabular-nums"><%= spec.paper_gauge %></td>
           <td class="px-4 py-3 text-right tabular-nums"><%= spec.width_mm %></td>
-          <td class="px-4 py-3 text-right tabular-nums"><%= order_quantity(line.quantity_g) %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= order_quantity(line.quantity_g, unit: line.quantity_unit) %></td>
           <td class="px-4 py-3"><%= line.customer_batch_no || "—" %></td>
           <td class="px-4 py-3 text-right tabular-nums"><%= money(line.price_per_tonne_cents, line.currency) %></td>
           <td class="px-4 py-3">

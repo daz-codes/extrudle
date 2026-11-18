@@ -7,6 +7,33 @@ class SalesOrderTest < ActiveSupport::TestCase
     assert_equal "SO-00006", SalesOrder.next_number
   end
 
+  test "numbers keep counting past SO-99999" do
+    SalesOrder.create!(customer: customers(:rhine), required_on: Date.current, number: "SO-99999")
+    assert_equal "SO-100000", SalesOrder.next_number
+    SalesOrder.create!(customer: customers(:rhine), required_on: Date.current)
+    assert_equal "SO-100001", SalesOrder.next_number
+  end
+
+  test "a number taken at the same moment by someone else is retried, not a crash" do
+    order = SalesOrder.new(customer: customers(:rhine), required_on: Date.current)
+    # Another user's insert lands between our validation and our insert: the unique index rejects ours once.
+    def order._create_record(*)
+      @attempts = @attempts.to_i + 1
+      raise ActiveRecord::RecordNotUnique, "number taken" if @attempts == 1
+      super
+    end
+
+    assert order.save_with_number
+    assert order.persisted?
+    assert_equal 2, order.instance_variable_get(:@attempts)
+  end
+
+  test "gives up after a few clashes instead of looping" do
+    order = SalesOrder.new(customer: customers(:rhine), required_on: Date.current)
+    def order._create_record(*) = raise(ActiveRecord::RecordNotUnique, "number taken")
+    assert_raises(ActiveRecord::RecordNotUnique) { order.save_with_number }
+  end
+
   test "needs an active customer and a required date" do
     order = SalesOrder.new(customer: customers(:dormant))
     assert_not order.valid?
@@ -43,6 +70,18 @@ class SalesOrderTest < ActiveSupport::TestCase
     assert_not_includes SalesOrder.in_window("overdue", today:), sales_orders(:bf_open)
     assert_includes SalesOrder.in_window("later", today:), sales_orders(:rhine_later)
     assert_equal SalesOrder.count, SalesOrder.in_window(nil).count
+  end
+
+  test "overdue only covers orders still to make" do
+    assert_not_includes SalesOrder.in_window("overdue"), sales_orders(:bf_dispatched)
+  end
+
+  test "window counts in one query match the windows, even with includes" do
+    scope = SalesOrder.includes(:customer, lines: :product_spec).search(nil)
+    counts = assert_queries_count(1) { scope.window_counts }
+    expected = SalesOrder::WINDOWS.keys.index_with { |window| SalesOrder.in_window(window).count }
+    assert_equal expected, counts
+    assert_equal 1, counts["overdue"]
   end
 
   test "sorted by required date with urgent first on the same day" do

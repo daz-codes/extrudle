@@ -15,12 +15,12 @@ class SalesOrdersController < ApplicationController
     when "all" then orders
     else orders.where(status: @status)
     end
-    @window_counts = SalesOrder::WINDOWS.keys.index_with { |window| orders.in_window(window).count }
+    @window_counts = orders.window_counts
     @sales_orders = orders.in_window(@window).by_required_date
   end
 
   def show
-    @line = SalesOrderLine.new(quantity_unit: "kg") if @sales_order.editable? # not linked, so it stays out of @sales_order.lines
+    @line = SalesOrderLine.new if @sales_order.editable? # not linked, so it stays out of @sales_order.lines
   end
 
   def new
@@ -30,7 +30,7 @@ class SalesOrdersController < ApplicationController
   def create
     @sales_order = SalesOrder.new(sales_order_params)
 
-    if @sales_order.save
+    if @sales_order.save_with_number
       redirect_to @sales_order, notice: "Order #{@sales_order.number} was created. Add its lines below."
     else
       render :new, status: :unprocessable_content

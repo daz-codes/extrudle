@@ -1,6 +1,12 @@
 <% content_for :title, "Edit #{@product_spec}" %>
 <%= render "master_data/header", title: "Edit spec #{@product_spec}" %>
-<% if @product_spec.used? %>
+<% if @product_spec.used? && !@product_spec.latest_revision? %>
+  <% latest = @product_spec.revisions.last %>
+  <p class="mb-6 max-w-4xl rounded-md border border-lemon-400 bg-lemon-100 px-4 py-3 text-ink-900">
+    <strong><%= @product_spec %></strong> has been replaced by <%= link_to "revision #{latest.revision}", edit_product_spec_path(latest), class: "link" %>.
+    Edit that one to make changes. Here you can only tick or untick <em>Active</em>.
+  </p>
+<% elsif @product_spec.used? %>
   <p class="mb-6 max-w-4xl rounded-md border border-lemon-400 bg-lemon-100 px-4 py-3 text-ink-900">
     <strong><%= @product_spec %></strong> is on <%= pluralize(@product_spec.sales_order_lines.count, "order line") %>, so it can't change.
     Saving creates <strong>revision <%= @product_spec.next_revision %></strong>. Existing orders keep revision <%= @product_spec.revision %>.

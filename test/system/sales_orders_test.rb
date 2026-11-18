@@ -26,7 +26,7 @@ class SalesOrdersTest < ApplicationSystemTestCase
 
     assert_text "Added BF-700-250 to SO-00005"
     within "#lines-heading + table" do
-      assert_text "12.50 t"
+      assert_text "12.5 t"
     end
 
     click_on "Orders"

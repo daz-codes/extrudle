@@ -41,7 +41,7 @@ class SalesOrder < ApplicationRecord
 
   scope :in_window, ->(window, today: Date.current) {
     case window
-    when "overdue" then where(required_on: ...today)
+    when "overdue" then where(required_on: ...today, status: ACTIVE_STATUSES)
     when "this_week" then where(required_on: today..today.end_of_week)
     when "next_two_weeks" then where(required_on: (today.end_of_week + 1)..(today.end_of_week + 14))
     when "later" then where(required_on: (today.end_of_week + 15)..)
@@ -49,9 +49,37 @@ class SalesOrder < ApplicationRecord
     end
   }
 
+  # Order counts per date window, in one query. Overdue only counts orders still to make.
+  def self.window_counts(today: Date.current)
+    eow = today.end_of_week
+    binds = { today:, eow:, next_start: eow + 1, next_end: eow + 14, later: eow + 15, active: ACTIVE_STATUSES }
+    conditions = [
+      "sales_orders.required_on < :today AND sales_orders.status IN (:active)",
+      "sales_orders.required_on BETWEEN :today AND :eow",
+      "sales_orders.required_on BETWEEN :next_start AND :next_end",
+      "sales_orders.required_on >= :later"
+    ]
+    sums = conditions.map do |condition|
+      Arel.sql(sanitize_sql_array([ "COALESCE(SUM(CASE WHEN #{condition} THEN 1 ELSE 0 END), 0)", binds ]))
+    end
+
+    WINDOWS.keys.zip(unscope(:includes, :order).pick(*sums)).to_h
+  end
+
+  # Compares the numeric part, so SO-100000 comes after SO-99999.
   def self.next_number
-    last = where("number LIKE 'SO-%'").maximum(:number)
-    format(NUMBER_FORMAT, last.to_s.delete_prefix("SO-").to_i + 1)
+    last = where("number LIKE 'SO-%'").pick(Arel.sql("MAX(CAST(SUBSTR(number, 4) AS INTEGER))"))
+    format(NUMBER_FORMAT, last.to_i + 1)
+  end
+
+  # Like save, but if another user took the same number at the same moment, takes the next one.
+  def save_with_number(attempts: 3)
+    save
+  rescue ActiveRecord::RecordNotUnique
+    raise if (attempts -= 1).zero?
+
+    self.number = nil
+    retry
   end
 
   def total_g

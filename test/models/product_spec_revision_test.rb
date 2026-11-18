@@ -59,6 +59,40 @@ class ProductSpecRevisionTest < ActiveSupport::TestCase
     assert spec.errors.include?(:code)
   end
 
+  test "a superseded revision can't be revised, but can still be deactivated" do
+    rev1 = product_specs(:bf_700)
+    assert ProductSpec::Revision.new(rev1, { width_mm: 710 }).save
+    rev1.reload
+    assert_not rev1.latest_revision?
+
+    stale = ProductSpec::Revision.new(rev1, { width_mm: 720 })
+    assert_no_difference "ProductSpec.count" do
+      assert_not stale.save
+    end
+    assert_match "replaced by revision 2", rev1.errors.full_messages.to_sentence
+    assert_equal 720, rev1.width_mm, "the user's edit is kept for the form"
+    assert_equal 1, ProductSpec.active.where(code: "BF-700-250").count
+
+    assert ProductSpec::Revision.new(rev1.reload, { active: true }).save, "toggling Active stays allowed"
+  end
+
+  test "unticking Active in the same edit retires the new revision too" do
+    spec = product_specs(:bf_700)
+    revision = ProductSpec::Revision.new(spec, { width_mm: 710, active: false })
+    assert revision.save
+    assert revision.revised?
+    assert_not revision.spec.active?
+    assert_not spec.reload.active?
+    assert_equal 0, ProductSpec.active.where(code: "BF-700-250").count
+  end
+
+  test "creating a revision leaves the user's edits on the original in memory" do
+    spec = product_specs(:bf_700)
+    assert ProductSpec::Revision.new(spec, { width_mm: 710 }).save
+    assert_equal 710, spec.width_mm
+    assert_equal 700, spec.reload.width_mm
+  end
+
   test "used specs can't be destroyed" do
     assert_not product_specs(:bf_700).destroy
   end

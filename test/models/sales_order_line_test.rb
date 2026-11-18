@@ -36,6 +36,48 @@ class SalesOrderLineTest < ActiveSupport::TestCase
     assert_not line(quantity: "1", price_per_tonne: "cheap").valid?
   end
 
+  test "price keeps the currency it was agreed in" do
+    l = line(quantity: "1000", price_per_tonne: "1200")
+    l.save!
+    assert_equal "GBP", l.currency
+
+    customers(:brightform).update!(currency: "EUR")
+    assert_equal "GBP", l.reload.currency
+    assert_equal "EUR", line(sales_order: sales_orders(:bf_open).reload, quantity: "1").tap(&:validate).currency
+  end
+
+  test "the unit is kept, so a line entered in tonnes reopens in tonnes" do
+    l = line(quantity_unit: "t", quantity: "12.5")
+    l.save!
+    l = SalesOrderLine.find(l.id)
+    assert_equal "t", l.quantity_unit
+    assert_equal "12.5", l.quantity
+  end
+
+  test "quantities finer than a gram are rejected, not rounded" do
+    assert_not line(quantity: "1.0005").valid?
+    bad = line(quantity_unit: "t", quantity: "1.0000001")
+    assert_not bad.valid?
+    assert_includes bad.errors.full_messages, "Quantity can't be finer than 1 g (6 decimal places in t)"
+    assert line(quantity_unit: "t", quantity: "1.000001").valid?
+  end
+
+  test "a bad quantity gives one error, on the quantity field" do
+    bad = line(quantity: "lots")
+    bad.validate
+    assert_equal [ "Quantity is not a number" ], bad.errors.full_messages
+
+    zero = line(quantity: "0")
+    zero.validate
+    assert_equal [ "Quantity must be greater than 0" ], zero.errors.full_messages
+  end
+
+  test "prices with more than 2 decimal places are rejected" do
+    l = line(quantity: "1", price_per_tonne: "12.345")
+    assert_not l.valid?
+    assert_includes l.errors.full_messages, "Price per tonne can have at most 2 decimal places"
+  end
+
   test "spec must be the customer's own or a stock spec" do
     assert line(quantity: "1", product_spec: product_specs(:stock)).valid?
 

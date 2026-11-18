@@ -80,6 +80,10 @@ class ProductSpec < ApplicationRecord
     self.class.where(code: code).order(:revision)
   end
 
+  def latest_revision?
+    revision == self.class.where(code: code_in_database || code).maximum(:revision)
+  end
+
   def next_revision
     self.class.where(code: code).maximum(:revision).to_i + 1
   end

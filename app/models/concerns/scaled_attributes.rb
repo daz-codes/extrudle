@@ -3,6 +3,7 @@
 #
 #   scaled_attribute :max_reel_kg,  column: :max_reel_g,  scale: Weight::GRAMS_PER_KG  # kg <-> grams
 #   scaled_attribute :silicone_pct, column: :silicone_bp, scale: 100                   # %  <-> basis points
+#   scaled_attribute :price_per_tonne, column: :price_per_tonne_cents, scale: 100, pad: true  # "1850.00"
 #
 # Parsing and formatting go through DecimalInput, the same parser behind Weight.parse
 # and Money.parse. Input finer than the stored unit is rejected rather than rounded.
@@ -18,7 +19,8 @@ module ScaledAttributes
   end
 
   class_methods do
-    def scaled_attribute(name, column:, scale:)
+    # pad: true always shows every decimal place (money: "1850.00", not "1850").
+    def scaled_attribute(name, column:, scale:, pad: false)
       self.scaled_attributes = scaled_attributes.merge(name => { column:, scale: })
 
       define_method(name) do
@@ -26,7 +28,7 @@ module ScaledAttributes
         return raw[:text] if raw
 
         value = self[column]
-        value && DecimalInput.from_scaled_integer(value, scale)
+        value && DecimalInput.from_scaled_integer(value, scale, pad:)
       end
 
       define_method("#{name}=") do |input|

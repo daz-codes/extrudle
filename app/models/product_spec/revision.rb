@@ -4,6 +4,12 @@
 # * Used spec (on an order): leave it untouched and save the changes as the
 #   next revision of the same code. Line rates are copied, and the old revision
 #   is deactivated so new orders pick the new one. Existing orders keep theirs.
+#   Only the latest revision can be revised, so changes are never built on a
+#   superseded revision (which would drop the later one's changes).
+#
+# Line rates are planning data (machine throughput), not part of the product,
+# so they stay editable on used specs: existing orders should be planned at
+# today's rates.
 #
 #   revision = ProductSpec::Revision.new(spec, params)
 #   if revision.save
@@ -27,6 +33,8 @@ class ProductSpec::Revision
     return false unless original.valid?
 
     if needs_new_revision?
+      return superseded_error unless original.latest_revision?
+
       create_revision
     else
       original.save
@@ -53,8 +61,9 @@ class ProductSpec::Revision
       ProductSpec.transaction do
         revision.save!
         revision.copy_line_rates_from(original)
-        original.restore_attributes
-        original.update!(active: false)
+        # Deactivate the stored row only: the in-memory original keeps the user's
+        # edits so the form can be shown again if anything fails.
+        original.update_columns(active: false, updated_at: Time.current)
       end
 
       @spec = revision
@@ -64,9 +73,16 @@ class ProductSpec::Revision
       false
     end
 
+    # Includes `active` as edited, so unticking Active in the same edit retires the new revision too.
     def revision_attributes
       original.attributes
         .except("id", "created_at", "updated_at")
-        .merge("revision" => original.next_revision, "active" => true)
+        .merge("revision" => original.next_revision)
+    end
+
+    def superseded_error
+      latest = original.revisions.last
+      original.errors.add(:base, "Revision #{original.revision} has been replaced by revision #{latest.revision}. Edit that one instead.")
+      false
     end
 end

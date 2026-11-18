@@ -1,77 +1,85 @@
 class SalesOrderLine < ApplicationRecord
-  QUANTITY_UNITS = %w[ kg t ].freeze
+  include ScaledAttributes
+
+  QUANTITY_UNITS = { "kg" => Weight::GRAMS_PER_KG, "t" => Weight::GRAMS_PER_TONNE }.freeze
 
   belongs_to :sales_order, inverse_of: :lines
   belongs_to :product_spec
 
-  attribute :quantity_unit, :string, default: "kg"
+  # The price is agreed in the customer's currency when the line is added, and kept with it.
+  scaled_attribute :price_per_tonne, column: :price_per_tonne_cents, scale: 100, pad: true
 
-  validates :quantity_g, numericality: { only_integer: true, greater_than: 0 }
-  validates :quantity_unit, inclusion: { in: QUANTITY_UNITS }
+  validates :quantity_g, numericality: { only_integer: true, greater_than: 0 }, unless: :quantity_input_invalid?
+  validates :quantity_unit, inclusion: { in: QUANTITY_UNITS.keys }
+  validates :currency, inclusion: { in: Money::CURRENCIES.keys }
   validates :price_per_tonne_cents, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
-  validate :quantity_input_is_a_number
-  validate :price_input_is_a_number
+  validate :quantity_input_is_valid
   validate :spec_suits_the_order, if: -> { new_record? || will_save_change_to_product_spec_id? }
   validate :order_is_editable
+
+  before_validation :take_currency_from_customer, on: :create
+  after_validation :report_quantity_errors_on_the_form_field
 
   normalizes :customer_batch_no, with: ->(no) { no.strip.presence }
 
   delegate :customer, to: :sales_order
 
-  # The quantity as typed, in the chosen unit ("12.5" with quantity_unit "t").
+  # The quantity as typed, in its unit ("12.5" with quantity_unit "t").
   def quantity
-    return @quantity_input if @quantity_input_invalid
+    return @quantity_input[:text] if quantity_input_invalid?
     return nil if quantity_g.nil?
 
-    divisor = quantity_unit == "t" ? Weight::GRAMS_PER_TONNE : Weight::GRAMS_PER_KG
-    (BigDecimal(quantity_g) / divisor).to_s("F").delete_suffix(".0")
+    DecimalInput.from_scaled_integer(quantity_g, unit_scale)
   end
 
-  # Order matters: the form sends quantity_unit before quantity, but don't rely on it.
+  # The form may send quantity before quantity_unit, so the text is kept and
+  # parsed again if the unit changes.
   def quantity=(input)
-    @quantity_input = input
+    @quantity_text = input.to_s
     convert_quantity
   end
 
   def quantity_unit=(unit)
     super
-    convert_quantity if defined?(@quantity_input)
-  end
-
-  def price_per_tonne
-    return @price_input if @price_input_invalid
-    return nil if price_per_tonne_cents.nil?
-
-    major, minor = price_per_tonne_cents.divmod(100)
-    "#{major}.#{minor.to_s.rjust(2, "0")}"
-  end
-
-  def price_per_tonne=(input)
-    @price_input = input
-    @price_input_invalid = false
-    self.price_per_tonne_cents = Money.parse(input)
-  rescue Money::InvalidInput
-    @price_input_invalid = true
-  end
-
-  def currency
-    customer.currency
+    convert_quantity if defined?(@quantity_text)
   end
 
   private
+    def unit_scale
+      QUANTITY_UNITS.fetch(quantity_unit, Weight::GRAMS_PER_KG)
+    end
+
     def convert_quantity
-      @quantity_input_invalid = false
-      self.quantity_g = Weight.parse(@quantity_input, unit: QUANTITY_UNITS.include?(quantity_unit) ? quantity_unit : "kg")
-    rescue Weight::InvalidInput
-      @quantity_input_invalid = true
+      @quantity_input = nil
+      self.quantity_g = @quantity_text.strip.empty? ? nil : DecimalInput.to_scaled_integer(@quantity_text, unit_scale, exact: true)
+    rescue DecimalInput::TooPrecise
+      @quantity_input = { text: @quantity_text, error: :too_precise }
+    rescue DecimalInput::Invalid
+      @quantity_input = { text: @quantity_text, error: :not_a_number }
     end
 
-    def quantity_input_is_a_number
-      errors.add(:quantity, :not_a_number) if @quantity_input_invalid
+    def quantity_input_invalid?
+      @quantity_input.present?
     end
 
-    def price_input_is_a_number
-      errors.add(:price_per_tonne, :not_a_number) if @price_input_invalid
+    def quantity_input_is_valid
+      case @quantity_input&.dig(:error)
+      when :too_precise
+        errors.add(:quantity, :too_precise, message: "can't be finer than 1 g (#{DecimalInput.places(unit_scale)} decimal places in #{quantity_unit})")
+      when :not_a_number
+        errors.add(:quantity, :not_a_number)
+      end
+    end
+
+    def report_quantity_errors_on_the_form_field
+      return unless errors.include?(:quantity_g)
+
+      errors.where(:quantity_g).each { |error| errors.import(error, attribute: :quantity) }
+      errors.delete(:quantity_g)
+    end
+
+    def take_currency_from_customer
+      self.currency = customer.currency if sales_order&.customer
     end
 
     def spec_suits_the_order

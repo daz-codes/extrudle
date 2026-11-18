@@ -40,7 +40,11 @@ module SalesOrdersHelper
     "#{spec} · #{spec.thickness_micron} µm × #{spec.width_mm} mm"
   end
 
-  def order_quantity(grams)
-    grams >= Weight::GRAMS_PER_TONNE ? tonnes(grams) : kg(grams)
+  # Exact, never rounded: "12.345 t", "750 kg". A line shows the unit it was entered in;
+  # totals use tonnes from 1 t up.
+  def order_quantity(grams, unit: nil)
+    unit ||= grams >= Weight::GRAMS_PER_TONNE ? "t" : "kg"
+    number = DecimalInput.from_scaled_integer(grams, SalesOrderLine::QUANTITY_UNITS.fetch(unit))
+    "#{number_with_delimiter(number)} #{unit}"
   end
 end
