@@ -55,6 +55,12 @@ class WeightTest < ActiveSupport::TestCase
     assert_raises(Weight::InvalidInput) { Weight.parse(5, unit: "lb") }
   end
 
+  test "formats exact kilograms with separators" do
+    assert_equal "1,250.5 kg", Weight.format_kg(1_250_500)
+    assert_equal "12,000 kg", Weight.format_kg(12_000_000)
+    assert_equal "0.001 kg", Weight.format_kg(1)
+  end
+
   test "converts grams back to exact decimals" do
     assert_equal BigDecimal("1250.5"), Weight.to_kg(1_250_500)
     assert_equal BigDecimal("1.2505"), Weight.to_tonnes(1_250_500)

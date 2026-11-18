@@ -51,8 +51,8 @@ class Schedule::Warnings
       planned = order_line.planned_g
       return unless planned > order_line.quantity_g
 
-      Warning.new(:over_planned, "#{Weight.to_kg(planned).to_s('F').delete_suffix('.0')} kg planned for #{order_line.sales_order.number} #{order_line.product_spec}, " \
-                                 "but #{Weight.to_kg(order_line.quantity_g).to_s('F').delete_suffix('.0')} kg is ordered")
+      Warning.new(:over_planned, "#{Weight.format_kg(planned)} planned for #{order_line.sales_order.number} #{order_line.product_spec}, " \
+                                 "but #{Weight.format_kg(order_line.quantity_g)} is ordered")
     end
 
     def idle_before(block, previous)

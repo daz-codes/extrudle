@@ -1,5 +1,6 @@
-# Edits one line's plan. Every change reflows the line and updates the
-# affected orders' open/scheduled status, all in one transaction.
+# Edits one line's plan. Every change rebuilds the automatic changeovers,
+# reflows the line and updates the affected orders' open/scheduled status,
+# all in one transaction.
 #
 #   editor = Schedule::Editor.new(line)
 #   job = editor.add_job(order_line)                  # plans what's left of the line
@@ -8,19 +9,29 @@
 #   editor.move(job, :up)
 #   editor.remove(job)
 #
+# The queue of unlocked blocks starts at line.queue_starts_at, which only changes
+# when the planner sets it (start_at, or starts_at: on add), or when an unlocked
+# block is placed before it.
+#
+# Changeovers between jobs are automatic (§11 Q17): after every edit, each job
+# whose spec differs from the previous job in the queue gets an automatic
+# changeover just before it, unless the planner already put a changeover there.
+# Automatic changeovers are rebuilt each time; the planner's own are kept.
+#
 # Failures raise Schedule::Error with a message for the planner.
 class Schedule::Editor
+  AUTOMATIC_MESSAGE = "This changeover is added automatically between jobs for different specs, and moves with them"
+
   attr_reader :line
 
   def initialize(line)
     @line = line
   end
 
-  # Puts an order line on this line's queue. planned_g defaults to whatever is
-  # still unplanned. A changeover is added between jobs for different specs (§11 Q17).
+  # Puts an order line on this line's queue. planned_g defaults to whatever is still unplanned.
   def add_job(order_line, planned_g: nil, position: nil, duration_minutes: nil, starts_at: nil)
     order = order_line.sales_order
-    raise Schedule::Error, "Order #{order.number} is #{order.status.humanize.downcase}, so it can't be planned" unless order.editable?
+    ensure_order_editable!(order)
 
     order_line.schedule_blocks.reset
     planned_g ||= order_line.unplanned_g
@@ -34,47 +45,39 @@ class Schedule::Editor
   # Adds any block. Unlocked blocks join the queue at position (1-based, among
   # the line's blocks in time order) or at the end. Locked blocks need starts_at.
   #
-  # starts_at: on an unlocked block sets when the line's queue starts. Use it for
-  # the first block on an empty line; otherwise the queue starts now.
+  # starts_at: on an unlocked block sets when the line's queue starts.
   def add(block, position: nil, starts_at: nil)
     block.line = line
     raise Schedule::Error, "A locked block needs a start time" if block.locked? && block.starts_at.blank?
-
-    queue_start = starts_at && Schedule.snap_up(starts_at)
-    edit(starts_at: queue_start) do |blocks|
-      unless block.locked?
-        block.queue_key = position ? queue_key_before(blocks, position) : queue_end(blocks)
-        blocks << block
-        add_changeovers_around(block, blocks) if block.job?
-      else
-        blocks << block
-      end
+    validate_position!(position) if position
+    edit(starts_at: starts_at) do |blocks|
+      block.queue_key = position ? queue_key_before(blocks, position) : queue_end(blocks) unless block.locked?
+      blocks << block
     end
     block
   end
 
-  # Swaps an unlocked block with its neighbour in the queue. Locked blocks
-  # stay put; the queue flows around them.
+  # Swaps an unlocked block with the previous or next one in the queue
+  # (changeovers are skipped; they're rebuilt). Locked blocks stay put.
   def move(block, direction)
     edit do |blocks|
-      block = find(blocks, block)
-      raise Schedule::Error, "Locked blocks can't be moved. Unlock it first." if block.locked?
-
-      queue = flowing(blocks)
+      block = find_movable(blocks, block)
+      queue = flowing(blocks).reject(&:automatic?)
       index = queue.index(block)
-      other = queue[direction.to_sym == :up ? index - 1 : index + 1]
-      next unless other && (direction.to_sym != :up || index.positive?)
+      other_index = direction.to_sym == :up ? index - 1 : index + 1
+      next unless other_index.between?(0, queue.size - 1)
 
+      other = queue[other_index]
+      ensure_order_editable!(other.sales_order) if other.job?
       block.queue_key, other.queue_key = other.queue_key, block.queue_key
     end
   end
 
   # Moves an unlocked block so it sits at position (1-based) in the line.
   def move_to(block, position)
+    validate_position!(position)
     edit do |blocks|
-      block = find(blocks, block)
-      raise Schedule::Error, "Locked blocks can't be moved. Unlock it first." if block.locked?
-
+      block = find_movable(blocks, block)
       block.queue_key = queue_key_before(blocks - [ block ], position)
     end
   end
@@ -83,6 +86,7 @@ class Schedule::Editor
   def resize(block, duration_minutes)
     edit do |blocks|
       block = find(blocks, block)
+      ensure_order_editable!(block.sales_order) if block.job?
       raise Schedule::Error, "#{block} takes as long as the line rate says. Change the planned weight instead." if block.job? && block.line_rate
 
       block.duration_minutes = duration_minutes
@@ -92,6 +96,7 @@ class Schedule::Editor
   def replan(job, planned_g)
     edit do |blocks|
       job = find(blocks, job)
+      ensure_order_editable!(job.sales_order)
       job.planned_g = planned_g
     end
   end
@@ -104,54 +109,76 @@ class Schedule::Editor
     end
   end
 
+  # Returns a locked block to the queue at the point in time it already sits,
+  # so it doesn't move. If it's before the queue's start, the queue starts there.
   def unlock(block)
     edit do |blocks|
       block = find(blocks, block)
+      next unless block.locked?
+
+      later = flowing(blocks).detect { _1.starts_at && _1.starts_at >= block.starts_at }
       block.locked = false
-      block.queue_key = block.position
+      block.queue_key = later ? later.queue_key - BigDecimal("0.5") : queue_end(blocks)
+      @anchor = block.starts_at if @anchor.nil? || block.starts_at < @anchor
     end
   end
 
   def remove(block)
     edit do |blocks|
       block = find(blocks, block)
-      blocks.delete(block)
-      @removed = block
+      ensure_order_editable!(block.sales_order) if block.job?
+      raise Schedule::Error, AUTOMATIC_MESSAGE if block.automatic?
+
+      discard(blocks, block)
+    end
+  end
+
+  # Takes every job for an order off this line in one edit.
+  def remove_jobs_for(order)
+    edit do |blocks|
+      blocks.select { _1.job? && _1.sales_order_line.sales_order_id == order.id }.each { discard(blocks, _1) }
     end
   end
 
   # Restarts the line's queue at a new time (e.g. the plan starts Monday 06:00).
-  # Needs at least one unlocked block; for an empty line, pass starts_at: to add.
   def start_at(time)
     edit(starts_at: time) { }
   end
 
+  # Re-times the line, e.g. after a line rate changes.
+  def reflow
+    edit { }
+  end
+
   # Takes every job for an order off all lines (e.g. when it's cancelled).
   def self.unschedule(order)
-    lines = Line.joins(:schedule_blocks).merge(ScheduleBlock.jobs.where(sales_order_line_id: order.lines.select(:id))).distinct
-    lines.each do |line|
-      editor = new(line)
-      line.schedule_blocks.jobs.where(sales_order_line_id: order.lines.select(:id)).each { editor.remove(_1) }
-    end
+    Line.where(id: ScheduleBlock.jobs.where(sales_order_line_id: order.lines.select(:id)).select(:line_id))
+      .each { new(_1).remove_jobs_for(order) }
   end
 
   private
     def edit(starts_at: nil)
       ScheduleBlock.transaction do
         blocks = load_blocks
-        # Read the line's start before changing anything, so removing or moving
-        # the first block doesn't shift the whole queue.
-        anchor = starts_at || blocks.reject(&:locked?).filter_map(&:starts_at).min
+        @anchor = starts_at ? Schedule.snap_up(starts_at) : queue_start(blocks)
+        @removed = []
         blocks.reject(&:locked?).each { _1.queue_key ||= _1.position }
-        @removed = nil
         yield blocks
 
-        @removed&.destroy! if @removed&.persisted?
-        Schedule::Reflow.new(line, blocks: blocks, starts_at: anchor).call
+        rebuild_changeovers(blocks)
+        @removed.select(&:persisted?).each(&:destroy!)
+        @anchor ||= Schedule.snap_up(Time.current) if blocks.any? { !_1.locked? }
+        line.update!(queue_starts_at: @anchor) if line.queue_starts_at != @anchor
+        Schedule::Reflow.new(line, blocks: blocks, starts_at: @anchor).call
         refresh_orders(blocks)
       end
     rescue ActiveRecord::RecordInvalid => e
       raise Schedule::Error, "#{e.record}: #{e.record.errors.full_messages.to_sentence}"
+    end
+
+    # The stored start, falling back to the earliest unlocked block for lines planned before it was stored.
+    def queue_start(blocks)
+      line.queue_starts_at || blocks.reject(&:locked?).filter_map(&:starts_at).min
     end
 
     def load_blocks
@@ -160,6 +187,30 @@ class Schedule::Editor
 
     def find(blocks, block)
       blocks.detect { _1.id == block.id } || raise(Schedule::Error, "That block isn't on line #{line.name}")
+    end
+
+    def find_movable(blocks, block)
+      block = find(blocks, block)
+      raise Schedule::Error, "Locked blocks can't be moved. Unlock it first." if block.locked?
+      raise Schedule::Error, AUTOMATIC_MESSAGE if block.automatic?
+
+      ensure_order_editable!(block.sales_order) if block.job?
+      block
+    end
+
+    def discard(blocks, block)
+      blocks.delete(block)
+      @removed << block
+    end
+
+    def ensure_order_editable!(order)
+      return if order.editable?
+
+      raise Schedule::Error, "Order #{order.number} is #{order.status.humanize.downcase}, so its plan can't change"
+    end
+
+    def validate_position!(position)
+      raise Schedule::Error, "Position must be 1 or more" unless position.is_a?(Integer) && position >= 1
     end
 
     def flowing(blocks)
@@ -179,32 +230,39 @@ class Schedule::Editor
       target.queue_key - BigDecimal("0.5")
     end
 
-    def add_changeovers_around(job, blocks)
-      queue = flowing(blocks)
-      index = queue.index(job)
-      before = index.positive? ? queue[index - 1] : nil
-      after = queue[index + 1]
+    # An automatic changeover before each job whose spec differs from the previous
+    # job in the queue, unless the planner's own changeover already sits between
+    # them (§11 Q17). Existing automatic rows are reused where possible.
+    def rebuild_changeovers(blocks)
+      spare = flowing(blocks).select(&:automatic?)
+      spare.each { blocks.delete(_1) }
 
-      add_changeover_between(before, job, blocks) if needs_changeover?(before, job)
-      add_changeover_between(job, after, blocks) if needs_changeover?(job, after)
+      previous_job = nil
+      manual_changeover = false
+      flowing(blocks).each do |block|
+        if block.changeover?
+          manual_changeover = true
+        elsif block.job?
+          if !manual_changeover && needs_changeover?(previous_job, block)
+            changeover = spare.shift || ScheduleBlock.new(line: line, kind: "changeover", automatic: true,
+                                                          duration_minutes: Schedule.round_up_to_slot(line.default_changeover_minutes))
+            changeover.queue_key = block.queue_key - BigDecimal("0.25")
+            blocks << changeover
+          end
+          previous_job = block
+          manual_changeover = false
+        end
+      end
+
+      @removed.concat(spare)
     end
 
     def needs_changeover?(first, second)
-      first&.job? && second&.job? && first.sales_order_line.product_spec_id != second.sales_order_line.product_spec_id &&
-        line.default_changeover_minutes.positive?
-    end
-
-    def add_changeover_between(first, second, blocks)
-      changeover = ScheduleBlock.new(line: line, kind: "changeover",
-                                     duration_minutes: Schedule.round_up_to_slot(line.default_changeover_minutes))
-      changeover.queue_key = (first.queue_key + second.queue_key) / 2
-      blocks << changeover
+      first && first.product_spec&.id != second.product_spec&.id && line.default_changeover_minutes.positive?
     end
 
     def refresh_orders(blocks)
-      order_lines = blocks.filter_map(&:sales_order_line)
-      order_lines << @removed.sales_order_line if @removed&.job?
-      order_lines.uniq.each { _1.schedule_blocks.reset } # planned weights have changed
-      order_lines.map(&:sales_order).uniq.each(&:refresh_schedule_status!)
+      orders = (blocks + @removed).select(&:job?).map(&:sales_order).uniq
+      orders.each(&:refresh_schedule_status!)
     end
 end

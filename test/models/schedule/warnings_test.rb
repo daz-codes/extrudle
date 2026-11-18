@@ -45,7 +45,7 @@ class Schedule::WarningsTest < ActiveSupport::TestCase
     order_line = sales_order_lines(:bf_open_700)
     job = @editor.add_job(order_line, planned_g: 12_000_000)
     warning = Schedule::Warnings.for_line(@d1)[job.reload].detect { _1.code == :over_planned }
-    assert_match(/12000 kg planned .* but 10000 kg is ordered/, warning.message)
+    assert_match(/12,000 kg planned .* but 10,000 kg is ordered/, warning.message)
   end
 
   test "idle time before a locked block" do

@@ -24,6 +24,7 @@ class ScheduleBlock < ApplicationRecord
   validates :sales_order_line, presence: true, if: :job?
   validates :planned_g, numericality: { only_integer: true, greater_than: 0 }, if: :job?
   validates :sales_order_line, :planned_g, absence: true, unless: :job?
+  validates :automatic, absence: { message: "is only for unlocked changeovers" }, unless: -> { changeover? && !locked? }
   validate :locked_blocks_do_not_overlap, if: :locked?
 
   scope :ordered, -> { order(:starts_at, :position) }

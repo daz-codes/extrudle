@@ -23,6 +23,12 @@ module Weight
     raise InvalidInput, "#{input.inspect} is not a valid weight"
   end
 
+  # Exact, with thousands separators: 1_250_500 => "1,250.5 kg". For text outside
+  # views (warnings, messages); views can also use the kg helper.
+  def format_kg(grams)
+    "#{ActiveSupport::NumberHelper.number_to_delimited(DecimalInput.from_scaled_integer(grams, GRAMS_PER_KG))} kg"
+  end
+
   def to_kg(grams)
     BigDecimal(grams) / GRAMS_PER_KG
   end

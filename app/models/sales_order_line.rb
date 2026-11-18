@@ -19,7 +19,9 @@ class SalesOrderLine < ApplicationRecord
   validate :order_is_editable
 
   before_validation :take_currency_from_customer, on: :create
+  validate :spec_fixed_while_planned, on: :update
   after_save -> { sales_order.refresh_schedule_status! }, if: :saved_change_to_quantity_g?
+  after_destroy -> { sales_order.refresh_schedule_status! }
   after_validation :report_quantity_errors_on_the_form_field
 
   normalizes :customer_batch_no, with: ->(no) { no.strip.presence }
@@ -95,6 +97,13 @@ class SalesOrderLine < ApplicationRecord
 
     def take_currency_from_customer
       self.currency = customer.currency if sales_order&.customer
+    end
+
+    # A planned job's duration and changeovers depend on its spec.
+    def spec_fixed_while_planned
+      return unless will_save_change_to_product_spec_id? && schedule_blocks.exists?
+
+      errors.add(:product_spec, "can't change while this line is on the planner. Take it off the plan first.")
     end
 
     def spec_suits_the_order

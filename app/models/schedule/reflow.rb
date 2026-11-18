@@ -51,10 +51,11 @@ class Schedule::Reflow
   end
 
   private
-    # Where the line's queue starts: an explicit time, else the earliest
-    # unlocked block's current start, else now.
+    # Where the line's queue starts: an explicit time, else the line's stored
+    # start, else the earliest unlocked block's current start, else now.
     def anchor
-      @starts_at || blocks.reject(&:locked?).filter_map { _1.starts_at_was || _1.starts_at }.min || Time.current
+      @starts_at || line.queue_starts_at ||
+        blocks.reject(&:locked?).filter_map { _1.starts_at_was || _1.starts_at }.min || Time.current
     end
 
     def queue(flowing)
