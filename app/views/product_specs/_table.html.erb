@@ -1,21 +1,21 @@
 <%# locals: (product_specs:, show_customer: true) %>
-<table class="w-full text-left">
-  <thead class="border-b border-ink-200 bg-ink-50 text-sm text-ink-600">
+<table class="data-table w-full text-left">
+  <thead>
     <tr>
-      <th scope="col" class="px-4 py-3 font-semibold">Spec</th>
-      <% if show_customer %><th scope="col" class="px-4 py-3 font-semibold">Customer</th><% end %>
-      <th scope="col" class="px-4 py-3 text-right font-semibold">Micron</th>
-      <th scope="col" class="px-4 py-3 text-right font-semibold">Width</th>
-      <th scope="col" class="px-4 py-3 font-semibold">Silicone</th>
-      <th scope="col" class="px-4 py-3 font-semibold">Rates (kg/h)</th>
-      <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+      <th scope="col" class="px-4 py-3">Spec</th>
+      <% if show_customer %><th scope="col" class="px-4 py-3">Customer</th><% end %>
+      <th scope="col" class="px-4 py-3 text-right">Micron</th>
+      <th scope="col" class="px-4 py-3 text-right">Width</th>
+      <th scope="col" class="px-4 py-3">Silicone</th>
+      <th scope="col" class="px-4 py-3">Rates (kg/h)</th>
+      <th scope="col" class="px-4 py-3">Status</th>
     </tr>
   </thead>
-  <tbody class="divide-y divide-ink-100">
+  <tbody>
     <% product_specs.each do |spec| %>
       <tr id="<%= dom_id(spec) %>" class="<%= "text-ink-500" unless spec.active? %>">
         <td class="px-4 py-3">
-          <%= link_to spec.to_s, spec, class: "font-semibold text-brand-700 underline-offset-2 hover:underline" %>
+          <%= link_to spec.to_s, spec, class: "link font-semibold" %>
           <% if spec.customer_description.present? %><div class="text-sm text-ink-500"><%= spec.customer_description %></div><% end %>
         </td>
         <% if show_customer %><td class="px-4 py-3"><%= spec.customer&.name || "Stock / any" %></td><% end %>
@@ -26,7 +26,7 @@
           <% if spec.line_rates.any? %>
             <%= safe_join(spec.line_rates.sort_by { _1.line.position }.map { |rate| "#{rate.line.name} #{rate.kg_per_hour}" }, " · ") %>
           <% else %>
-            <span class="badge bg-ginger-100 text-ginger-800">No rates</span>
+            <span class="badge badge-lemon">No rates</span>
           <% end %>
         </td>
         <td class="px-4 py-3"><%= status_badge(spec) %></td>

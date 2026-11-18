@@ -1,7 +1,7 @@
 <% content_for :title, "Home" %>
 
 <div class="mb-8">
-  <h1 class="text-3xl font-bold text-ink-900">Good to see you, <%= Current.user.name.split.first %></h1>
+  <h1 class="page-title">Good to see you, <%= Current.user.name.split.first %></h1>
   <p class="mt-1 text-ink-600"><%= l(Time.current, format: "%A %-d %B %Y, %H:%M") %> (UK time)</p>
 </div>
 
@@ -16,8 +16,8 @@
      ].each do |title, blurb, slice| %>
     <section class="card p-5">
       <div class="flex items-start justify-between gap-3">
-        <h2 class="text-lg font-semibold text-ink-900"><%= title %></h2>
-        <span class="badge bg-ink-100 text-ink-600"><%= slice %></span>
+        <h2 class="section-title"><%= title %></h2>
+        <span class="badge badge-quiet"><%= slice %></span>
       </div>
       <p class="mt-2 text-ink-600"><%= blurb %></p>
     </section>

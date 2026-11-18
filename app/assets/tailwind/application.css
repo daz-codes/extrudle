@@ -1,49 +1,81 @@
 @import "tailwindcss";
 
+/* Geist and Geist Mono (SIL OFL), served by the app so pages never wait on an outside host.
+   Variable woff2, Latin subset (covers £, € and µ). Licences sit next to the files. */
+@font-face {
+  font-family: "Geist";
+  src: url("geist-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("geist-mono-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
-  Extrudle design tokens. Use these names in views, never raw hex.
-  ink    -> slate (text, borders, surfaces)
-  brand  -> steel blue (nav, primary actions, links, selection)
-  ginger -> orange highlight, used sparingly like a highlighter pen
-  ok/bad -> QA pass/fail
+  Extrudle design: "Lemon and Lime".
+  Crisp zinc greys on a light grey canvas, with two fluorescent highlights.
+
+  Views use semantic classes (.page-title, .section-title, .card, .btn-primary,
+  .nav-link, .tab, .link, .choice, .data-table, .field-group ...) and these tokens:
+
+    canvas / surface  page background / card background
+    ink-50..950       zinc neutrals (text, borders, quiet fills)
+    lime-*            primary highlight: title underlines, current tab, key actions, focus
+    lemon-*           secondary highlight: links, row hover, warnings, notices
+    ok / bad          QA pass / fail
+
+  Use the highlights sparingly. They mark what matters; they aren't decoration.
 */
+
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --color-ink-50: var(--color-slate-50);
-  --color-ink-100: var(--color-slate-100);
-  --color-ink-200: var(--color-slate-200);
-  --color-ink-300: var(--color-slate-300);
-  --color-ink-400: var(--color-slate-400);
-  --color-ink-500: var(--color-slate-500);
-  --color-ink-600: var(--color-slate-600);
-  --color-ink-700: var(--color-slate-700);
-  --color-ink-800: var(--color-slate-800);
-  --color-ink-900: var(--color-slate-900);
-  --color-ink-950: var(--color-slate-950);
+  --color-canvas: #f4f4f5;
+  --color-surface: #ffffff;
 
-  --color-brand-50: #eef4fb;
-  --color-brand-100: #d6e4f5;
-  --color-brand-200: #afc8ea;
-  --color-brand-300: #7fa5da;
-  --color-brand-400: #4f7fc4;
-  --color-brand-500: #2e64b0;
-  --color-brand-600: #24569c;
-  --color-brand-700: #1e4e8c;
-  --color-brand-800: #183b6a;
-  --color-brand-900: #0f2a4d;
-  --color-brand-950: #0a1c34;
+  --color-ink-50: var(--color-zinc-50);
+  --color-ink-100: var(--color-zinc-100);
+  --color-ink-200: var(--color-zinc-200);
+  --color-ink-300: var(--color-zinc-300);
+  --color-ink-400: var(--color-zinc-400);
+  --color-ink-500: var(--color-zinc-500);
+  --color-ink-600: var(--color-zinc-600);
+  --color-ink-700: var(--color-zinc-700);
+  --color-ink-800: var(--color-zinc-800);
+  --color-ink-900: var(--color-zinc-900);
+  --color-ink-950: var(--color-zinc-950);
 
-  --color-ginger-50: #fdf4ec;
-  --color-ginger-100: #fbe4cf;
-  --color-ginger-200: #f6c79e;
-  --color-ginger-300: #f0a467;
-  --color-ginger-400: #e98c45;
-  --color-ginger-500: #e07b2e;
-  --color-ginger-600: #c4621c;
-  --color-ginger-700: #a14e17;
-  --color-ginger-800: #7e3d15;
-  --color-ginger-900: #643214;
+  --color-lime-50: #f9fde6;
+  --color-lime-100: #f1fbc4;
+  --color-lime-200: #e6f88f;
+  --color-lime-300: #d4f53c;
+  --color-lime-400: #c2e41f;
+  --color-lime-500: #a4c412;
+  --color-lime-600: #83a00b;
+  --color-lime-700: #637a0c;
+  --color-lime-800: #4e600f;
+  --color-lime-900: #414f12;
+  --color-lime-950: #222c04;
+
+  --color-lemon-50: #fefff0;
+  --color-lemon-100: #fcffd1;
+  --color-lemon-200: #f9ffa6;
+  --color-lemon-300: #f5ff70;
+  --color-lemon-400: #e8f24a;
+  --color-lemon-500: #cdd52a;
+  --color-lemon-600: #a3a81c;
+  --color-lemon-700: #7b7e19;
+  --color-lemon-800: #62631b;
+  --color-lemon-900: #53531c;
+  --color-lemon-950: #2e2e0b;
 
   --color-ok-50: var(--color-emerald-50);
   --color-ok-600: var(--color-emerald-600);
@@ -52,58 +84,225 @@
   --color-bad-600: var(--color-red-600);
   --color-bad-700: var(--color-red-700);
   --color-bad-800: var(--color-red-800);
+  --color-bad-900: var(--color-red-900);
 }
 
 @layer base {
   body {
-    @apply bg-ink-50 text-ink-800 antialiased;
+    @apply bg-canvas font-sans text-ink-800 antialiased;
   }
 
   :focus-visible {
-    @apply outline-3 outline-offset-2 outline-ginger-500;
+    outline: 3px solid var(--color-ink-900);
+    outline-offset: 2px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--color-ink-900);
   }
 }
 
-/* Repeated controls only. Everything else is utilities in the markup. */
 @layer components {
+  /* Headings: a fat lime underline on page titles, a slimmer one on section titles. */
+  .page-title {
+    @apply font-display text-3xl font-semibold text-ink-900 sm:text-4xl;
+    width: fit-content;
+    line-height: 1.15;
+    letter-spacing: -0.04em;
+    text-decoration: underline;
+    text-decoration-color: var(--color-lime-300);
+    text-decoration-thickness: 0.3em;
+    text-underline-offset: -0.08em;
+    text-decoration-skip-ink: none;
+  }
+  .section-title,
+  .section-title-lg {
+    @apply font-display font-semibold text-ink-900;
+    width: fit-content;
+    letter-spacing: -0.02em;
+    text-decoration: underline;
+    text-decoration-color: var(--color-lime-300);
+    text-decoration-thickness: 0.22em;
+    text-underline-offset: 0.05em;
+    text-decoration-skip-ink: none;
+  }
+  .section-title {
+    @apply text-lg;
+  }
+  .section-title-lg {
+    @apply text-2xl;
+  }
+  .eyebrow {
+    @apply font-mono text-xs font-medium tracking-wider text-ink-500 uppercase;
+  }
+
+  /* Links: lemon underline, turning ink on hover. */
+  .link {
+    @apply font-medium text-ink-900 underline underline-offset-4;
+    text-decoration-color: var(--color-lemon-400);
+    text-decoration-thickness: 3px;
+  }
+  .link:hover {
+    text-decoration-color: var(--color-ink-900);
+  }
+
+  /* Header and navigation */
+  .app-header {
+    @apply border-b border-ink-200 bg-surface text-ink-900;
+  }
+  .nav-link {
+    @apply inline-flex min-h-12 cursor-pointer items-center rounded-full px-3.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200 active:text-ink-900;
+  }
+  .nav-link[aria-current="page"] {
+    @apply bg-ink-900 text-white hover:bg-ink-900;
+  }
+
+  .wordmark {
+    @apply inline-flex items-center gap-2.5 font-display text-xl font-bold text-ink-900;
+    letter-spacing: -0.04em;
+  }
+  .wordmark-lg {
+    @apply text-2xl;
+  }
+  .wordmark-mark {
+    @apply grid size-9 place-items-center rounded-[10px] bg-lime-300;
+  }
+  .wordmark-mark svg {
+    @apply size-6;
+  }
+  .wordmark-nozzle {
+    fill: var(--color-lemon-300);
+    stroke: currentColor;
+    stroke-width: 1.2;
+  }
+
+  /* Tabs: a segmented control. The current tab is raised with a lime edge. */
+  .tabs {
+    @apply inline-flex min-w-max gap-0.5 rounded-[14px] bg-ink-200/60 p-1;
+  }
+  .tab {
+    @apply inline-flex min-h-12 cursor-pointer items-center rounded-[10px] px-4 font-medium text-ink-700 transition;
+  }
+  /* Hover previews the selected look: raised white with a light lime edge. */
+  .tab:hover:not([aria-current="page"]) {
+    @apply bg-surface/80 text-ink-900;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), inset 0 -3px 0 var(--color-lime-200);
+  }
+  .tab:active:not([aria-current="page"]) {
+    @apply bg-surface;
+  }
+  .tab[aria-current="page"] {
+    @apply bg-surface font-semibold text-ink-900;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), inset 0 -3px 0 var(--color-lime-300);
+  }
+
+  /* Buttons. Every button has a pressed (:active) state: touch screens never hover. */
   .btn {
-    @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[11px] px-5 text-base font-semibold whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-900;
+    @apply bg-ink-900 text-white hover:bg-ink-700 active:bg-ink-950;
   }
   .btn-secondary {
-    @apply border border-ink-300 bg-white text-ink-800 hover:bg-ink-100 active:bg-ink-200;
+    @apply border border-ink-200 bg-surface text-ink-900 shadow-xs hover:bg-ink-50 active:bg-ink-100;
   }
-  /* White text needs ginger-700 for AA contrast. */
   .btn-accent {
-    @apply bg-ginger-700 text-white hover:bg-ginger-800;
+    @apply bg-lime-300 text-ink-900 hover:bg-lime-400 active:bg-lime-500;
+    box-shadow: inset 0 0 0 1px rgb(24 24 27 / 0.15);
   }
   .btn-danger {
-    @apply bg-bad-700 text-white hover:bg-bad-800;
+    @apply bg-bad-700 text-white hover:bg-bad-800 active:bg-bad-900;
   }
 
-  .field-label {
-    @apply mb-1 block text-sm font-semibold text-ink-700;
-  }
-  .field-input {
-    @apply block min-h-12 w-full rounded-md border border-ink-300 bg-white px-3 text-base text-ink-900 shadow-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-2 focus:outline-brand-500;
-  }
-  .field-hint {
-    @apply mt-1 text-sm text-ink-500;
-  }
-
+  /* Cards and tables */
   .card {
-    @apply rounded-lg border border-ink-200 bg-white shadow-sm;
+    @apply rounded-[18px] border border-ink-200 bg-surface shadow-xs;
+  }
+  /* Clickable cards get a lime outline on hover and when pressed (touch). Static cards don't react. */
+  a.card {
+    @apply transition;
+  }
+  a.card:hover,
+  a.card:active {
+    border-color: var(--color-lime-400);
+    box-shadow: 0 0 0 1px var(--color-lime-400), 0 10px 24px rgb(24 24 27 / 0.06);
+  }
+  a.card:active {
+    @apply bg-lime-50;
+  }
+  .data-table thead th {
+    @apply border-b border-ink-200 bg-ink-50 font-mono text-xs font-medium tracking-wider text-ink-500 uppercase;
+  }
+  .data-table tbody tr + tr {
+    @apply border-t border-ink-100;
+  }
+  .data-table tbody tr {
+    @apply transition-colors hover:bg-lemon-50;
+  }
+  .data-table .tabular-nums {
+    @apply font-mono text-[0.95em];
   }
 
+  /* Badges */
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
-}
+  .badge-quiet {
+    @apply bg-ink-100 text-ink-700;
+  }
+  .badge-lime {
+    @apply bg-lime-300 text-ink-900;
+  }
+  .badge-lemon {
+    @apply bg-lemon-300 text-ink-900;
+  }
 
-/* Spec form: hide fields that don't apply, without JavaScript. The model clears their values too. */
-@layer components {
+  /* Forms */
+  .field-label {
+    @apply mb-1.5 block text-sm font-semibold text-ink-800;
+  }
+  .field-input {
+    @apply block min-h-12 w-full rounded-[11px] border border-ink-200 bg-surface px-3 text-base text-ink-900 shadow-xs placeholder:text-ink-400;
+  }
+  .field-input:focus {
+    outline: 3px solid color-mix(in oklab, var(--color-lime-300) 75%, transparent);
+    outline-offset: 0;
+    border-color: var(--color-ink-900);
+  }
+  .field-hint {
+    @apply mt-1.5 text-sm text-ink-500;
+  }
+
+  /* Input with a unit, e.g. kg or µm */
+  .field-group {
+    @apply flex items-stretch;
+  }
+  .field-group .field-input {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+  .field-suffix {
+    @apply inline-flex items-center rounded-r-[11px] border border-l-0 border-ink-200 bg-ink-50 px-3 font-mono text-sm text-ink-600;
+  }
+  .field-group:has(.field-input:focus) .field-suffix {
+    @apply border-ink-900;
+  }
+  /* An invalid input and its unit stay red together, focused or not. */
+  .field-group:has(.field-input[aria-invalid="true"]) .field-suffix {
+    @apply border-bad-600 text-bad-700;
+  }
+
+  /* Big tappable options for enums */
+  .choice {
+    @apply inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-[11px] border border-ink-200 bg-surface px-4 transition hover:border-ink-300 active:border-ink-500 active:bg-ink-50;
+  }
+  .choice:has(:checked) {
+    @apply border-ink-900 bg-lime-100 font-semibold text-ink-900;
+    box-shadow: inset 0 0 0 1px var(--color-ink-900);
+  }
+
+  /* Spec form: hide fields that don't apply, without JavaScript. The model clears their values too. */
   .silicone-fields:has(input[value="none"]:checked) .js-silicone-pct,
   .reel-limit-fields:has(input[value="max_roll_on_side"]:checked) .js-max-diameter {
     display: none;

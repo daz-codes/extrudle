@@ -52,7 +52,7 @@ class ExtrudleFormBuilder < ActionView::Helpers::FormBuilder
   def check_row(method, label: nil, hint: nil, wrapper: nil)
     @template.tag.div(class: wrapper) do
       @template.tag.label(class: "flex min-h-12 cursor-pointer items-center gap-3") do
-        check_box(method, class: "size-5 accent-brand-700") +
+        check_box(method, class: "size-5 accent-ink-900") +
           @template.tag.span(label || humanize(method), class: "font-semibold") +
           (hint ? @template.tag.span(hint, class: "text-sm text-ink-600") : "".html_safe)
       end + errors_for(method)
@@ -73,14 +73,14 @@ class ExtrudleFormBuilder < ActionView::Helpers::FormBuilder
     end
 
     def with_suffix(field, suffix)
-      @template.tag.div(class: "flex items-stretch") do
-        field + @template.tag.span(suffix, class: "-ml-px inline-flex items-center rounded-r-md border border-ink-300 bg-ink-100 px-3 text-ink-600")
+      @template.tag.div(class: "field-group") do
+        field + @template.tag.span(suffix, class: "field-suffix")
       end
     end
 
     def radio_option(method, value, text)
-      @template.tag.label(class: "inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-md border border-ink-300 bg-white px-4 has-checked:border-brand-500 has-checked:bg-brand-50 has-checked:font-semibold") do
-        radio_button(method, value, class: "size-5 accent-brand-700") + @template.tag.span(text)
+      @template.tag.label(class: "choice") do
+        radio_button(method, value, class: "size-5 accent-ink-900") + @template.tag.span(text)
       end
     end
 

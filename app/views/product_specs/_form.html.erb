@@ -3,7 +3,7 @@
   <%= form.error_summary %>
 
   <section class="card space-y-5 p-6">
-    <h2 class="text-lg font-semibold text-ink-900">Spec</h2>
+    <h2 class="section-title">Spec</h2>
     <div class="grid gap-5 sm:grid-cols-2">
       <%= form.text_row :code, required: true, autofocus: true, hint: "Our spec code. Upper case." %>
       <%= form.select_row :customer_id, Customer.active.or(Customer.where(id: product_spec.customer_id)).by_name.map { [ _1.name, _1.id ] },
@@ -13,7 +13,7 @@
   </section>
 
   <section class="card space-y-5 p-6">
-    <h2 class="text-lg font-semibold text-ink-900">Film</h2>
+    <h2 class="section-title">Film</h2>
     <div class="grid gap-5 sm:grid-cols-2">
       <%= form.number_row :thickness_micron, required: true, min: 1, step: 1, suffix: "µm", hint: "The paper plan writes 250 µm as .250" %>
       <%= form.number_row :width_mm, required: true, min: 1, step: 1, suffix: "mm" %>
@@ -30,7 +30,7 @@
   </section>
 
   <section class="card space-y-5 p-6">
-    <h2 class="text-lg font-semibold text-ink-900">Reel and core</h2>
+    <h2 class="section-title">Reel and core</h2>
     <div class="grid gap-5 sm:grid-cols-2">
       <%= form.radio_row :core_inches, ProductSpec::CORE_SIZES, labels: { "3" => "3 inch", "6" => "6 inch" } %>
       <%= form.radio_row :core_orientation, ProductSpec.core_orientations.keys %>
@@ -43,7 +43,7 @@
   </section>
 
   <section class="card space-y-5 p-6">
-    <h2 class="text-lg font-semibold text-ink-900">Packing</h2>
+    <h2 class="section-title">Packing</h2>
     <div class="grid gap-5 sm:grid-cols-2">
       <%= form.radio_row :pallet_type, ProductSpec.pallet_types.keys %>
       <%= form.number_row :reels_per_pallet, min: 1, step: 1 %>
@@ -53,7 +53,7 @@
   </section>
 
   <section class="card space-y-5 p-6">
-    <h2 class="text-lg font-semibold text-ink-900">Customer references</h2>
+    <h2 class="section-title">Customer references</h2>
     <div class="grid gap-5 sm:grid-cols-3">
       <%= form.text_row :customer_part_no %>
       <%= form.text_row :customer_tool_no %>

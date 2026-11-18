@@ -9,12 +9,12 @@
   </div>
   <% if inactive %>
     <label class="flex min-h-12 cursor-pointer items-center gap-2">
-      <%= check_box_tag :inactive, "1", include_inactive?, class: "size-5 accent-brand-700" %>
+      <%= check_box_tag :inactive, "1", include_inactive?, class: "size-5 accent-ink-900" %>
       <span>Include inactive</span>
     </label>
   <% end %>
   <%= submit_tag "Filter", name: nil, class: "btn btn-secondary" %>
   <% if search_query || include_inactive? %>
-    <%= link_to "Clear", request.path, class: "btn text-brand-700 underline" %>
+    <%= link_to "Clear", request.path, class: "btn link" %>
   <% end %>
 <% end %>

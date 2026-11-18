@@ -35,26 +35,28 @@ Full plan and phases: `PLAN.md` (in the repo root, next to this file). Work thro
 - Thickness is stored in microns as an integer (the paper plan writes 250µm as ".250").
 - Material feeds per run: virgin_coex, virgin_mainex, pcw, regrind. Regrind is produced in-house.
 
-## Design
-Professional and calm: **greys and blues, with orange/ginger highlights**. Style everything with Tailwind utilities, and only extract components (partials, or `@apply` sparingly) when markup repeats.
+## Design: "Lemon and Lime"
+Clean and modern: zinc greys on a light grey canvas, with two fluorescent highlights. Style everything with Tailwind utilities plus the semantic classes in `app/assets/tailwind/application.css`. Don't put raw hex in views.
 
-Define semantic colour tokens once in `app/assets/tailwind/application.css` with `@theme`, and use those names in views, not raw hex:
+| Token | Role |
+|---|---|
+| `canvas` / `surface` | Page background (`#f4f4f5`) / cards and header (white) |
+| `ink-50..950` | Zinc neutrals for text, borders and quiet fills. Body text is `ink-800`, headings `ink-900` |
+| `lime-*` | Primary highlight (`lime-300 #d4f53c`): title underlines, current tab, `btn-accent`, selected choices, input focus, the wordmark |
+| `lemon-*` | Secondary highlight (`lemon-300 #f5ff70`): link underlines, table row hover, warnings ("No rates"), notices |
+| `ok` / `bad` | QA pass/fail, target vs actual (emerald / red) |
 
-| Token | Role | Base |
-|---|---|---|
-| `ink` (slate scale) | Text, borders, surfaces, tables | Tailwind `slate` |
-| `brand` (blue scale) | Nav bar, primary buttons, links, selected state | deep steel blue, e.g. `brand-700 #1E4E8C`, `brand-900 #0F2A4D` |
-| `ginger` (orange scale) | Highlights: urgent orders, the planner's "now" line, the active reel row, focus rings, key figures | e.g. `ginger-500 #E07B2E`, `ginger-600 #C4621C` |
-| `ok` / `bad` | QA pass/fail, target vs actual | Tailwind `emerald` / `red` |
-
-- Use ginger sparingly, like the highlighter pen on the paper plan. If everything is orange, nothing stands out. It is never the colour for errors (that's `bad`).
-- The page background is `slate-50` with white cards. The nav is `brand-900` with white text.
-- Body text is `slate-800` on white. Check contrast (WCAG AA) for all text, including white text on ginger buttons (use `ginger-700` or darker; `ginger-600` fails AA for body text).
-- Typography: system font stack, tabular numbers (`tabular-nums`) for every weight, quantity and time column.
-- Office pages: dense but readable tables. `/floor/*` pages: large type (≥ 20px body), big targets, high contrast.
+- Fonts: **Geist** for text and headings, **Geist Mono** for numbers in tables, table headers, eyebrows and units. Both are self-hosted in `app/assets/fonts` (no external font requests: floor terminals may be offline).
+- Use `tabular-nums` for every weight, quantity and time, in tables, cards and `/floor/*` pages alike.
+- Check contrast (WCAG AA, 4.5:1 for body text) for all text. On white, `ink-500` is the lightest grey for readable text; `ink-400` is for placeholders and decoration only.
+- Highlights are for emphasis, not decoration. Text on lime or lemon is always `ink-900`, never white. Errors are always `bad`, never lemon.
+- Headings: `.page-title` (fat lime underline) and `.section-title` / `.section-title-lg` (slimmer lime underline). Small caps labels use `.eyebrow`.
+- Primary actions are `btn-primary` (ink). Use `btn-accent` (lime) for one standout action per page, and `btn-secondary` for the rest.
+- Touch targets (buttons, tabs, nav links, choices) are at least 48px tall (`min-h-12`), and every interactive style that changes on `:hover` also changes on `:active`, since touch screens never hover.
+- Office pages: dense but readable tables (`.data-table`). `/floor/*` pages: large type (≥ 20px body), big targets, high contrast.
 - Light theme only for MVP.
 
-Shared building blocks live in `application.css` under `@layer components`: `.btn` (+ `.btn-primary`, `.btn-secondary`, `.btn-accent`, `.btn-danger`), `.field-label`, `.field-input`, `.field-hint`, `.card`, `.badge`. Layouts: `application` (office), `floor` (large type) and `auth` (sign-in pages).
+Semantic classes: `.btn` (+ `-primary`, `-secondary`, `-accent`, `-danger`), `.card`, `.data-table`, `.badge` (+ `-quiet`, `-lime`, `-lemon`), `.link`, `.nav-link`, `.tabs`/`.tab`, `.choice`, `.field-label`, `.field-input`, `.field-hint`, `.field-group` + `.field-suffix`, `.eyebrow`. Layouts: `application` (office), `floor` (large type) and `auth` (sign-in pages).
 
 Forms use `ExtrudleFormBuilder` (the default builder): `text_row`, `number_row`, `email_row`, `telephone_row`, `text_area_row`, `select_row`, `radio_row` (big tappable options for enums), `check_row` and `error_summary`. Each row renders the label, hint and inline errors. Use `suffix: "kg"` for units.
 
