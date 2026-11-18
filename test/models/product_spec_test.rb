@@ -16,7 +16,7 @@ class ProductSpecTest < ActiveSupport::TestCase
   test "code and revision are unique together" do
     duplicate = valid_spec(code: "bf-700-250", revision: 1)
     assert_not duplicate.valid?
-    assert duplicate.errors.of_kind?(:revision, :taken)
+    assert_equal [ "Spec code is already used by another spec" ], duplicate.errors.full_messages
 
     assert valid_spec(code: "BF-700-250", revision: 2).valid?
   end
@@ -35,7 +35,8 @@ class ProductSpecTest < ActiveSupport::TestCase
   test "silicone needs a percentage, stored in basis points" do
     spec = valid_spec(silicone: "underside")
     assert_not spec.valid?
-    assert spec.errors.include?(:silicone_bp)
+    assert spec.errors.include?(:silicone_pct), "column errors are reported on the form field"
+    assert_not spec.errors.include?(:silicone_bp)
 
     spec.silicone_pct = "0.55"
     assert spec.valid?
@@ -70,6 +71,32 @@ class ProductSpecTest < ActiveSupport::TestCase
     assert_nil spec.max_reel_g
   end
 
+  test "invalid silicone text is dropped when silicone is switched to none" do
+    spec = valid_spec(silicone: "underside", silicone_pct: "1,5")
+    assert_not spec.valid?
+
+    spec.silicone = "none"
+    assert spec.valid?, spec.errors.full_messages.to_sentence
+    assert_nil spec.silicone_pct
+  end
+
+  test "input finer than the stored unit is rejected, not rounded" do
+    spec = valid_spec(silicone: "underside", silicone_pct: "0.125", max_reel_kg: "0.0004")
+    assert_not spec.valid?
+    assert_includes spec.errors.full_messages, "Silicone % can have at most 2 decimal places"
+    assert_includes spec.errors.full_messages, "Max reel weight can have at most 3 decimal places"
+    assert_equal "0.125", spec.silicone_pct
+
+    assert valid_spec(silicone: "underside", silicone_pct: "0.12", max_reel_kg: "0.001").valid?
+  end
+
+  test "max reel weight errors appear on the kg field" do
+    spec = valid_spec(max_reel_kg: "-5")
+    assert_not spec.valid?
+    assert spec.errors.include?(:max_reel_kg)
+    assert_not spec.errors.include?(:max_reel_g)
+  end
+
   test "max diameter is required for a diameter limit and dropped for max roll on side" do
     assert_not valid_spec(max_diameter_mm: nil).valid?
 
@@ -81,6 +108,8 @@ class ProductSpecTest < ActiveSupport::TestCase
   test "paper gauge matches the production plan" do
     assert_equal ".250", product_specs(:bf_700).paper_gauge
     assert_equal ".050", valid_spec(thickness_micron: 50).paper_gauge
+    assert_equal "1.000", valid_spec(thickness_micron: 1_000).paper_gauge
+    assert_equal "1.250", valid_spec(thickness_micron: 1_250).paper_gauge
   end
 
   test "duplicate copies the spec but not its identity" do
@@ -103,6 +132,40 @@ class ProductSpecTest < ActiveSupport::TestCase
 
     assert_equal 190, copy.rate_for(lines(:d1)).kg_per_hour
     assert_equal 175, copy.rate_for(lines(:d2)).kg_per_hour
+  end
+
+  test "rates on inactive lines are not copied, but stay visible on their spec" do
+    source = product_specs(:bf_700)
+    lines(:d2).update!(active: false)
+
+    copy = source.duplicate
+    copy.code = "BF-700-250-C"
+    copy.save!
+    copy.copy_line_rates_from(source)
+
+    assert_equal [ lines(:d1) ], copy.line_rates.map(&:line)
+    assert_includes source.lines_for_rates, lines(:d2)
+    assert_not_includes copy.lines_for_rates, lines(:d2)
+  end
+
+  test "saving a copy is all or nothing if the line rates can't be copied" do
+    source = product_specs(:bf_700)
+    copy = source.duplicate
+    copy.code = "BF-700-250-D"
+    def copy.copy_line_rates_from(_source) = raise(ActiveRecord::RecordNotUnique)
+
+    assert_no_difference [ "ProductSpec.count", "LineRate.count" ] do
+      assert_not copy.save_with_line_rates_from(source)
+    end
+    assert copy.new_record?
+    assert_includes copy.errors.full_messages, "The line rates could not be copied. Please try again."
+  end
+
+  test "saving with an invalid spec reports its own errors" do
+    spec = valid_spec(width_mm: nil)
+    assert_not spec.save_with_line_rates_from(product_specs(:bf_700))
+    assert spec.errors.include?(:width_mm)
+    assert_not spec.errors.include?(:base)
   end
 
   test "search covers code, customer and customer references" do

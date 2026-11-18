@@ -90,11 +90,19 @@ class ExtrudleFormBuilder < ActionView::Helpers::FormBuilder
 
     def errors_for(method)
       return "".html_safe unless errors?(method)
-      @template.tag.p(object.errors.full_messages_for(method).to_sentence, id: error_id(method), class: "mt-1 text-sm font-medium text-bad-700")
+      messages = error_keys(method).flat_map { |key| object.errors.full_messages_for(key) }
+      @template.tag.p(messages.to_sentence, id: error_id(method), class: "mt-1 text-sm font-medium text-bad-700")
     end
 
     def errors?(method)
-      object.respond_to?(:errors) && object.errors.include?(method)
+      object.respond_to?(:errors) && error_keys(method).any? { |key| object.errors.include?(key) }
+    end
+
+    # A supplier_id field also shows errors on the supplier association (e.g. "must exist").
+    def error_keys(method)
+      method = method.to_sym
+      association = method.to_s.delete_suffix("_id").to_sym if method.end_with?("_id")
+      [ method, association ].compact
     end
 
     def describedby(method, hint)

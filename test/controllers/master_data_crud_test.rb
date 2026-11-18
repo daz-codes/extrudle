@@ -40,6 +40,8 @@ class MasterDataCrudTest < ActionDispatch::IntegrationTest
 
     patch material_path(materials(:regrind)), params: { material: { supplier_id: suppliers(:albion).id } }
     assert_response :unprocessable_content
+    assert_select "#material_supplier_id_error", /must be blank for materials made in-house/
+    assert_select "select#material_supplier_id[aria-invalid=true]"
   end
 
   test "lines: create and update" do

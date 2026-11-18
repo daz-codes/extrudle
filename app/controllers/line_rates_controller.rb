@@ -3,7 +3,10 @@ class LineRatesController < ApplicationController
   before_action :set_product_spec
 
   def create
-    @line_rate = @product_spec.line_rates.find_or_initialize_by(line_id: params.dig(:line_rate, :line_id))
+    line = Line.active.find_by(id: params.dig(:line_rate, :line_id))
+    return redirect_to(@product_spec, alert: "Choose an active line.") unless line
+
+    @line_rate = @product_spec.line_rates.find_or_initialize_by(line:)
     @line_rate.kg_per_hour = params.dig(:line_rate, :kg_per_hour)
     save_and_redirect
   end
@@ -29,7 +32,7 @@ class LineRatesController < ApplicationController
       if @line_rate.save
         redirect_to @product_spec, notice: "Rate for line #{@line_rate.line.name} saved."
       else
-        redirect_to @product_spec, alert: "Line #{@line_rate.line&.name}: #{@line_rate.errors.full_messages.to_sentence}"
+        redirect_to @product_spec, alert: "Line #{@line_rate.line.name}: #{@line_rate.errors.full_messages.to_sentence}"
       end
     end
 end

@@ -9,7 +9,7 @@ class ProductSpecsController < ApplicationController
   end
 
   def show
-    @lines = Line.active.ordered
+    @lines = @product_spec.lines_for_rates
   end
 
   # ?copy_from=ID prefills the form from an existing spec ("Duplicate as new").
@@ -22,8 +22,7 @@ class ProductSpecsController < ApplicationController
     @product_spec = ProductSpec.new(product_spec_params)
     @source = ProductSpec.find_by(id: params[:copy_from])
 
-    if @product_spec.save
-      @product_spec.copy_line_rates_from(@source) if @source
+    if @product_spec.save_with_line_rates_from(@source)
       redirect_to @product_spec, notice: "Spec #{@product_spec} was added."
     else
       render :new, status: :unprocessable_content

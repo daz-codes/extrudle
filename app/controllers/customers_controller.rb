@@ -7,7 +7,7 @@ class CustomersController < ApplicationController
   end
 
   def show
-    @product_specs = @customer.product_specs.by_code
+    @product_specs = @customer.product_specs.includes(line_rates: :line).by_code
   end
 
   def new

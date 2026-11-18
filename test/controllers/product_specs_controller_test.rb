@@ -44,6 +44,26 @@ class ProductSpecsControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ 175, 190 ], copy.line_rates.map(&:kg_per_hour).sort
   end
 
+  test "errors on stored columns show inline next to the form field" do
+    post product_specs_path, params: { product_spec: spec_params(silicone: "underside", silicone_pct: "0", max_reel_kg: "-5") }
+    assert_response :unprocessable_content
+    assert_select "#product_spec_silicone_pct_error", /must be greater than 0/
+    assert_select "input#product_spec_silicone_pct[aria-invalid=true]"
+    assert_select "#product_spec_max_reel_kg_error", /must be greater than 0/
+  end
+
+  test "a taken code is reported on the code field" do
+    post product_specs_path, params: { product_spec: spec_params(code: "bf-700-250") }
+    assert_response :unprocessable_content
+    assert_select "#product_spec_code_error", /already used by another spec/
+  end
+
+  test "show lists an inactive line that still has a rate" do
+    lines(:d2).update!(active: false)
+    get product_spec_path(product_specs(:bf_700))
+    assert_select "input[name='line_rate[kg_per_hour]'][value='175']"
+  end
+
   test "update" do
     patch product_spec_path(product_specs(:stock)), params: { product_spec: { reels_per_pallet: "2" } }
     assert_redirected_to product_spec_path(product_specs(:stock))

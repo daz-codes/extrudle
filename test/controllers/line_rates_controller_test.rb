@@ -14,6 +14,17 @@ class LineRatesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 230, @spec.rate_for(lines(:d1)).kg_per_hour
   end
 
+  test "a missing, unknown or inactive line is rejected" do
+    lines(:d2).update!(active: false)
+    [ "", "0", lines(:d2).id ].each do |line_id|
+      assert_no_difference "LineRate.count" do
+        post product_spec_line_rates_path(@spec), params: { line_rate: { line_id:, kg_per_hour: "230" } }
+      end
+      assert_redirected_to product_spec_path(@spec)
+      assert_equal "Choose an active line.", flash[:alert]
+    end
+  end
+
   test "creating twice for a line updates the existing rate" do
     post product_spec_line_rates_path(product_specs(:bf_700)), params: { line_rate: { line_id: lines(:d1).id, kg_per_hour: "200" } }
     assert_equal 200, line_rates(:bf_700_d1).reload.kg_per_hour
