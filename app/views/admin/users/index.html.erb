@@ -1,27 +1,27 @@
 <% content_for :title, "Users" %>
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-  <h1 class="text-3xl font-bold text-ink-900">Users</h1>
+  <h1 class="page-title">Users</h1>
   <%= link_to "Add user", new_admin_user_path, class: "btn btn-primary" %>
 </div>
 
 <div class="card overflow-x-auto">
-  <table class="w-full text-left">
-    <thead class="border-b border-ink-200 bg-ink-50 text-sm text-ink-600">
+  <table class="data-table w-full text-left">
+    <thead>
       <tr>
-        <th scope="col" class="px-4 py-3 font-semibold">Name</th>
-        <th scope="col" class="px-4 py-3 font-semibold">Email</th>
-        <th scope="col" class="px-4 py-3 font-semibold">Role</th>
-        <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+        <th scope="col" class="px-4 py-3">Name</th>
+        <th scope="col" class="px-4 py-3">Email</th>
+        <th scope="col" class="px-4 py-3">Role</th>
+        <th scope="col" class="px-4 py-3">Status</th>
         <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-ink-100">
+    <tbody>
       <% @users.each do |user| %>
         <tr id="<%= dom_id(user) %>" class="<%= "text-ink-400" unless user.active? %>">
           <td class="px-4 py-3 font-medium"><%= user.name %></td>
           <td class="px-4 py-3"><%= user.email_address %></td>
-          <td class="px-4 py-3"><span class="badge bg-brand-50 text-brand-800"><%= user.role.humanize %></span></td>
+          <td class="px-4 py-3"><span class="badge badge-quiet"><%= user.role.humanize %></span></td>
           <td class="px-4 py-3"><%= user.active? ? "Active" : "Deactivated" %></td>
           <td class="px-4 py-3 text-right">
             <%= link_to "Edit", edit_admin_user_path(user), class: "btn btn-secondary", aria: { label: "Edit #{user.name}" } %>

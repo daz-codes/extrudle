@@ -1,49 +1,61 @@
 @import "tailwindcss";
 
 /*
-  Extrudle design tokens. Use these names in views, never raw hex.
-  ink    -> slate (text, borders, surfaces)
-  brand  -> steel blue (nav, primary actions, links, selection)
-  ginger -> orange highlight, used sparingly like a highlighter pen
-  ok/bad -> QA pass/fail
+  Extrudle design system.
+
+  Views use semantic classes (.page-title, .card, .btn-primary, .nav-link, .tab,
+  .link, .choice, .data-table ...) and a few colour tokens:
+
+    canvas / surface  page background / card background
+    ink-50..950       neutrals, mixed from the theme's ink and surface colours
+    primary-50..900   interactive colour (focus, checked, emphasis text)
+    mark-50..900      the fluorescent highlighter colour
+    ok / bad          QA pass / fail
+
+  Each theme below sets only --theme-* variables plus a few personality rules.
+  The design preview switcher toggles <html data-theme="...">.
 */
-@theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  --color-ink-50: var(--color-slate-50);
-  --color-ink-100: var(--color-slate-100);
-  --color-ink-200: var(--color-slate-200);
-  --color-ink-300: var(--color-slate-300);
-  --color-ink-400: var(--color-slate-400);
-  --color-ink-500: var(--color-slate-500);
-  --color-ink-600: var(--color-slate-600);
-  --color-ink-700: var(--color-slate-700);
-  --color-ink-800: var(--color-slate-800);
-  --color-ink-900: var(--color-slate-900);
-  --color-ink-950: var(--color-slate-950);
+@theme static {
+  --font-sans: var(--theme-font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--theme-font-display), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--theme-font-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
-  --color-brand-50: #eef4fb;
-  --color-brand-100: #d6e4f5;
-  --color-brand-200: #afc8ea;
-  --color-brand-300: #7fa5da;
-  --color-brand-400: #4f7fc4;
-  --color-brand-500: #2e64b0;
-  --color-brand-600: #24569c;
-  --color-brand-700: #1e4e8c;
-  --color-brand-800: #183b6a;
-  --color-brand-900: #0f2a4d;
-  --color-brand-950: #0a1c34;
+  --color-canvas: var(--theme-canvas);
+  --color-surface: var(--theme-surface);
 
-  --color-ginger-50: #fdf4ec;
-  --color-ginger-100: #fbe4cf;
-  --color-ginger-200: #f6c79e;
-  --color-ginger-300: #f0a467;
-  --color-ginger-400: #e98c45;
-  --color-ginger-500: #e07b2e;
-  --color-ginger-600: #c4621c;
-  --color-ginger-700: #a14e17;
-  --color-ginger-800: #7e3d15;
-  --color-ginger-900: #643214;
+  --color-ink-50: color-mix(in oklab, var(--theme-ink) 4%, var(--theme-surface));
+  --color-ink-100: color-mix(in oklab, var(--theme-ink) 8%, var(--theme-surface));
+  --color-ink-200: color-mix(in oklab, var(--theme-ink) 15%, var(--theme-surface));
+  --color-ink-300: color-mix(in oklab, var(--theme-ink) 26%, var(--theme-surface));
+  --color-ink-400: color-mix(in oklab, var(--theme-ink) 45%, var(--theme-surface));
+  --color-ink-500: color-mix(in oklab, var(--theme-ink) 66%, var(--theme-surface));
+  --color-ink-600: color-mix(in oklab, var(--theme-ink) 76%, var(--theme-surface));
+  --color-ink-700: color-mix(in oklab, var(--theme-ink) 85%, var(--theme-surface));
+  --color-ink-800: color-mix(in oklab, var(--theme-ink) 93%, var(--theme-surface));
+  --color-ink-900: var(--theme-ink);
+  --color-ink-950: color-mix(in oklab, var(--theme-ink) 85%, black);
+
+  --color-primary-50: color-mix(in oklab, var(--theme-primary) 7%, white);
+  --color-primary-100: color-mix(in oklab, var(--theme-primary) 14%, white);
+  --color-primary-200: color-mix(in oklab, var(--theme-primary) 28%, white);
+  --color-primary-300: color-mix(in oklab, var(--theme-primary) 45%, white);
+  --color-primary-500: color-mix(in oklab, var(--theme-primary) 80%, white);
+  --color-primary-600: color-mix(in oklab, var(--theme-primary) 90%, white);
+  --color-primary-700: var(--theme-primary);
+  --color-primary-800: color-mix(in oklab, var(--theme-primary) 80%, black);
+  --color-primary-900: color-mix(in oklab, var(--theme-primary) 60%, black);
+
+  --color-mark: var(--theme-mark);
+  --color-mark-50: color-mix(in oklab, var(--theme-mark) 14%, white);
+  --color-mark-100: color-mix(in oklab, var(--theme-mark) 28%, white);
+  --color-mark-200: color-mix(in oklab, var(--theme-mark) 50%, white);
+  --color-mark-300: var(--theme-mark);
+  --color-mark-500: color-mix(in oklab, var(--theme-mark) 82%, black);
+  --color-mark-700: color-mix(in oklab, var(--theme-mark) 45%, var(--theme-ink));
+  --color-mark-800: color-mix(in oklab, var(--theme-mark) 30%, var(--theme-ink));
+  --color-mark-900: color-mix(in oklab, var(--theme-mark) 18%, var(--theme-ink));
+  --color-mark-alt: var(--theme-mark-alt);
 
   --color-ok-50: var(--color-emerald-50);
   --color-ok-600: var(--color-emerald-600);
@@ -54,58 +66,697 @@
   --color-bad-800: var(--color-red-800);
 }
 
+/* ---------------------------------------------------------------------------
+   Theme tokens
+   ------------------------------------------------------------------------- */
+
+/* Highlighter: Breadboarder's fluo marker pens on warm paper, hard ink shadows. */
+:root,
+[data-theme="highlighter"] {
+  --theme-font-body: "Figtree";
+  --theme-font-display: "Bricolage Grotesque";
+  --theme-font-mono: "Geist Mono";
+  --theme-canvas: #ecece5;
+  --theme-surface: #fffef9;
+  --theme-ink: #24251f;
+  --theme-primary: #4b4fc4;
+  --theme-mark: #f5ff70;
+  --theme-mark-alt: #ffb8d2;
+  --theme-mark-blue: #7cdbff;
+  --theme-mark-green: #baff78;
+  --theme-focus: #7379e7;
+}
+
+/* Swoosh: daz.codes neon pink and cyan, uppercase Jost, hand-drawn underlines. */
+[data-theme="swoosh"] {
+  --theme-font-body: "DM Sans";
+  --theme-font-display: "Jost";
+  --theme-font-mono: "Geist Mono";
+  --theme-canvas: #f1f1f5;
+  --theme-surface: #ffffff;
+  --theme-ink: #1c1b22;
+  --theme-primary: #a3159b;
+  --theme-mark: #fc6df7;
+  --theme-mark-alt: #13fbfb;
+  --theme-focus: #a3159b;
+  --swoosh-pink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 16' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='f' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23fc6df7' stop-opacity='.95'/%3E%3Cstop offset='.65' stop-color='%23fc6df7' stop-opacity='.55'/%3E%3Cstop offset='1' stop-color='%23fc6df7' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0,13 Q65,1 200,11' stroke='url(%23f)' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  --swoosh-cyan: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 16' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='f' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%2313d7f5' stop-opacity='.95'/%3E%3Cstop offset='.65' stop-color='%2313d7f5' stop-opacity='.55'/%3E%3Cstop offset='1' stop-color='%2313d7f5' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0,13 Q65,1 200,11' stroke='url(%23f)' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  --neon-gradient: linear-gradient(120deg, #13fbfb, #fc6df7 55%, #d8f640);
+}
+
+/* Lime: crisp and minimal, zinc greys with one acid-lime highlight. */
+[data-theme="lime"] {
+  --theme-font-body: "Geist";
+  --theme-font-display: "Geist";
+  --theme-font-mono: "Geist Mono";
+  --theme-canvas: #f4f4f5;
+  --theme-surface: #ffffff;
+  --theme-ink: #18181b;
+  --theme-primary: #3f3f46;
+  --theme-mark: #d4f53c;
+  --theme-mark-alt: #d8dcff;
+  --theme-focus: #18181b;
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------------- */
+
 @layer base {
   body {
-    @apply bg-ink-50 text-ink-800 antialiased;
+    @apply bg-canvas font-sans text-ink-800 antialiased;
+    font-feature-settings: "ss01", "cv11";
   }
 
   :focus-visible {
-    @apply outline-3 outline-offset-2 outline-ginger-500;
+    outline: 3px solid var(--theme-focus);
+    outline-offset: 2px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--color-ink-900);
   }
 }
 
-/* Repeated controls only. Everything else is utilities in the markup. */
+/* ---------------------------------------------------------------------------
+   Shared components (structure). Themes add personality further down.
+   ------------------------------------------------------------------------- */
+
 @layer components {
+  /* Headings */
+  .page-title {
+    @apply font-display text-3xl font-bold text-ink-900 sm:text-4xl;
+    width: fit-content;
+    line-height: 1.15;
+  }
+  .section-title {
+    @apply font-display text-lg font-semibold text-ink-900;
+    width: fit-content;
+  }
+  .section-title-lg {
+    @apply font-display text-2xl font-bold text-ink-900;
+    width: fit-content;
+  }
+  .eyebrow {
+    @apply text-xs font-bold tracking-widest text-ink-500 uppercase;
+  }
+
+  /* Links */
+  .link {
+    @apply text-ink-900 underline decoration-2 underline-offset-4;
+  }
+
+  /* Header and navigation */
+  .app-header {
+    @apply bg-surface text-ink-900;
+  }
+  .nav-link {
+    @apply inline-flex min-h-12 cursor-pointer items-center rounded-lg px-3 text-sm font-semibold text-ink-600 transition-colors hover:text-ink-900;
+  }
+  .nav-link[aria-current="page"] {
+    @apply text-ink-900;
+  }
+
+  .wordmark {
+    @apply inline-flex items-center gap-2.5 font-display text-xl font-extrabold text-ink-900;
+  }
+  .wordmark-mark {
+    @apply grid size-9 place-items-center;
+  }
+  .wordmark-mark svg {
+    @apply size-6;
+  }
+  .wordmark-nozzle {
+    fill: var(--color-mark-alt);
+    stroke: currentColor;
+    stroke-width: 1.2;
+  }
+
+  /* Tabs (master data sections) */
+  .tabs {
+    @apply flex min-w-max gap-1;
+  }
+  .tab {
+    @apply inline-flex min-h-12 items-center px-4 font-semibold text-ink-600 transition-colors hover:text-ink-900;
+  }
+  .tab[aria-current="page"] {
+    @apply text-ink-900;
+  }
+
+  /* Buttons */
   .btn {
-    @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 px-5 text-base font-semibold whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-900;
+    @apply bg-ink-900 text-surface;
   }
   .btn-secondary {
-    @apply border border-ink-300 bg-white text-ink-800 hover:bg-ink-100 active:bg-ink-200;
+    @apply bg-surface text-ink-900;
   }
-  /* White text needs ginger-700 for AA contrast. */
   .btn-accent {
-    @apply bg-ginger-700 text-white hover:bg-ginger-800;
+    @apply bg-mark text-ink-900;
   }
   .btn-danger {
     @apply bg-bad-700 text-white hover:bg-bad-800;
   }
 
-  .field-label {
-    @apply mb-1 block text-sm font-semibold text-ink-700;
-  }
-  .field-input {
-    @apply block min-h-12 w-full rounded-md border border-ink-300 bg-white px-3 text-base text-ink-900 shadow-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-2 focus:outline-brand-500;
-  }
-  .field-hint {
-    @apply mt-1 text-sm text-ink-500;
-  }
-
+  /* Cards and tables */
   .card {
-    @apply rounded-lg border border-ink-200 bg-white shadow-sm;
+    @apply bg-surface;
+  }
+  .data-table thead th {
+    @apply text-xs font-bold tracking-wider text-ink-500 uppercase;
+  }
+  .data-table tbody tr + tr {
+    @apply border-t border-ink-100;
+  }
+  .data-table tbody tr {
+    @apply transition-colors;
   }
 
+  /* Badges */
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
-}
+  .badge-quiet {
+    @apply bg-ink-100 text-ink-700;
+  }
+  .badge-mark {
+    @apply bg-mark text-ink-900;
+  }
 
-/* Spec form: hide fields that don't apply, without JavaScript. The model clears their values too. */
-@layer components {
+  /* Forms */
+  .field-label {
+    @apply mb-1.5 block text-sm font-semibold text-ink-800;
+  }
+  .field-input {
+    @apply block min-h-12 w-full border border-ink-300 bg-surface px-3 text-base text-ink-900 placeholder:text-ink-400;
+  }
+  .field-input:focus {
+    outline: 3px solid var(--theme-focus);
+    outline-offset: 0;
+    border-color: var(--color-ink-900);
+  }
+  .field-hint {
+    @apply mt-1.5 text-sm text-ink-500;
+  }
+  /* Input with a unit, e.g. kg or µm. Inherits the theme's input radius and border. */
+  .field-group {
+    @apply flex items-stretch;
+  }
+  .field-group .field-input {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+  .field-suffix {
+    @apply inline-flex items-center border border-l-0 border-ink-300 bg-ink-50 px-3 text-ink-600;
+    border-start-end-radius: inherit;
+    border-end-end-radius: inherit;
+  }
+  .field-group:has(.field-input:focus) .field-suffix {
+    border-color: var(--color-ink-900);
+  }
+
+  .choice {
+    @apply inline-flex min-h-12 cursor-pointer items-center gap-2 border border-ink-300 bg-surface px-4 transition;
+  }
+  .choice:has(:checked) {
+    @apply font-semibold text-ink-900;
+  }
+
+  /* Spec form: hide fields that don't apply, without JavaScript. The model clears their values too. */
   .silicone-fields:has(input[value="none"]:checked) .js-silicone-pct,
   .reel-limit-fields:has(input[value="max_roll_on_side"]:checked) .js-max-diameter {
     display: none;
+  }
+
+  /* Design preview switcher */
+  .theme-switcher {
+    @apply fixed right-4 bottom-4 z-50 flex items-center gap-1 rounded-full border border-ink-200 bg-surface p-1.5 text-sm shadow-lg;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  .theme-switcher-label {
+    @apply px-2 text-xs font-bold tracking-wider text-ink-500 uppercase;
+  }
+  .theme-switcher-option {
+    @apply min-h-10 cursor-pointer rounded-full px-3.5 font-semibold text-ink-700 hover:bg-ink-100;
+  }
+  .theme-switcher-option[aria-pressed="true"] {
+    @apply bg-ink-900 text-surface;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Highlighter personality
+   ------------------------------------------------------------------------- */
+
+@layer components {
+  [data-theme="highlighter"] {
+    --hl: linear-gradient(176deg, transparent 50%, var(--theme-mark) 51%, var(--theme-mark) 88%, transparent 89%);
+    --hl-pink: linear-gradient(176deg, transparent 58%, var(--theme-mark-alt) 59%, var(--theme-mark-alt) 92%, transparent 93%);
+
+    .page-title {
+      font-weight: 800;
+      letter-spacing: -0.045em;
+      background: var(--hl);
+      padding-inline: 0.15em;
+      margin-left: -0.15em;
+    }
+    .section-title,
+    .section-title-lg {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: var(--hl-pink);
+      padding-inline: 0.1em;
+      margin-left: -0.1em;
+    }
+
+    .link {
+      text-decoration-color: var(--theme-mark-alt);
+      text-decoration-thickness: 3px;
+      font-weight: 650;
+    }
+    .link:hover {
+      background: var(--theme-mark);
+      text-decoration-color: var(--color-ink-900);
+    }
+
+    .app-header {
+      border-bottom: 2px solid var(--color-ink-900);
+    }
+    .wordmark {
+      letter-spacing: -0.05em;
+    }
+    .wordmark-mark {
+      transform: rotate(-7deg);
+      background: var(--theme-mark);
+      border: 2px solid var(--color-ink-900);
+      border-radius: 43% 46% 18% 17%;
+      box-shadow: 2px 2px 0 var(--color-ink-900);
+    }
+    .nav-link:hover {
+      background: var(--color-ink-100);
+    }
+    .nav-link[aria-current="page"] {
+      background: var(--theme-mark);
+      box-shadow: inset 0 0 0 2px var(--color-ink-900);
+      transform: rotate(-1deg);
+    }
+
+    .tabs {
+      border-bottom: 2px solid var(--color-ink-200);
+    }
+    .tab {
+      border-radius: 8px 10px 0 0;
+    }
+    .tab[aria-current="page"] {
+      background: var(--hl);
+    }
+
+    .btn {
+      border: 2px solid var(--color-ink-900);
+      border-radius: 8px 11px 9px 10px;
+      box-shadow: 3px 3px 0 var(--color-ink-900);
+      font-weight: 800;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--color-ink-900);
+    }
+    .btn:active:not(:disabled) {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--color-ink-900);
+    }
+    .btn-primary {
+      background: var(--theme-mark);
+      color: var(--color-ink-900);
+    }
+    .btn-accent {
+      background: var(--theme-mark-alt);
+    }
+    .btn-secondary:hover {
+      background: var(--theme-mark-blue);
+    }
+
+    .card {
+      border: 1.5px solid var(--color-ink-400);
+      border-radius: 14px;
+      box-shadow: 3px 4px 0 color-mix(in oklab, var(--theme-ink) 14%, transparent);
+    }
+    a.card:hover {
+      border-color: var(--color-ink-900);
+      box-shadow: 4px 5px 0 var(--color-ink-900);
+    }
+    .data-table thead th {
+      border-bottom: 2px solid var(--color-ink-900);
+    }
+    .data-table tbody tr:hover {
+      background: color-mix(in oklab, var(--theme-mark) 22%, var(--theme-surface));
+    }
+
+    .badge {
+      border: 1.5px solid currentColor;
+    }
+    .badge-mark {
+      border-color: var(--color-ink-900);
+      transform: rotate(-3deg);
+    }
+
+    .field-input,
+    .choice {
+      border: 2px solid var(--color-ink-300);
+      border-radius: 9px;
+    }
+    .field-input:hover,
+    .choice:hover {
+      border-color: var(--color-ink-500);
+    }
+    .field-suffix {
+      border: 2px solid var(--color-ink-300);
+      border-left: 0;
+      border-radius: 0 9px 9px 0;
+      font-weight: 700;
+    }
+    .choice:has(:checked) {
+      background: var(--theme-mark);
+      border-color: var(--color-ink-900);
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Swoosh personality
+   ------------------------------------------------------------------------- */
+
+@layer components {
+  [data-theme="swoosh"] {
+    .page-title,
+    .section-title,
+    .section-title-lg,
+    .nav-link,
+    .tab,
+    .btn,
+    .eyebrow,
+    .data-table thead th,
+    .wordmark-text {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+    }
+
+    .page-title {
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      padding-bottom: 0.45em;
+      background: var(--swoosh-pink) left bottom / 100% 0.42em no-repeat;
+    }
+    .section-title,
+    .section-title-lg {
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      font-size: 1rem;
+      padding-bottom: 0.5em;
+      background: var(--swoosh-cyan) left bottom / 100% 0.55em no-repeat;
+    }
+    .section-title-lg {
+      font-size: 1.5rem;
+    }
+
+    .link {
+      color: var(--theme-primary);
+      text-decoration-color: color-mix(in oklab, var(--theme-mark) 60%, transparent);
+    }
+    .link:hover {
+      text-decoration-color: var(--theme-primary);
+    }
+
+    .app-header {
+      position: relative;
+      background: color-mix(in oklab, var(--theme-surface) 85%, transparent);
+      backdrop-filter: blur(12px);
+    }
+    .app-header::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 3px;
+      background: var(--neon-gradient);
+    }
+    .wordmark-text {
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      background: linear-gradient(90deg, var(--theme-primary), #e23ad9);
+      background-clip: text;
+      color: transparent;
+    }
+    .wordmark-mark {
+      color: var(--color-ink-900);
+    }
+    .nav-link,
+    .tab {
+      letter-spacing: 0.08em;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .nav-link[aria-current="page"],
+    .tab[aria-current="page"] {
+      background: var(--swoosh-pink) center bottom 0.55rem / 80% 0.5rem no-repeat;
+    }
+
+    .tabs {
+      border-bottom: 1px solid var(--color-ink-200);
+    }
+
+    .btn {
+      border-radius: 999px;
+      letter-spacing: 0.08em;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background: var(--theme-primary);
+    }
+    .btn-secondary {
+      border: 1px solid var(--color-ink-200);
+    }
+    .btn-secondary:hover {
+      border-color: var(--color-ink-500);
+    }
+    .btn-accent {
+      background: var(--neon-gradient);
+    }
+    .btn-accent:hover {
+      filter: saturate(1.3) brightness(1.03);
+    }
+
+    .card {
+      border: 1px solid color-mix(in oklab, var(--theme-ink) 8%, transparent);
+      border-radius: 18px;
+      box-shadow: 2px 3px 10px rgb(0 0 0 / 0.06);
+    }
+    a.card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    a.card:hover {
+      transform: scale(1.02);
+      box-shadow: 4px 6px 18px rgb(0 0 0 / 0.1);
+    }
+    .data-table thead th {
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+    .data-table tbody tr:hover {
+      background: color-mix(in oklab, var(--theme-mark-alt) 8%, var(--theme-surface));
+    }
+
+    .badge-mark {
+      background: color-mix(in oklab, var(--theme-mark) 35%, white);
+    }
+
+    .field-input {
+      border-radius: 12px;
+      border-color: var(--color-ink-200);
+    }
+    .field-input:focus {
+      outline: 3px solid color-mix(in oklab, var(--theme-mark) 55%, transparent);
+      border-color: var(--theme-primary);
+    }
+    .field-suffix {
+      border-color: var(--color-ink-200);
+      border-radius: 0 12px 12px 0;
+    }
+    .choice {
+      border-radius: 999px;
+      border-color: var(--color-ink-200);
+    }
+    .choice:has(:checked) {
+      border-color: var(--theme-mark);
+      background: color-mix(in oklab, var(--theme-mark) 14%, white);
+      box-shadow: inset 0 0 0 1px var(--theme-mark);
+    }
+    input[type="checkbox"],
+    input[type="radio"] {
+      accent-color: var(--theme-primary);
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Lime personality
+   ------------------------------------------------------------------------- */
+
+@layer components {
+  [data-theme="lime"] {
+    .page-title {
+      font-weight: 650;
+      letter-spacing: -0.04em;
+      text-decoration: underline;
+      text-decoration-color: var(--theme-mark);
+      text-decoration-thickness: 0.3em;
+      text-underline-offset: -0.08em;
+      text-decoration-skip-ink: none;
+    }
+    .section-title,
+    .section-title-lg {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      letter-spacing: -0.02em;
+    }
+    .section-title::before,
+    .section-title-lg::before {
+      content: "";
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 3px;
+      background: var(--theme-mark);
+      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--theme-ink) 20%, transparent);
+    }
+    .eyebrow,
+    .data-table thead th {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+    .data-table .tabular-nums {
+      font-family: var(--font-mono);
+      font-size: 0.95em;
+    }
+
+    .link {
+      text-decoration-color: var(--theme-mark);
+      text-decoration-thickness: 3px;
+      font-weight: 550;
+    }
+    .link:hover {
+      text-decoration-color: var(--color-ink-900);
+    }
+
+    .app-header {
+      border-bottom: 1px solid var(--color-ink-200);
+    }
+    .wordmark {
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+    .wordmark-mark {
+      background: var(--theme-mark);
+      border-radius: 10px;
+    }
+    .wordmark-nozzle {
+      fill: var(--theme-surface);
+    }
+    .nav-link {
+      border-radius: 999px;
+      padding-inline: 0.9rem;
+      font-weight: 500;
+    }
+    .nav-link:hover {
+      background: var(--color-ink-100);
+    }
+    .nav-link[aria-current="page"] {
+      background: var(--theme-ink);
+      color: var(--theme-surface);
+    }
+
+    .tabs {
+      display: inline-flex;
+      gap: 2px;
+      padding: 4px;
+      border-radius: 14px;
+      background: color-mix(in oklab, var(--theme-ink) 7%, var(--theme-canvas));
+    }
+    .tab {
+      min-height: 2.75rem;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .tab[aria-current="page"] {
+      background: var(--theme-surface);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), inset 0 -3px 0 var(--theme-mark);
+      font-weight: 600;
+    }
+
+    .btn {
+      border-radius: 11px;
+    }
+    .btn-primary:hover {
+      background: var(--color-ink-700);
+    }
+    .btn-secondary {
+      border: 1px solid var(--color-ink-200);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .btn-secondary:hover {
+      background: var(--color-ink-50);
+    }
+    .btn-accent {
+      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--theme-ink) 15%, transparent);
+    }
+    .btn-accent:hover {
+      background: color-mix(in oklab, var(--theme-mark) 85%, black);
+    }
+
+    .card {
+      border: 1px solid var(--color-ink-200);
+      border-radius: 18px;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+    }
+    a.card:hover {
+      border-color: var(--color-ink-300);
+      box-shadow: 0 6px 20px rgb(0 0 0 / 0.06);
+    }
+    .data-table thead th {
+      background: var(--color-ink-50);
+      border-bottom: 1px solid var(--color-ink-200);
+    }
+    .data-table tbody tr:hover {
+      background: var(--color-ink-50);
+    }
+
+    .field-input {
+      border-radius: 11px;
+      border-color: var(--color-ink-200);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+    }
+    .field-input:focus {
+      outline: 3px solid color-mix(in oklab, var(--theme-mark) 70%, transparent);
+      border-color: var(--theme-ink);
+    }
+    .field-suffix {
+      border-color: var(--color-ink-200);
+      border-radius: 0 11px 11px 0;
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+    }
+    .choice {
+      border-radius: 11px;
+      border-color: var(--color-ink-200);
+    }
+    .choice:has(:checked) {
+      border-color: var(--theme-ink);
+      box-shadow: inset 0 0 0 1px var(--theme-ink);
+      background: color-mix(in oklab, var(--theme-mark) 22%, white);
+    }
   }
 }

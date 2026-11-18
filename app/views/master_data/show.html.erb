@@ -10,10 +10,10 @@
        material_categories: "Groups for stock reports.",
        lines: "Extrusion lines and changeover defaults."
      }.each do |name, blurb| %>
-    <%= link_to url_for(name), class: "card group block p-5 transition hover:border-brand-300 hover:shadow" do %>
+    <%= link_to url_for(name), class: "card group block p-5" do %>
       <div class="flex items-baseline justify-between gap-3">
-        <h2 class="text-lg font-semibold text-ink-900 group-hover:text-brand-700"><%= MasterDataHelper::MASTER_DATA_SECTIONS.to_h.invert[name] %></h2>
-        <span class="text-2xl font-bold tabular-nums text-brand-700"><%= @counts[name] %></span>
+        <h2 class="section-title"><%= MasterDataHelper::MASTER_DATA_SECTIONS.to_h.invert[name] %></h2>
+        <span class="font-display text-3xl font-bold tabular-nums text-ink-900"><%= @counts[name] %></span>
       </div>
       <p class="mt-2 text-ink-600"><%= blurb %></p>
     <% end %>

@@ -3,19 +3,19 @@
 <%= render "master_data/filters", placeholder: "Search name or contact" %>
 
 <div class="card overflow-x-auto">
-  <table class="w-full text-left">
-    <thead class="border-b border-ink-200 bg-ink-50 text-sm text-ink-600">
+  <table class="data-table w-full text-left">
+    <thead>
       <tr>
-        <th scope="col" class="px-4 py-3 font-semibold">Name</th>
-        <th scope="col" class="px-4 py-3 font-semibold">Contact</th>
-        <th scope="col" class="px-4 py-3 font-semibold">Currency</th>
-        <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+        <th scope="col" class="px-4 py-3">Name</th>
+        <th scope="col" class="px-4 py-3">Contact</th>
+        <th scope="col" class="px-4 py-3">Currency</th>
+        <th scope="col" class="px-4 py-3">Status</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-ink-100">
+    <tbody>
       <% @customers.each do |customer| %>
         <tr id="<%= dom_id(customer) %>" class="<%= "text-ink-500" unless customer.active? %>">
-          <td class="px-4 py-3"><%= link_to customer.name, customer, class: "font-semibold text-brand-700 underline-offset-2 hover:underline" %></td>
+          <td class="px-4 py-3"><%= link_to customer.name, customer, class: "link font-semibold" %></td>
           <td class="px-4 py-3"><%= [customer.contact_name, customer.email].compact_blank.join(" · ").presence || "—" %></td>
           <td class="px-4 py-3"><%= customer.currency %></td>
           <td class="px-4 py-3"><%= status_badge(customer) %></td>

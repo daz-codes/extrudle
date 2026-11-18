@@ -1,0 +1,9 @@
+<%# Design preview only: lets us compare the candidate themes. Remove once one is chosen. %>
+<div class="theme-switcher" data-controller="theme" role="group" aria-label="Design preview">
+  <span class="theme-switcher-label">Design</span>
+  <% ApplicationHelper::THEMES.each do |key, label| %>
+    <button type="button" class="theme-switcher-option" data-theme-target="option"
+            data-action="theme#pick" data-theme-name-param="<%= key %>"
+            aria-pressed="<%= current_theme == key %>"><%= label %></button>
+  <% end %>
+</div>

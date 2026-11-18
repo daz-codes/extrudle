@@ -1,4 +1,11 @@
 module ApplicationHelper
+  # Candidate designs for the preview switcher (see shared/_theme_switcher).
+  THEMES = { "highlighter" => "Highlighter", "swoosh" => "Swoosh", "lime" => "Lime" }.freeze
+
+  def current_theme
+    THEMES.key?(cookies[:theme]) ? cookies[:theme] : THEMES.keys.first
+  end
+
   # 1_250_500 g => "1,250.5 kg"
   def kg(grams, precision: 1)
     return "—" if grams.nil?
@@ -18,8 +25,6 @@ module ApplicationHelper
   end
 
   def nav_link(label, path, active: current_page?(path))
-    classes = "inline-flex min-h-12 items-center rounded-md px-3 text-sm font-medium transition-colors " +
-      (active ? "bg-brand-700 text-white shadow-[inset_0_-3px_0_var(--color-ginger-500)]" : "text-brand-100 hover:bg-brand-800 hover:text-white")
-    link_to label, path, class: classes, aria: { current: (active ? "page" : nil) }
+    link_to label, path, class: "nav-link", aria: { current: (active ? "page" : nil) }
   end
 end

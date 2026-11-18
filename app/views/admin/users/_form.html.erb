@@ -24,8 +24,8 @@
     <legend class="field-label">Role</legend>
     <div class="grid gap-2 sm:grid-cols-3">
       <% { "admin" => "Everything, including users", "office" => "Planning, orders, stock", "floor" => "Floor screens only" }.each do |role, hint| %>
-        <label class="flex min-h-12 cursor-pointer items-start gap-3 rounded-md border border-ink-300 p-3 has-checked:border-brand-500 has-checked:bg-brand-50">
-          <%= form.radio_button :role, role, class: "mt-1 size-5 accent-brand-700" %>
+        <label class="choice items-start p-3">
+          <%= form.radio_button :role, role, class: "mt-1 size-5 accent-primary-700" %>
           <span>
             <span class="block font-semibold"><%= role.humanize %></span>
             <span class="block text-sm text-ink-600"><%= hint %></span>
@@ -36,7 +36,7 @@
   </fieldset>
 
   <label class="flex min-h-12 cursor-pointer items-center gap-3">
-    <%= form.check_box :active, class: "size-5 accent-brand-700" %>
+    <%= form.check_box :active, class: "size-5 accent-primary-700" %>
     <span class="font-semibold">Active</span>
     <span class="text-sm text-ink-600">Deactivated users can't sign in.</span>
   </label>

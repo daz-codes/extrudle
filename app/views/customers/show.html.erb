@@ -3,7 +3,7 @@
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
   <div class="flex items-center gap-3">
-    <h1 class="text-3xl font-bold text-ink-900"><%= @customer.name %></h1>
+    <h1 class="page-title"><%= @customer.name %></h1>
     <%= status_badge(@customer) %>
   </div>
   <div class="flex flex-wrap gap-3">
@@ -14,7 +14,7 @@
 
 <div class="grid gap-6 lg:grid-cols-3">
   <section class="card p-5">
-    <h2 class="mb-3 text-lg font-semibold">Details</h2>
+    <h2 class="section-title mb-3">Details</h2>
     <dl class="space-y-2">
       <% { "Contact" => @customer.contact_name, "Email" => @customer.email, "Phone" => @customer.phone, "Currency" => @customer.currency }.each do |label, value| %>
         <div class="flex justify-between gap-4"><dt class="text-ink-600"><%= label %></dt><dd class="text-right font-medium"><%= value.presence || "—" %></dd></div>
@@ -31,7 +31,7 @@
   </section>
 
   <section class="card overflow-x-auto lg:col-span-2">
-    <h2 class="px-5 pt-5 text-lg font-semibold">Specs</h2>
+    <h2 class="section-title px-5 pt-5">Specs</h2>
     <%= render "product_specs/table", product_specs: @product_specs, show_customer: false %>
   </section>
 </div>

@@ -5,11 +5,11 @@
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
   <div>
     <div class="flex items-center gap-3">
-      <h1 class="text-3xl font-bold text-ink-900">Spec <%= spec %></h1>
+      <h1 class="page-title">Spec <%= spec %></h1>
       <%= status_badge(spec) %>
     </div>
     <p class="mt-1 text-ink-600">
-      <%= spec.customer ? link_to(spec.customer.name, spec.customer, class: "text-brand-700 underline") : "Stock / any customer" %>
+      <%= spec.customer ? link_to(spec.customer.name, spec.customer, class: "link") : "Stock / any customer" %>
       <% if spec.customer_description.present? %> · <%= spec.customer_description %><% end %>
     </p>
   </div>
@@ -21,18 +21,18 @@
 
 <%# Same columns as the paper Extrusion Production Plan (form 5.4.1.1) so it reads familiarly. %>
 <section class="card mb-6 overflow-x-auto" aria-labelledby="plan-row-heading">
-  <h2 id="plan-row-heading" class="px-5 pt-4 text-sm font-semibold uppercase tracking-wide text-ink-500">As it appears on the production plan</h2>
-  <table class="mt-2 w-full text-left">
-    <thead class="border-y border-ink-200 bg-ink-50 text-sm text-ink-600">
+  <h2 id="plan-row-heading" class="eyebrow px-5 pt-4">As it appears on the production plan</h2>
+  <table class="data-table mt-2 w-full text-left">
+    <thead>
       <tr>
-        <th scope="col" class="px-4 py-2 font-semibold">Customer refs</th>
-        <th scope="col" class="px-4 py-2 font-semibold">Micron</th>
-        <th scope="col" class="px-4 py-2 font-semibold">Width</th>
-        <th scope="col" class="px-4 py-2 font-semibold">PE</th>
-        <th scope="col" class="px-4 py-2 font-semibold">Silicone</th>
-        <th scope="col" class="px-4 py-2 font-semibold">Antiblock</th>
-        <th scope="col" class="px-4 py-2 font-semibold">Reel size</th>
-        <th scope="col" class="px-4 py-2 font-semibold">Additional info &amp; packaging</th>
+        <th scope="col" class="px-4 py-2">Customer refs</th>
+        <th scope="col" class="px-4 py-2">Micron</th>
+        <th scope="col" class="px-4 py-2">Width</th>
+        <th scope="col" class="px-4 py-2">PE</th>
+        <th scope="col" class="px-4 py-2">Silicone</th>
+        <th scope="col" class="px-4 py-2">Antiblock</th>
+        <th scope="col" class="px-4 py-2">Reel size</th>
+        <th scope="col" class="px-4 py-2">Additional info &amp; packaging</th>
       </tr>
     </thead>
     <tbody>
@@ -61,7 +61,7 @@
 
 <div class="grid gap-6 lg:grid-cols-2">
   <section class="card p-5">
-    <h2 class="mb-3 text-lg font-semibold">Details</h2>
+    <h2 class="section-title mb-3">Details</h2>
     <dl class="divide-y divide-ink-100">
       <% {
            "Thickness" => micron(spec.thickness_micron),
@@ -77,7 +77,7 @@
   </section>
 
   <section class="card p-5" aria-labelledby="line-rates-heading">
-    <h2 id="line-rates-heading" class="text-lg font-semibold">Line rates</h2>
+    <h2 id="line-rates-heading" class="section-title">Line rates</h2>
     <p class="mb-4 text-sm text-ink-600">Output on each line. The planner uses this to work out how long a job takes.</p>
 
     <div class="space-y-3">
@@ -90,9 +90,9 @@
             <%= form.hidden_field :line_id %>
             <div class="flex-1">
               <%= form.label :kg_per_hour, "Rate on #{line.name}", class: "sr-only" %>
-              <div class="flex">
-                <%= form.number_field :kg_per_hour, min: 1, step: 1, required: true, placeholder: "Not set", class: "field-input rounded-r-none tabular-nums" %>
-                <span class="-ml-px inline-flex items-center rounded-r-md border border-ink-300 bg-ink-100 px-3 text-ink-600">kg/h</span>
+              <div class="field-group">
+                <%= form.number_field :kg_per_hour, min: 1, step: 1, required: true, placeholder: "Not set", class: "field-input tabular-nums" %>
+                <span class="field-suffix">kg/h</span>
               </div>
             </div>
             <%= form.submit "Save", class: "btn btn-primary", aria: { label: "Save rate for #{line.name}" } %>
@@ -104,7 +104,7 @@
         </div>
       <% end %>
       <% if @lines.empty? %>
-        <p class="text-ink-500">No active lines. <%= link_to "Add a line", new_line_path, class: "text-brand-700 underline" %>.</p>
+        <p class="text-ink-500">No active lines. <%= link_to "Add a line", new_line_path, class: "link" %>.</p>
       <% end %>
     </div>
   </section>

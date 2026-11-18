@@ -1,28 +1,30 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="en-GB" data-theme="<%= current_theme %>">
   <head>
     <%= render "shared/head" %>
   </head>
 
-  <body class="min-h-screen bg-ink-100 text-xl">
-    <header class="bg-brand-900 text-white">
+  <body class="min-h-screen text-xl">
+    <header class="app-header">
       <div class="flex flex-wrap items-center gap-4 px-4 py-3">
         <%= render "shared/wordmark" %>
-        <span class="badge bg-ginger-700 text-white text-sm">Floor</span>
+        <span class="badge badge-mark text-sm">Floor</span>
 
         <div class="ml-auto flex items-center gap-3">
           <span class="font-semibold"><%= Current.user.name %></span>
           <% if Current.user.office_access? %>
-            <%= link_to "Office", root_path, class: "btn bg-brand-700 text-white hover:bg-brand-800" %>
+            <%= link_to "Office", root_path, class: "btn btn-secondary" %>
           <% end %>
-          <%= button_to "Sign out", session_path, method: :delete, class: "btn bg-brand-800 text-white hover:bg-brand-950" %>
+          <%= button_to "Sign out", session_path, method: :delete, class: "btn btn-secondary" %>
         </div>
       </div>
     </header>
 
-    <main class="px-4 py-6">
+    <main class="px-4 py-8">
       <%= render "shared/flash" %>
       <%= yield %>
     </main>
+
+    <%= render "shared/theme_switcher" %>
   </body>
 </html>
