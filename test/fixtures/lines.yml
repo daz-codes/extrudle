@@ -1,0 +1,11 @@
+d1:
+  name: D1
+  machine_no: "1"
+  default_changeover_minutes: 60
+  position: 1
+
+d2:
+  name: D2
+  machine_no: "2"
+  default_changeover_minutes: 90
+  position: 2

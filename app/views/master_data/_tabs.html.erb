@@ -1,0 +1,12 @@
+<nav aria-label="Master data" class="mb-6 -mx-4 overflow-x-auto px-4">
+  <ul class="flex min-w-max gap-1 border-b border-slate-200">
+    <% MasterDataHelper::MASTER_DATA_SECTIONS.each do |label, name| %>
+      <% current = controller_name == name.to_s || (name == :product_specs && controller_name == "line_rates") %>
+      <li>
+        <%= link_to label, url_for(name),
+              class: "-mb-px inline-flex min-h-12 items-center border-b-3 px-4 font-semibold #{current ? 'border-ginger-500 text-brand-800' : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900'}",
+              aria: { current: (current ? "page" : nil) } %>
+      </li>
+    <% end %>
+  </ul>
+</nav>

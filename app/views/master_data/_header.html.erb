@@ -1,0 +1,8 @@
+<%# locals: (title:, action: nil, action_path: nil) %>
+<%= render "master_data/tabs" %>
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <h1 class="text-3xl font-bold text-slate-900"><%= title %></h1>
+  <% if action %>
+    <%= link_to action, action_path, class: "btn btn-primary" %>
+  <% end %>
+</div>

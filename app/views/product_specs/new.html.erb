@@ -1,0 +1,8 @@
+<% content_for :title, "Add spec" %>
+<%= render "master_data/header", title: @source ? "Duplicate #{@source}" : "Add spec" %>
+<% if @source %>
+  <p class="mb-6 max-w-4xl rounded-md border border-ginger-300 bg-ginger-50 px-4 py-3 text-ginger-900">
+    Copied from <strong><%= @source %></strong>. Give it a new spec code. Line rates are copied too.
+  </p>
+<% end %>
+<%= render "form", product_spec: @product_spec %>

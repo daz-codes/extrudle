@@ -1,0 +1,13 @@
+jade:
+  name: JADE
+  grade: CZ-302
+  material_category: virgin
+  supplier: pacific
+  origin: virgin
+  source: purchased
+
+regrind:
+  name: Regrind chip
+  material_category: recycled
+  origin: recycled
+  source: internal

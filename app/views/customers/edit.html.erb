@@ -1,0 +1,3 @@
+<% content_for :title, "Edit #{@customer.name}" %>
+<%= render "master_data/header", title: "Edit #{@customer.name}" %>
+<%= render "form", customer: @customer %>

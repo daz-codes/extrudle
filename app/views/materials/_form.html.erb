@@ -1,0 +1,15 @@
+<%= form_with model: material, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.text_row :name, required: true, autofocus: true, hint: "e.g. JADE, Clear PCW flake, Regrind chip" %>
+    <%= form.text_row :grade, hint: "Supplier grade, e.g. LL1002" %>
+  </div>
+  <%= form.select_row :material_category_id, MaterialCategory.ordered.map { [ _1.name, _1.id ] }, select_options: { include_blank: "Choose a category" }, required: true, wrapper: "max-w-md" %>
+  <%= form.radio_row :origin, Material.origins.keys %>
+  <%= form.radio_row :source, Material.sources.keys, labels: { "purchased" => "Bought in", "internal" => "Made in-house (regrind)" } %>
+  <%= form.select_row :supplier_id, Supplier.active.or(Supplier.where(id: material.supplier_id)).by_name.map { [ _1.name, _1.id ] },
+        select_options: { include_blank: "None" }, hint: "Leave blank for in-house materials.", wrapper: "max-w-md" %>
+  <%= form.text_area_row :notes %>
+  <%= form.check_row :active %>
+  <%= render "master_data/form_actions", form: form, cancel_path: materials_path %>
+<% end %>

@@ -1,31 +1,48 @@
-# Files in the config/locales directory are used for internationalization and
-# are automatically loaded by Rails. If you want to use locales other than
-# English, add the necessary files in this directory.
-#
-# To use the locales, use `I18n.t`:
-#
-#     I18n.t "hello"
-#
-# In views, this is aliased to just `t`:
-#
-#     <%= t("hello") %>
-#
-# To use a different locale, set it with `I18n.locale`:
-#
-#     I18n.locale = :es
-#
-# This would use the information in config/locales/es.yml.
-#
-# To learn more about the API, please read the Rails Internationalization guide
-# at https://guides.rubyonrails.org/i18n.html.
-#
-# Be aware that YAML interprets the following case-insensitive strings as
-# booleans: `true`, `false`, `on`, `off`, `yes`, `no`. Therefore, these strings
-# must be quoted to be interpreted as strings. For example:
-#
-#     en:
-#       "yes": yup
-#       enabled: "ON"
-
 en:
-  hello: "Hello world"
+  activerecord:
+    models:
+      product_spec: Product spec
+      material_category: Material category
+      line_rate: Line rate
+    attributes:
+      customer:
+        contact_name: Contact
+        email: Email
+      supplier:
+        contact_name: Contact
+        incoterm: Default incoterm
+        currency: Default currency
+      material:
+        material_category: Category
+        material_category_id: Category
+        supplier_id: Supplier
+      line:
+        name: Line name
+        machine_no: Machine no.
+        default_changeover_minutes: Default changeover
+      product_spec:
+        code: Spec code
+        customer_id: Customer
+        width_mm: Width
+        thickness_micron: Thickness
+        material_type: Material type
+        pe: PE
+        silicone_pct: Silicone %
+        silicone_bp: Silicone %
+        antiblock: Antiblock
+        core_inches: Core size
+        core_orientation: Core orientation
+        reel_limit: Reel size limit
+        max_diameter_mm: Max diameter
+        max_reel_kg: Max reel weight
+        max_reel_g: Max reel weight
+        pallet_type: Pallet type
+        reels_per_pallet: Reels per pallet
+        label_inside_core: Label inside core
+        packaging_notes: Packaging notes
+        customer_part_no: Customer part no.
+        customer_tool_no: Customer tool no.
+        customer_product_code: Customer product code
+        customer_description: Customer description
+      line_rate:
+        kg_per_hour: Rate

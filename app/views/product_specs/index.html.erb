@@ -1,0 +1,7 @@
+<% content_for :title, "Product specs" %>
+<%= render "master_data/header", title: "Product specs", action: "Add spec", action_path: new_product_spec_path %>
+<%= render "master_data/filters", placeholder: "Search code, customer, part no. or description" %>
+
+<div class="card overflow-x-auto">
+  <%= render "product_specs/table", product_specs: @product_specs %>
+</div>

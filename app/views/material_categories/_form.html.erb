@@ -1,0 +1,7 @@
+<%= form_with model: material_category, class: "card max-w-2xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <%= form.text_row :name, required: true, autofocus: true %>
+  <%= form.text_row :description %>
+  <%= form.number_row :position, label: "Display order", step: 1, wrapper: "max-w-40" %>
+  <%= render "master_data/form_actions", form: form, cancel_path: material_categories_path %>
+<% end %>
