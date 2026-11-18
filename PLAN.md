@@ -110,7 +110,8 @@ Goal: replace the Word production plan and give a live stock figure.
   - Deferred: `SpecIngredient` recipes (waiting on stream % from §11 Q6, needed by Slice 7c) and locking used specs into new revisions (Slice 2, once orders reference specs).
 - [x] **Slice 2 – Sales orders**: orders with lines (spec dropdown pre-fills spec details read-only, quantity in kg/tonnes toggle), status, list filtered by required date.
   - Also: spec revision locking (edits to a spec on an order create the next revision). Statuses after `open` are only reachable by cancel/reopen until Slices 3–8 set them. Working assumptions Q11–Q14 are in §11.
-- [ ] **Slice 3 – Planner model**: `ScheduleBlock`, duration calc, `Schedule::Reflow` service, locked blocks, warnings. Heavy unit tests here.
+- [x] **Slice 3 – Planner model**: `ScheduleBlock`, duration calc, `Schedule::Reflow` service, locked blocks, warnings. Heavy unit tests here.
+  - Built as `ScheduleBlock`, `Schedule::Reflow`, `Schedule::Editor` (add/insert/move/resize/replan/lock/unlock/remove/start_at, automatic changeovers) and `Schedule::Warnings` (late, no rate, over-planned, idle before a locked block). Orders switch between open and scheduled automatically. Assumptions: §11 Q15–Q17.
 - [ ] **Slice 4 – Planner UI**: per-line week timeline (48 slots/day), add job from an unscheduled order line, add changeover/maintenance/no-orders blocks, move up/down buttons (Turbo Streams), print view.
 - [ ] **Slice 5 – Purchasing**: POs with currency, incoterms, lines in kg, price/tonne; PO PDF; status (draft/sent/part-received/received).
 - [ ] **Slice 6 – Goods in & stock**: receive against a PO line → creates Lots + StockMovements; set location (on site/storage/at supplier/in transit); transfer between locations; stock-on-hand by material and category; printable lot labels (A4 sheet of QR codes is fine for MVP).
@@ -186,3 +187,9 @@ We're building ahead of some answers. Each question has a **best guess** that th
 - [ ] **Q12. Is the required date per order or per line?** Guess: per order. If one order can have lines due on different dates, move `required_on` onto `sales_order_lines`.
 - [ ] **Q13. Is the order quantity exact, or is ± some % acceptable?** Guess: a target in kg with no tolerance stored. Update: add `tolerance_bp` to lines if over- or under-runs are agreed per order.
 - [ ] **Q14. Can one customer PO cover several specs?** Guess: yes, one order with several lines (one spec per line).
+
+### Slice 3 (planner) assumptions
+- [ ] **Q15. Does a job pause for planned maintenance or an engineer visit and carry on afterwards?** Guess: no. Jobs aren't split. A job that won't finish before a locked block starts moves after it, and the line shows as idle (warning). Update: `Schedule::Reflow#first_free_start` would split jobs instead.
+- [ ] **Q16. When is a job "late"?** Guess: when it finishes after the end of the order's required day (UK time), with no allowance for QA, packing or transport. Update: `Schedule::Warnings#late` (add a buffer, or compare with the start of the day).
+- [ ] **Q17. Is a changeover needed between two jobs for the same spec?** Guess: no. A changeover is only added automatically between jobs for different specs, using the line's default minutes. Update: `Schedule::Editor#needs_changeover?`, and the Phase 3 changeover matrix.
+

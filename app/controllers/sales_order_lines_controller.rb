@@ -27,8 +27,11 @@ class SalesOrderLinesController < ApplicationController
   end
 
   def destroy
-    @line.destroy!
-    redirect_to @sales_order, notice: "Removed #{@line.product_spec} from #{@sales_order.number}.", status: :see_other
+    if @line.destroy
+      redirect_to @sales_order, notice: "Removed #{@line.product_spec} from #{@sales_order.number}.", status: :see_other
+    else
+      redirect_to @sales_order, alert: "#{@line.product_spec} is on the planner. Take it off the plan first.", status: :see_other
+    end
   end
 
   private

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_090003) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_100000) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -45,6 +45,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_090003) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "queue_starts_at"
     t.index ["name"], name: "index_lines_on_name", unique: true
     t.check_constraint "default_changeover_minutes >= 0", name: "lines_changeover_non_negative"
   end
@@ -139,6 +140,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_090003) do
     t.index ["status", "required_on"], name: "index_sales_orders_on_status_and_required_on"
   end
 
+  create_table "schedule_blocks", force: :cascade do |t|
+    t.integer "line_id", null: false
+    t.string "kind", null: false
+    t.integer "position", null: false
+    t.datetime "starts_at", null: false
+    t.datetime "ends_at", null: false
+    t.integer "duration_minutes", null: false
+    t.integer "sales_order_line_id"
+    t.integer "planned_g"
+    t.boolean "locked", default: false, null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "automatic", default: false, null: false
+    t.index ["line_id", "position"], name: "index_schedule_blocks_on_line_id_and_position"
+    t.index ["line_id", "starts_at"], name: "index_schedule_blocks_on_line_id_and_starts_at"
+    t.index ["line_id"], name: "index_schedule_blocks_on_line_id"
+    t.index ["sales_order_line_id"], name: "index_schedule_blocks_on_sales_order_line_id"
+    t.check_constraint "duration_minutes > 0 AND duration_minutes % 30 = 0", name: "schedule_blocks_duration_in_slots"
+    t.check_constraint "ends_at > starts_at", name: "schedule_blocks_ends_after_start"
+    t.check_constraint "kind <> 'job' OR (sales_order_line_id IS NOT NULL AND planned_g > 0)", name: "schedule_blocks_jobs_have_order_line"
+  end
+
   create_table "sessions", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "ip_address"
@@ -182,5 +206,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_090003) do
   add_foreign_key "sales_order_lines", "product_specs"
   add_foreign_key "sales_order_lines", "sales_orders"
   add_foreign_key "sales_orders", "customers"
+  add_foreign_key "schedule_blocks", "lines"
+  add_foreign_key "schedule_blocks", "sales_order_lines"
   add_foreign_key "sessions", "users"
 end
