@@ -10,7 +10,7 @@
        material_categories: "Groups for stock reports.",
        lines: "Extrusion lines and changeover defaults."
      }.each do |name, blurb| %>
-    <%= link_to url_for(name), class: "card group block p-5" do %>
+    <%= link_to url_for(name), class: "card block p-5" do %>
       <div class="flex items-start justify-between gap-3">
         <h2 class="section-title"><%= MasterDataHelper::MASTER_DATA_SECTIONS.to_h.invert[name] %></h2>
         <span class="grid size-14 shrink-0 place-items-center rounded-full bg-lemon-300 font-mono text-xl font-semibold tabular-nums text-ink-900 ring-1 ring-ink-900/10"><%= @counts[name] %></span>

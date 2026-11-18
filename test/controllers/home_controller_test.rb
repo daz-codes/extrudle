@@ -14,6 +14,12 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_select "nav a", text: "Users", count: 0
   end
 
+  test "pages load no fonts or styles from outside hosts" do
+    get new_session_path
+    assert_select "link[href^='http']", count: 0
+    assert_select "script[src^='http']", count: 0
+  end
+
   test "admins see the users link" do
     sign_in_as users(:admin)
     get root_path
