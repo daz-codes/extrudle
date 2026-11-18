@@ -28,8 +28,11 @@ else
   "extrudle-demo"
 end
 
+# On the preview, Stu signs in with his own address (credentials: demo_admin_email).
+stu_email = (Rails.application.credentials.demo_admin_email.presence if demo_in_production) || "admin@extrudle.test"
+
 [
-  { name: "Stu Kershaw",  email_address: "admin@extrudle.test",  role: "admin" },
+  { name: "Stu Kershaw",  email_address: stu_email,              role: "admin" },
   { name: "Jess Kershaw", email_address: "office@extrudle.test", role: "office" },
   { name: "Eric Kershaw", email_address: "floor@extrudle.test",  role: "floor" }
 ].each do |attrs|
