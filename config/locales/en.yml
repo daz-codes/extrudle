@@ -46,3 +46,17 @@ en:
         customer_description: Customer description
       line_rate:
         kg_per_hour: Rate
+      sales_order:
+        number: Order no.
+        customer_po_ref: Customer PO ref
+        required_on: Required by
+        urgent: Urgent
+      sales_order_line:
+        product_spec: Spec
+        product_spec_id: Spec
+        quantity: Quantity
+        quantity_g: Quantity
+        quantity_unit: Unit
+        customer_batch_no: Customer batch no.
+        price_per_tonne: Price per tonne
+        price_per_tonne_cents: Price per tonne

@@ -1,0 +1,15 @@
+bf_open_700:
+  sales_order: bf_open
+  product_spec: bf_700
+  quantity_g: 10000000
+  price_per_tonne_cents: 185000
+
+bf_overdue_700:
+  sales_order: bf_overdue
+  product_spec: bf_700
+  quantity_g: 2500000
+
+bf_dispatched_700:
+  sales_order: bf_dispatched
+  product_spec: bf_700
+  quantity_g: 4000000

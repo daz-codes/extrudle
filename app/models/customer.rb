@@ -2,6 +2,7 @@ class Customer < ApplicationRecord
   include Deactivatable
 
   has_many :product_specs, dependent: :restrict_with_error
+  has_many :sales_orders, dependent: :restrict_with_error
 
   normalizes :name, with: ->(n) { n.squish }
   normalizes :email, with: ->(e) { e.strip.downcase }

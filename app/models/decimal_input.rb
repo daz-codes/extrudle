@@ -29,8 +29,12 @@ module DecimalInput
   end
 
   # The inverse, as plain text a form can send back: (1_250_500, 1_000) #=> "1250.5"
-  def from_scaled_integer(value, multiplier)
-    (BigDecimal(value) / multiplier).to_s("F").delete_suffix(".0")
+  # pad: true keeps every decimal place: (185_000, 100, pad: true) #=> "1850.00"
+  def from_scaled_integer(value, multiplier, pad: false)
+    whole, fraction = (BigDecimal(value) / multiplier).to_s("F").split(".")
+    fraction = fraction.to_s.sub(/0+\z/, "")
+    fraction = fraction.ljust(places(multiplier), "0") if pad
+    fraction.empty? ? whole : "#{whole}.#{fraction}"
   end
 
   # Decimal places a multiplier allows: 1_000 => 3, 100 => 2.

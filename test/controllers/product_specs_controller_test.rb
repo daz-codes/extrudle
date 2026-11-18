@@ -64,6 +64,20 @@ class ProductSpecsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='line_rate[kg_per_hour]'][value='175']"
   end
 
+  test "editing a used spec creates the next revision" do
+    spec = product_specs(:bf_700)
+    get edit_product_spec_path(spec)
+    assert_select "p", /creates\s+revision 2/
+
+    assert_difference "ProductSpec.count" do
+      patch product_spec_path(spec), params: { product_spec: { width_mm: "710" } }
+    end
+    revision = ProductSpec.find_by!(code: "BF-700-250", revision: 2)
+    assert_redirected_to product_spec_path(revision)
+    follow_redirect!
+    assert_select "#notice", /revision 2/
+  end
+
   test "update" do
     patch product_spec_path(product_specs(:stock)), params: { product_spec: { reels_per_pallet: "2" } }
     assert_redirected_to product_spec_path(product_specs(:stock))

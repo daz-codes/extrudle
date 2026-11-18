@@ -1,0 +1,30 @@
+<%# locals: (order:, line:) %>
+<%= form_with model: [ order, line ], url: line.persisted? ? sales_order_line_path(order, line) : sales_order_lines_path(order),
+      scope: :sales_order_line, class: "space-y-5" do |form| %>
+  <%= form.error_summary %>
+
+  <div data-controller="spec-summary" data-spec-summary-url-value="<%= summary_product_spec_path("__ID__") %>" class="space-y-3">
+    <%= form.select_row :product_spec_id, spec_options_for(order, line.product_spec_id), required: true,
+          select_options: { include_blank: "Choose a spec" },
+          data: { spec_summary_target: "select", action: "spec-summary#load" } %>
+    <%= turbo_frame_tag "spec_summary", src: (summary_product_spec_path(line.product_spec_id) if line.product_spec_id),
+          data: { spec_summary_target: "frame" } %>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-[1fr_auto]">
+    <%= form.text_row :quantity, required: true, inputmode: "decimal", autocomplete: "off" %>
+    <%= form.radio_row :quantity_unit, SalesOrderLine::QUANTITY_UNITS.keys, labels: { "kg" => "kg", "t" => "tonnes" } %>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.text_row :customer_batch_no, hint: "If the customer sends one." %>
+    <% currency = line.persisted? ? line.currency : order.customer.currency %>
+    <%= form.text_row :price_per_tonne, inputmode: "decimal", suffix: "#{Money.symbol(currency)}/t",
+          hint: "Optional. In #{currency}." %>
+  </div>
+
+  <div class="flex flex-wrap gap-3">
+    <%= form.submit line.persisted? ? "Save line" : "Add line", class: "btn btn-primary" %>
+    <% if line.persisted? %><%= link_to "Cancel", order, class: "btn btn-secondary" %><% end %>
+  </div>
+<% end %>

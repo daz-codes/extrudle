@@ -19,7 +19,7 @@ class ExtrudleFormBuilder < ActionView::Helpers::FormBuilder
     end
   end
 
-  %i[ text_field email_field telephone_field number_field ].each do |input|
+  %i[ text_field email_field telephone_field number_field date_field ].each do |input|
     define_method(input.to_s.sub("_field", "_row")) do |method, label: nil, hint: nil, suffix: nil, wrapper: nil, **options|
       row(method, label:, hint:, wrapper:) do
         field = public_send(input, method, **input_options(method, options, hint))

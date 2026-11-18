@@ -30,7 +30,9 @@ Full plan and phases: `PLAN.md` (in the repo root, next to this file). Work thro
 - Every stock change is a StockMovement row (receipt, transfer, issue_to_production, adjustment). Lot quantity = sum of movements.
 - A lot has a location: on_site, storage, at_supplier, in_transit.
 - The capping‑layer polymer is shared by both lines. Consumption is allocated per production run (see PLAN.md §4).
-- Product specs are versioned by being immutable once used: editing a used spec creates a new revision.
+- Product specs are versioned by being immutable once used (on any order line): editing a used spec creates the next revision via `ProductSpec::Revision`, copies its line rates and deactivates the old one. Orders keep the revision they were placed with. Toggling `active` alone never creates a revision.
+- Sales orders: `SO-00001` numbering, one customer, required date per order, lines of spec + quantity (entered in kg or t, stored as grams). Status `open → scheduled → in_production → dispatched → invoiced`, plus `cancelled`. Only `open`/`scheduled` orders can be edited.
+- Unanswered questions for Stu live in PLAN.md §11 with the working assumption the code uses. When building on an assumption, reference its Q number in a comment.
 - Paper forms being replaced: 5.4.1.1 Extrusion Production Plan (an ordered queue per machine) and 5.4.1.2 Production Log (one per despatch number: header, material loads by reel range, reel-by-reel weights, QA checks). Screen and PDF layouts should stay recognisable to operators.
 - Thickness is stored in microns as an integer (the paper plan writes 250µm as ".250").
 - Material feeds per run: virgin_coex, virgin_mainex, pcw, regrind. Regrind is produced in-house.

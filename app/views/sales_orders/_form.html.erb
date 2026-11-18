@@ -1,0 +1,20 @@
+<%= form_with model: sales_order, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <% if sales_order.new_record? || sales_order.lines.none? %>
+    <%= form.select_row :customer_id, Customer.active.or(Customer.where(id: sales_order.customer_id)).by_name.map { [ _1.name, _1.id ] },
+          select_options: { include_blank: "Choose a customer" }, required: true, autofocus: sales_order.new_record? %>
+  <% else %>
+    <div>
+      <span class="field-label">Customer</span>
+      <p class="font-medium text-ink-900"><%= sales_order.customer.name %></p>
+      <p class="field-hint">The customer can't change once the order has lines.</p>
+    </div>
+  <% end %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.text_row :customer_po_ref, hint: "Their order number, e.g. M15159" %>
+    <%= form.date_row :required_on, required: true, hint: "When it must be despatched." %>
+  </div>
+  <%= form.check_row :urgent, hint: "Highlighted on the order list and, later, the planner." %>
+  <%= form.text_area_row :notes %>
+  <%= render "master_data/form_actions", form: form, cancel_path: sales_order.persisted? ? sales_order : sales_orders_path %>
+<% end %>

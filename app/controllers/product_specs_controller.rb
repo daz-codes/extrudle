@@ -1,6 +1,6 @@
 class ProductSpecsController < ApplicationController
   include MasterData
-  before_action :set_product_spec, only: %i[ show edit update ]
+  before_action :set_product_spec, only: %i[ show edit update summary ]
 
   def index
     @product_specs = ProductSpec.including_inactive(include_inactive?).search(search_query)
@@ -33,11 +33,24 @@ class ProductSpecsController < ApplicationController
   end
 
   def update
-    if @product_spec.update(product_spec_params)
-      redirect_to @product_spec, notice: "Spec #{@product_spec} was updated."
+    revision = ProductSpec::Revision.new(@product_spec, product_spec_params)
+
+    if revision.save
+      notice = if revision.revised?
+        "Spec #{@product_spec.code} is used on orders, so your changes were saved as revision #{revision.spec.revision}. " \
+          "Existing orders keep revision #{@product_spec.revision}."
+      else
+        "Spec #{revision.spec} was updated."
+      end
+      redirect_to revision.spec, notice: notice
     else
       render :edit, status: :unprocessable_content
     end
+  end
+
+  # Read-only spec details for the order line form (loaded into a Turbo frame).
+  def summary
+    render partial: "product_specs/summary", locals: { spec: @product_spec }
   end
 
   private
