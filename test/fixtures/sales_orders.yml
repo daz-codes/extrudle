@@ -1,0 +1,26 @@
+bf_open:
+  number: SO-00001
+  customer: brightform
+  customer_po_ref: M15159
+  required_on: <%= Date.current + 3 %>
+  status: open
+
+bf_overdue:
+  number: SO-00002
+  customer: brightform
+  customer_po_ref: P15745
+  required_on: <%= Date.current - 2 %>
+  urgent: true
+  status: open
+
+rhine_later:
+  number: SO-00003
+  customer: rhine
+  required_on: <%= Date.current + 40 %>
+  status: open
+
+bf_dispatched:
+  number: SO-00004
+  customer: brightform
+  required_on: <%= Date.current - 10 %>
+  status: dispatched

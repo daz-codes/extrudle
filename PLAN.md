@@ -108,7 +108,8 @@ Goal: replace the Word production plan and give a live stock figure.
 - [x] **Slice 0 – Setup**: `rails new --database=sqlite3 --css=tailwind`, auth generator, Tailwind theme tokens and layout with nav (see CLAUDE.md §Design), `Weight`/`Money` display helpers, roles (admin/office/floor), Kamal config with a persistent volume for `storage/`, CI running tests. Move `PLAN.md` and `CLAUDE.md` into the app root.
 - [x] **Slice 1 – Master data**: Customers, Suppliers, MaterialCategories, Materials, Lines, ProductSpecs (with dropdowns for silicone/core/etc.), LineRates. CRUD screens + seeds. Spec "duplicate as new" button.
   - Deferred: `SpecIngredient` recipes (waiting on stream % from §11 Q6, needed by Slice 7c) and locking used specs into new revisions (Slice 2, once orders reference specs).
-- [ ] **Slice 2 – Sales orders**: orders with lines (spec dropdown pre-fills spec details read-only, quantity in kg/tonnes toggle), status, list filtered by required date.
+- [x] **Slice 2 – Sales orders**: orders with lines (spec dropdown pre-fills spec details read-only, quantity in kg/tonnes toggle), status, list filtered by required date.
+  - Also: spec revision locking (edits to a spec on an order create the next revision). Statuses after `open` are only reachable by cancel/reopen until Slices 3–8 set them. Working assumptions Q11–Q14 are in §11.
 - [ ] **Slice 3 – Planner model**: `ScheduleBlock`, duration calc, `Schedule::Reflow` service, locked blocks, warnings. Heavy unit tests here.
 - [ ] **Slice 4 – Planner UI**: per-line week timeline (48 slots/day), add job from an unscheduled order line, add changeover/maintenance/no-orders blocks, move up/down buttons (Turbo Streams), print view.
 - [ ] **Slice 5 – Purchasing**: POs with currency, incoterms, lines in kg, price/tonne; PO PDF; status (draft/sent/part-received/received).
@@ -150,14 +151,38 @@ Goal: replace the Word production plan and give a live stock figure.
 - Give Claude real sample data early (anonymised specs, a real PO, the production record sheet) — it makes the forms right first time.
 - Show your friend the planner after Slice 4. That's the moment to catch wrong assumptions.
 
-## 11. Questions to ask your friend before Slice 1
-1. Which Sage exactly (Sage 50 / Sage Business Cloud / Sage 200)?
-2. Rough kg/hour per line for typical specs? Does it vary much by width/thickness? (Log 731: 10,040 kg in ~52 h including a gap. Was that a stop?)
-3. Typical changeover times, and does it depend on what changes (micron, width, silicone)?
-4. A sample delivery note and the current reel/pallet labels.
-5. Is "Virgin Co‑Ex" the shared capping polymer? Is it one shared hopper, or split into each line?
-6. What % of each stream (Co‑Ex / Main‑Ex / PCW / Regrind) goes into a typical spec? Do recipes vary by spec?
-7. How is regrind made and labelled today? Is it weighed into bags?
-8. Who uses it: office only at first, or operators too? How many users?
-9. Does he need recycled-content % reporting (Plastic Packaging Tax / customer certificates)? The PCW + regrind data makes this easy.
-10. Is the second line "D2"? Do both lines use the same forms?
+## 11. Questions for Stu, with working assumptions
+We're building ahead of some answers. Each question has a **best guess** that the app uses for now, plus where it shows up, so it's quick to correct. When an answer comes back, tick the box, write the answer under it, and fix anything listed in **Update**.
+
+- [ ] **Q1. Which Sage exactly (Sage 50 / Sage Business Cloud / Sage 200)?**
+  - Guess: Sage 50 with a CSV import, built in Slice 8. Order lines have an optional price per tonne so the export has amounts to send.
+  - Update: Slice 8 export format. Drop `sales_order_lines.price_per_tonne_cents` if Sage prices invoices itself.
+- [ ] **Q2. Rough kg/hour per line for typical specs? Does it vary much by width/thickness?** (Log 731: 10,040 kg in ~52 h including a gap. Was that a stop?)
+  - Guess: 150–230 kg/h, a bit faster on D1. Seeded per spec as `LineRate`s.
+  - Update: `db/seeds.rb` rates, plus the real rates entered on each spec page.
+- [ ] **Q3. Typical changeover times? Do they depend on what changes (micron, width, silicone)?**
+  - Guess: a flat 60 min on D1 and 90 min on D2 (`lines.default_changeover_minutes`). There's no spec-to-spec matrix until Phase 3.
+  - Update: line settings and seeds. Bring the changeover matrix forward if it varies a lot.
+- [ ] **Q4. A sample delivery note and the current reel/pallet labels.**
+  - Guess: nothing yet. Needed by Slice 8 (delivery note PDF) and Phase 2 (labels).
+- [ ] **Q5. Is "Virgin Co‑Ex" the shared capping polymer? One shared hopper, or split into each line?**
+  - Guess: yes, Co‑Ex is the capping layer, fed from one shared hopper. Seeded as the "Capping polymer" category.
+  - Update: §4 allocation design (Slice 7c) if each line has its own hopper.
+- [ ] **Q6. What % of each stream (Co‑Ex / Main‑Ex / PCW / Regrind) goes into a typical spec? Do recipes vary by spec?**
+  - Guess: none yet. `SpecIngredient` recipes are deferred until we know, and Slice 7c needs them.
+- [ ] **Q7. How is regrind made and labelled today? Is it weighed into bags?**
+  - Guess: edge trim is reground into weighed bags with our own lot codes. Seeded as the in-house material "Regrind chip".
+  - Update: Slice 6/7c lot handling for regrind.
+- [ ] **Q8. Who uses it: office only at first, or operators too? How many users?**
+  - Guess: office and floor from the start, about 10 users, with roles admin/office/floor.
+- [ ] **Q9. Does he need recycled-content % reporting (Plastic Packaging Tax / customer certificates)?**
+  - Guess: yes, later (Phase 3 reports). Nothing to build yet.
+- [ ] **Q10. Is the second line "D2"? Do both lines use the same forms?**
+  - Guess: yes, D1 and D2, and both use forms 5.4.1.1 and 5.4.1.2.
+  - Update: line names in seeds or on the Lines screen.
+
+### Slice 2 (sales orders) assumptions
+- [ ] **Q11. How are our order numbers written?** Guess: `SO-00001`, then `SO-00002` and so on. The customer's own PO ref (e.g. `M15159`) is stored separately. Update: `SalesOrder.next_number`.
+- [ ] **Q12. Is the required date per order or per line?** Guess: per order. If one order can have lines due on different dates, move `required_on` onto `sales_order_lines`.
+- [ ] **Q13. Is the order quantity exact, or is ± some % acceptable?** Guess: a target in kg with no tolerance stored. Update: add `tolerance_bp` to lines if over- or under-runs are agreed per order.
+- [ ] **Q14. Can one customer PO cover several specs?** Guess: yes, one order with several lines (one spec per line).

@@ -1,3 +1,10 @@
 <% content_for :title, "Edit #{@product_spec}" %>
 <%= render "master_data/header", title: "Edit spec #{@product_spec}" %>
+<% if @product_spec.used? %>
+  <p class="mb-6 max-w-4xl rounded-md border border-lemon-400 bg-lemon-100 px-4 py-3 text-ink-900">
+    <strong><%= @product_spec %></strong> is on <%= pluralize(@product_spec.sales_order_lines.count, "order line") %>, so it can't change.
+    Saving creates <strong>revision <%= @product_spec.next_revision %></strong>. Existing orders keep revision <%= @product_spec.revision %>.
+    (Ticking or unticking <em>Active</em> on its own doesn't create a revision.)
+  </p>
+<% end %>
 <%= render "form", product_spec: @product_spec %>

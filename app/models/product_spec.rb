@@ -12,6 +12,7 @@ class ProductSpec < ApplicationRecord
   belongs_to :customer, optional: true
   has_many :line_rates, dependent: :destroy
   has_many :lines, through: :line_rates
+  has_many :sales_order_lines, dependent: :restrict_with_error
 
   enum :material_type, { clear: "clear", laminated: "laminated" }, default: :clear, validate: true
   enum :silicone, { none: "none", underside: "underside", reverse: "reverse", both: "both" },
@@ -69,6 +70,20 @@ class ProductSpec < ApplicationRecord
   end
 
   # Rates on deactivated lines are not copied.
+  # A spec is "used" once an order references it. Used specs are immutable:
+  # edits create the next revision instead (see ProductSpec::Revision).
+  def used?
+    persisted? && sales_order_lines.exists?
+  end
+
+  def revisions
+    self.class.where(code: code).order(:revision)
+  end
+
+  def next_revision
+    self.class.where(code: code).maximum(:revision).to_i + 1
+  end
+
   def copy_line_rates_from(source)
     source.line_rates.joins(:line).merge(Line.active).each do |rate|
       line_rates.create!(line_id: rate.line_id, kg_per_hour: rate.kg_per_hour)
