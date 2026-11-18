@@ -25,6 +25,12 @@ Rails.application.routes.draw do
     resources :lines, controller: "sales_order_lines", only: %i[ create edit update destroy ]
   end
 
+  get "planner" => "planner#show", as: :planner
+  get "planner/print" => "planner#print", as: :planner_print
+  resources :schedule_blocks, path: "planner/blocks", only: %i[ create edit update destroy ] do
+    patch :move, on: :member
+  end
+
   get "floor" => "floor#show", as: :floor_root
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

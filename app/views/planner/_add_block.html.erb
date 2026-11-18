@@ -1,0 +1,49 @@
+<section class="card p-5" aria-labelledby="add-block-heading">
+  <h2 id="add-block-heading" class="section-title">Add a block</h2>
+  <%= form_with url: schedule_blocks_path, class: "mt-4 space-y-4 lock-fields" do |form| %>
+    <%= hidden_field_tag :line_id, @line.id, id: nil %>
+    <%= hidden_field_tag :week, @week_start.iso8601, id: nil %>
+
+    <fieldset>
+      <legend class="field-label">What</legend>
+      <div class="flex flex-wrap gap-2">
+        <% ScheduleBlocksController::BLOCK_KINDS.each_with_index do |kind, index| %>
+          <label class="choice">
+            <%= radio_button_tag :kind, kind, index.zero?, class: "size-5" %>
+            <span><%= PlannerHelper::KIND_LABELS.fetch(kind) %></span>
+          </label>
+        <% end %>
+      </div>
+    </fieldset>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <%= label_tag :block_duration_hours, "Hours", class: "field-label" %>
+        <%= number_field_tag :duration_hours, hours_value(Schedule.round_up_to_slot(@line.default_changeover_minutes.nonzero? || 60)), id: "block_duration_hours", min: 0.5, step: 0.5, required: true, class: "field-input" %>
+      </div>
+      <div>
+        <%= label_tag :block_position, "Where", class: "field-label" %>
+        <%= select_tag :position, options_for_select([ [ "At the end", "" ] ] + @blocks.reject(&:locked?).map { [ "Before #{_1.position}. #{block_title(_1)}", _1.position ] }),
+              id: "block_position", class: "field-input" %>
+      </div>
+    </div>
+
+    <label class="flex min-h-12 cursor-pointer items-center gap-3">
+      <%= check_box_tag :locked, "1", false, id: "block_locked", class: "size-5" %>
+      <span class="font-semibold">Fix at a time</span>
+      <span class="text-sm text-ink-600">e.g. a booked engineer visit. It won't move.</span>
+    </label>
+    <div class="js-lock-time">
+      <%= label_tag :block_starts_at, "Starts", class: "field-label" %>
+      <%= datetime_field_tag :starts_at, datetime_local_value(default_queue_start), id: "block_starts_at", step: 1800, class: "field-input" %>
+    </div>
+
+    <div>
+      <%= label_tag :block_notes, "Notes", class: "field-label" %>
+      <%= text_field_tag :notes, nil, id: "block_notes", class: "field-input", placeholder: "e.g. Screw inspection" %>
+    </div>
+
+    <%= render "planner/queue_start_field", prefix: "block" %>
+    <%= form.submit "Add to line #{@line.name}", class: "btn btn-primary w-full" %>
+  <% end %>
+</section>

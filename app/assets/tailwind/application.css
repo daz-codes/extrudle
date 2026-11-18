@@ -308,3 +308,92 @@
     display: none;
   }
 }
+
+/* Planner timeline (PLAN.md §3): one row per day, one column per 30-minute slot. */
+@layer components {
+  .timeline-row {
+    @apply grid items-center border-t border-ink-100 py-1 first:border-t-0;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+  }
+  .timeline-track {
+    @apply relative grid gap-0;
+    grid-template-columns: repeat(var(--slots), minmax(0, 1fr));
+  }
+  /* A faint line every hour, a stronger one every 6 hours. */
+  .timeline-grid {
+    @apply rounded-md bg-ink-50;
+    background-image:
+      linear-gradient(to right, var(--color-ink-200) 1px, transparent 1px),
+      linear-gradient(to right, var(--color-ink-100) 1px, transparent 1px);
+    background-size: calc(100% / var(--slots) * 12) 100%, calc(100% / var(--slots) * 2) 100%;
+  }
+  .timeline-today .timeline-grid {
+    @apply bg-lime-50;
+  }
+  .timeline-block {
+    @apply relative z-10 mx-px flex min-w-0 flex-col justify-center overflow-hidden rounded-md px-1.5 py-1 text-[0.7rem] leading-tight transition hover:brightness-95 focus-visible:z-20;
+    grid-row: 1;
+  }
+  .timeline-warning {
+    @apply absolute top-1 right-1 size-2 rounded-full bg-bad-600 ring-2 ring-white;
+  }
+  .timeline-now {
+    @apply pointer-events-none absolute inset-y-[-4px] z-20 w-0.5 -translate-x-1/2 bg-ink-900;
+  }
+  .timeline-now::before {
+    content: "";
+    @apply absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-lime-300 ring-2 ring-ink-900;
+  }
+  .block-hatched {
+    background-image: repeating-linear-gradient(135deg, rgb(24 24 27 / 0.07) 0 5px, transparent 5px 10px);
+  }
+
+  /* "Fix at a time" reveals the start time, without JavaScript. */
+  .lock-fields:not(:has(input[name="locked"]:checked)) .js-lock-time {
+    display: none;
+  }
+}
+
+/* Printed plan: landscape A4, recognisable as paper form 5.4.1.1. */
+@layer components {
+  .print-table th {
+    @apply border-b-2 border-ink-900 px-2 py-1.5 align-bottom font-mono text-[0.7rem] font-semibold tracking-wide uppercase;
+  }
+  .print-table td {
+    @apply border-b border-ink-300 px-2 py-1.5 align-top;
+  }
+  .print-urgent td {
+    background: var(--color-lemon-200);
+  }
+  .print-late td:first-child {
+    box-shadow: inset 4px 0 0 var(--color-bad-600);
+  }
+  .print-other td {
+    @apply bg-ink-100 italic;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  .print-toolbar {
+    display: none;
+  }
+  .print-sheet {
+    padding: 0;
+    break-after: page;
+  }
+  .print-sheet:last-child {
+    break-after: auto;
+  }
+  .print-table tr {
+    break-inside: avoid;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
