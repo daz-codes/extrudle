@@ -25,6 +25,12 @@ module Schedule
     time.to_i % SLOT_SECONDS == 0
   end
 
+  # 90 => "1h 30m", 30 => "30m", 0 => "0m"
+  def duration_text(minutes)
+    hours, mins = minutes.divmod(60)
+    [ ("#{hours}h" if hours.positive?), ("#{mins}m" if mins.positive?) ].compact.join(" ").presence || "0m"
+  end
+
   # Minutes to make planned_g at kg_per_hour, rounded up to whole slots.
   # Integer maths only: grams × 60 ÷ (grams per hour), rounded up.
   def job_minutes(planned_g, kg_per_hour)

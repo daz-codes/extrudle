@@ -19,4 +19,11 @@ class ScheduleTest < ActiveSupport::TestCase
     assert_equal 90, Schedule.job_minutes(190_001, 190)        # one gram over
     assert_equal 30, Schedule.job_minutes(1, 190)              # never less than a slot
   end
+
+  test "duration text" do
+    assert_equal "1h 30m", Schedule.duration_text(90)
+    assert_equal "30m", Schedule.duration_text(30)
+    assert_equal "2h", Schedule.duration_text(120)
+    assert_equal "0m", Schedule.duration_text(0)
+  end
 end

@@ -1,6 +1,9 @@
 require "test_helper"
 
 class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
+  # Find icon buttons (▲ ▼ ✕) by their accessible names.
+  Capybara.enable_aria_label = true
+
   # Chrome's password-manager and breached-password popups steal clicks after sign-in.
   driven_by :selenium, using: :headless_chrome, screen_size: [ 1400, 1000 ] do |options|
     options.add_preference("credentials_enable_service", false)

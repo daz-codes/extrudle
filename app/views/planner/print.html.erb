@@ -1,0 +1,80 @@
+<% content_for :title, "Production plan" %>
+
+<div class="print-toolbar flex flex-wrap items-center justify-between gap-3 border-b border-ink-200 px-6 py-3">
+  <%= link_to "← Back to planner", planner_path, class: "link text-sm" %>
+  <button type="button" class="btn btn-primary" onclick="window.print()">Print</button>
+</div>
+
+<% @plans.each do |line, plan| %>
+  <section class="print-sheet px-6 py-6">
+    <header class="mb-4 flex flex-wrap items-end justify-between gap-4 border-b-2 border-ink-900 pb-3">
+      <div>
+        <p class="eyebrow">Form 5.4.1.1 · Extrusion Production Plan</p>
+        <h1 class="text-2xl font-bold">Machine <%= line.machine_no.presence || line.name %> · Line <%= line.name %></h1>
+      </div>
+      <p class="font-mono text-sm">Printed <%= l(Time.current, format: "%a %-d %b %Y %H:%M") %></p>
+    </header>
+
+    <table class="print-table w-full text-left text-[0.8rem]">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Start – finish</th>
+          <th>Customer &amp; order no.</th>
+          <th class="text-right">Quantity</th>
+          <th class="text-right">Micron</th>
+          <th class="text-right">Width</th>
+          <th>PE</th>
+          <th>Silicone</th>
+          <th>Antiblock</th>
+          <th>Reel size</th>
+          <th>Additional info &amp; packaging</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% plan[:blocks].each_with_index do |block, index| %>
+          <% warnings = plan[:warnings][block] || [] %>
+          <% late = warnings.any? { _1.code == :late } %>
+          <% if block.job? %>
+            <% order, spec = block.sales_order, block.product_spec %>
+            <tr class="<%= "print-urgent" if order.urgent? %> <%= "print-late" if late %>">
+              <td><%= index + 1 %></td>
+              <td class="whitespace-nowrap"><%= plan_range(block) %></td>
+              <td>
+                <strong><%= order.customer.name %></strong> · <%= order.number %><%= " · PO #{order.customer_po_ref}" if order.customer_po_ref %>
+                <div>
+                  <%= [ ("Part #{spec.customer_part_no}" if spec.customer_part_no.present?), ("Tool #{spec.customer_tool_no}" if spec.customer_tool_no.present?),
+                        ("Product #{spec.customer_product_code}" if spec.customer_product_code.present?) ].compact.join(" · ") %>
+                </div>
+                <div>Required <%= l(order.required_on, format: "%-d/%m") %><%= " · URGENT" if order.urgent? %><%= " · LATE" if late %></div>
+              </td>
+              <td class="text-right whitespace-nowrap"><%= kg(block.planned_g) %></td>
+              <td class="text-right font-semibold"><%= spec.paper_gauge %></td>
+              <td class="text-right font-semibold"><%= spec.width_mm %></td>
+              <td><%= yes_no(spec.pe) %></td>
+              <td><%= silicone_summary(spec) %></td>
+              <td><%= yes_no(spec.antiblock) %></td>
+              <td><%= reel_size_summary(spec) %></td>
+              <td>
+                <%= spec.core_inches %>" core, <%= spec.core_orientation %>. <%= spec.pallet_type.humanize %> pallet<%= ", #{spec.reels_per_pallet}/pallet" if spec.reels_per_pallet %>.
+                <%= "Label inside core." if spec.label_inside_core %> <%= spec.packaging_notes %>
+                <% if block.notes.present? %><div><em><%= block.notes %></em></div><% end %>
+              </td>
+            </tr>
+          <% else %>
+            <tr class="print-other">
+              <td><%= index + 1 %></td>
+              <td class="whitespace-nowrap"><%= plan_range(block) %></td>
+              <td colspan="9">
+                <strong><%= block_title(block) %></strong> · <%= duration_text(block.duration_minutes) %><%= " · fixed time" if block.locked? %><%= " · #{block.notes}" if block.notes.present? %>
+              </td>
+            </tr>
+          <% end %>
+        <% end %>
+        <% if plan[:blocks].empty? %>
+          <tr><td colspan="11" class="py-6 text-center">Nothing planned.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+<% end %>

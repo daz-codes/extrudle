@@ -1,0 +1,80 @@
+<section class="card overflow-x-auto p-4" aria-labelledby="timeline-heading">
+  <div class="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+    <h2 id="timeline-heading" class="section-title">Line <%= @line.name %> this week</h2>
+    <ul class="flex flex-wrap gap-3 text-xs text-ink-600" aria-label="Key">
+      <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-lime-200"></span>Job</li>
+      <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-lemon-300"></span>Urgent job</li>
+      <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm ring-2 ring-bad-600"></span>Late</li>
+      <li class="flex items-center gap-1.5"><span class="block-hatched size-3 rounded-sm bg-ink-200"></span>Changeover</li>
+      <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-ink-800"></span>Maintenance</li>
+      <li class="flex items-center gap-1.5"><%= lock_icon %>Locked</li>
+    </ul>
+  </div>
+
+  <div class="min-w-[60rem]">
+    <% first_day = @timeline.days.first %>
+    <div class="timeline-row text-ink-500" style="--slots: <%= first_day.slots %>" aria-hidden="true">
+      <div></div>
+      <div class="timeline-track h-6">
+        <% first_day.hours.each_slice(2).map(&:first).each do |slot, time| %>
+          <span class="font-mono text-[0.7rem]" style="grid-column: <%= slot %> / span 4"><%= time.strftime("%H:%M") %></span>
+        <% end %>
+      </div>
+    </div>
+
+    <% @timeline.days.each do |day| %>
+      <div class="timeline-row <%= "timeline-today" if day.today? %>" style="--slots: <%= day.slots %>">
+        <div class="pr-3 text-sm leading-tight">
+          <span class="font-semibold text-ink-900"><%= l(day.date, format: "%a") %></span>
+          <span class="font-mono text-ink-500"><%= l(day.date, format: "%-d %b") %></span>
+        </div>
+        <div class="timeline-track timeline-grid h-14">
+          <% day.segments.each do |segment| %>
+            <% block = segment.block %>
+            <% warnings = @warnings[block] || [] %>
+            <%= link_to edit_schedule_block_path(block, week: @week_start.iso8601),
+                  class: "timeline-block #{block_classes(block, warnings)} #{"rounded-l-none" if segment.continues_before} #{"rounded-r-none" if segment.continues_after}",
+                  style: "grid-column: #{segment.from_slot} / #{segment.to_slot}",
+                  title: "#{block_title(block)}\n#{plan_range(block)} (#{duration_text(block.duration_minutes)})#{"\n" + warnings.map(&:message).join("\n") if warnings.any?}",
+                  data: { turbo_frame: "_top" } do %>
+              <% if segment.span >= 3 || block.locked? %>
+                <span class="flex items-center gap-1 truncate font-semibold">
+                  <%= lock_icon if block.locked? %>
+                  <% if block.job? && block.sales_order.urgent? && segment.span >= 6 %><span class="rounded-sm bg-ink-900 px-1 text-[0.6rem] tracking-wide text-lemon-300 uppercase">Urgent</span><% end %>
+                  <% if segment.span >= 3 %><%= block_title(block) %><% end %>
+                </span>
+              <% end %>
+              <% if segment.span >= 4 %><span class="truncate opacity-75"><%= block_subtitle(block) %></span><% end %>
+              <span class="sr-only"><%= block_title(block) %>, <%= plan_range(block) %></span>
+              <% if warnings.any? %><span class="timeline-warning" aria-label="<%= pluralize(warnings.size, "warning") %>"></span><% end %>
+            <% end %>
+          <% end %>
+          <% if (now = day.now_percent) %>
+            <span class="timeline-now" style="left: <%= now %>%" aria-label="Now"></span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Warnings in full, readable on a touch screen without hovering (short blocks only show a dot). %>
+  <% flagged = @timeline.days.flat_map(&:segments).map(&:block).uniq.select { (@warnings[_1] || []).any? } %>
+  <% if flagged.any? %>
+    <div class="mt-4 border-t border-ink-200 pt-3">
+      <h3 class="eyebrow mb-2">Warnings this week</h3>
+      <ul class="space-y-1">
+        <% flagged.each do |block| %>
+          <li>
+            <%= link_to edit_schedule_block_path(block, week: @week_start.iso8601), class: "flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 rounded-[11px] px-2 py-1 hover:bg-lemon-50 active:bg-lemon-100", data: { turbo_frame: "_top" } do %>
+              <span class="font-semibold text-ink-900"><%= block_title(block) %></span>
+              <span class="font-mono text-sm text-ink-600 tabular-nums"><%= plan_range(block) %></span>
+              <% @warnings[block].each do |warning| %>
+                <span class="text-sm"><span class="badge <%= warning.code == :late ? "bg-bad-50 text-bad-700" : "badge-lemon" %> mr-1"><%= warning.code.to_s.humanize %></span><%= warning.message %></span>
+              <% end %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</section>

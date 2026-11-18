@@ -1,0 +1,85 @@
+<% block = @block %>
+<% content_for :title, "Edit #{block_title(block)}" %>
+<% week = Schedule::Timeline.week_start_for(block.starts_at.to_date) %>
+<% order_locked = block.job? && !block.sales_order.editable? %>
+
+<p class="mb-2"><%= link_to "← Back to line #{@line.name}", planner_path_for(@line, week), class: "link text-sm" %></p>
+<div class="mb-6 flex flex-wrap items-center gap-3">
+  <h1 class="page-title"><%= block_title(block) %></h1>
+  <% if block.locked? %><span class="badge badge-quiet gap-1"><%= lock_icon %>Locked</span><% end %>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+  <%= form_with url: schedule_block_path(block), method: :patch, class: "card space-y-5 p-6 lock-fields" do |form| %>
+    <%= hidden_field_tag :week, week.iso8601, id: nil %>
+
+    <% if block.job? %>
+      <div class="max-w-xs">
+        <%= label_tag :planned_kg, "Planned weight", class: "field-label" %>
+        <div class="field-group">
+          <%= text_field_tag :planned_kg, DecimalInput.from_scaled_integer(block.planned_g, Weight::GRAMS_PER_KG), inputmode: "decimal", class: "field-input", disabled: order_locked %>
+          <span class="field-suffix">kg</span>
+        </div>
+        <p class="field-hint"><%= kg(block.sales_order_line.quantity_g) %> ordered. The time comes from the line rate.</p>
+      </div>
+    <% end %>
+
+    <% if !block.job? || !block.line_rate %>
+      <div class="max-w-xs">
+        <%= label_tag :duration_hours, "Hours", class: "field-label" %>
+        <%= number_field_tag :duration_hours, hours_value(block.duration_minutes), min: 0.5, step: 0.5, class: "field-input", disabled: order_locked || block.automatic? %>
+        <p class="field-hint"><%= block.job? ? "No rate on #{@line.name}, so this is an estimate." : "In steps of half an hour." %></p>
+      </div>
+    <% end %>
+
+    <% unless block.automatic? %>
+      <%= hidden_field_tag :locked, "0", id: nil, disabled: order_locked %>
+      <label class="flex min-h-12 cursor-pointer items-center gap-3">
+        <%= check_box_tag :locked, "1", block.locked?, class: "size-5", disabled: order_locked %>
+        <span class="font-semibold">Fix at a time</span>
+        <span class="text-sm text-ink-600">Locked blocks never move; the queue flows round them.</span>
+      </label>
+      <div class="js-lock-time max-w-xs">
+        <%= label_tag :starts_at, "Starts", class: "field-label" %>
+        <%= datetime_field_tag :starts_at, datetime_local_value(block.starts_at), step: 1800, class: "field-input", disabled: order_locked %>
+      </div>
+    <% end %>
+
+    <div>
+      <%= label_tag :notes, "Notes", class: "field-label" %>
+      <%= text_area_tag :notes, block.notes, rows: 3, class: "field-input py-2", disabled: order_locked %>
+    </div>
+
+    <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
+      <%= form.submit "Save", class: "btn btn-primary" unless order_locked %>
+      <%= link_to "Cancel", planner_path_for(@line, week), class: "btn btn-secondary" %>
+    </div>
+  <% end %>
+
+  <aside class="space-y-4">
+    <section class="card p-5">
+      <h2 class="eyebrow">When</h2>
+      <p class="mt-2 font-semibold"><%= plan_range(block) %></p>
+      <p class="font-mono text-sm text-ink-600"><%= duration_text(block.duration_minutes) %> on line <%= @line.name %></p>
+      <% if block.job? %>
+        <h2 class="eyebrow mt-4">Order</h2>
+        <p class="mt-2"><%= link_to block.sales_order.number, block.sales_order, class: "link font-semibold" %> · <%= block.sales_order.customer.name %></p>
+        <p class="text-sm text-ink-600">Required <%= l(block.sales_order.required_on, format: "%a %-d %b") %> · <%= link_to block.product_spec.to_s, block.product_spec, class: "link" %></p>
+      <% end %>
+    </section>
+    <% if @warnings.any? %>
+      <section class="card space-y-2 p-5">
+        <h2 class="eyebrow">Warnings</h2>
+        <% @warnings.each do |warning| %>
+          <p class="text-sm"><span class="badge <%= warning.code == :late ? "bg-bad-50 text-bad-700" : "badge-lemon" %> mr-1"><%= warning.code.to_s.humanize %></span><%= warning.message %></p>
+        <% end %>
+      </section>
+    <% end %>
+    <% if order_locked %>
+      <p class="rounded-[11px] border border-lemon-400 bg-lemon-100 p-4 text-sm">Order <%= block.sales_order.number %> is <%= block.sales_order.status.humanize.downcase %>, so this job can't change.</p>
+    <% elsif !block.automatic? %>
+      <%= button_to "Remove from plan", schedule_block_path(block, week: week.iso8601), method: :delete, class: "btn btn-danger w-full",
+            form: { data: { turbo_confirm: "Remove #{block_title(block)} from line #{@line.name}?" } } %>
+    <% end %>
+  </aside>
+</div>

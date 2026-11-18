@@ -33,6 +33,8 @@ class Schedule::Editor
     order = order_line.sales_order
     ensure_order_editable!(order)
 
+    raise Schedule::Error, "Planned weight must be more than 0" if planned_g && !planned_g.positive?
+
     order_line.schedule_blocks.reset
     planned_g ||= order_line.unplanned_g
     raise Schedule::Error, "#{order.number} #{order_line.product_spec} is already fully planned" unless planned_g.positive?
@@ -49,6 +51,8 @@ class Schedule::Editor
   def add(block, position: nil, starts_at: nil)
     block.line = line
     raise Schedule::Error, "A locked block needs a start time" if block.locked? && block.starts_at.blank?
+
+    block.starts_at = Schedule.snap_up(block.starts_at) if block.locked? # same as lock: snap to the next slot
     validate_position!(position) if position
     edit(starts_at: starts_at) do |blocks|
       block.queue_key = position ? queue_key_before(blocks, position) : queue_end(blocks) unless block.locked?
@@ -84,42 +88,39 @@ class Schedule::Editor
 
   # New duration for a non-job block, or a manual estimate for a job with no rate.
   def resize(block, duration_minutes)
-    edit do |blocks|
-      block = find(blocks, block)
-      ensure_order_editable!(block.sales_order) if block.job?
-      raise Schedule::Error, "#{block} takes as long as the line rate says. Change the planned weight instead." if block.job? && block.line_rate
-
-      block.duration_minutes = duration_minutes
-    end
+    update(block, duration_minutes: duration_minutes)
   end
 
   def replan(job, planned_g)
-    edit do |blocks|
-      job = find(blocks, job)
-      ensure_order_editable!(job.sales_order)
-      job.planned_g = planned_g
-    end
+    update(job, planned_g: planned_g)
   end
 
   def lock(block, starts_at: nil)
-    edit do |blocks|
-      block = find(blocks, block)
-      block.locked = true
-      block.starts_at = Schedule.snap_up(starts_at) if starts_at
-    end
+    update(block, locked: true, starts_at: starts_at)
   end
 
   # Returns a locked block to the queue at the point in time it already sits,
   # so it doesn't move. If it's before the queue's start, the queue starts there.
   def unlock(block)
+    update(block, locked: false)
+  end
+
+  # Applies any mix of changes to one block in a single edit (one reflow).
+  # Only the keywords given are changed:
+  #
+  #   editor.update(job, planned_g: 2_000_000, locked: true, starts_at: time, notes: "Trial")
+  def update(block, **changes)
+    unknown = changes.keys - %i[ planned_g duration_minutes locked starts_at notes ]
+    raise ArgumentError, "unknown changes: #{unknown.join(", ")}" if unknown.any?
+
     edit do |blocks|
       block = find(blocks, block)
-      next unless block.locked?
+      ensure_order_editable!(block.sales_order) if block.job?
 
-      later = flowing(blocks).detect { _1.starts_at && _1.starts_at >= block.starts_at }
-      block.locked = false
-      block.queue_key = later ? later.queue_key - BigDecimal("0.5") : queue_end(blocks)
-      @anchor = block.starts_at if @anchor.nil? || block.starts_at < @anchor
+      apply_planned_g(block, changes[:planned_g]) if changes.key?(:planned_g)
+      apply_duration(block, changes[:duration_minutes]) if changes.key?(:duration_minutes)
+      apply_lock(blocks, block, changes[:locked], changes[:starts_at]) if changes.key?(:locked) || changes.key?(:starts_at)
+      block.notes = changes[:notes].presence if changes.key?(:notes)
     end
   end
 
@@ -172,8 +173,11 @@ class Schedule::Editor
         Schedule::Reflow.new(line, blocks: blocks, starts_at: @anchor).call
         refresh_orders(blocks)
       end
-    rescue ActiveRecord::RecordInvalid => e
-      raise Schedule::Error, "#{e.record}: #{e.record.errors.full_messages.to_sentence}"
+    rescue StandardError => e
+      line.reload # the transaction rolled back; don't leave an unsaved queue start in memory
+      raise Schedule::Error, "#{e.record}: #{e.record.errors.full_messages.to_sentence}" if e.is_a?(ActiveRecord::RecordInvalid)
+
+      raise
     end
 
     # The stored start, falling back to the earliest unlocked block for lines planned before it was stored.
@@ -183,6 +187,40 @@ class Schedule::Editor
 
     def load_blocks
       line.schedule_blocks.includes(sales_order_line: [ :sales_order, { product_spec: :line_rates } ]).to_a
+    end
+
+    def apply_planned_g(block, planned_g)
+      return if planned_g == block.planned_g
+      raise Schedule::Error, "Only jobs have a planned weight" unless block.job?
+      raise Schedule::Error, "Planned weight must be more than 0" unless planned_g.to_i.positive?
+
+      block.planned_g = planned_g
+    end
+
+    def apply_duration(block, minutes)
+      return if minutes == block.duration_minutes
+      raise Schedule::Error, AUTOMATIC_MESSAGE if block.automatic?
+      raise Schedule::Error, "#{block} takes as long as the line rate says. Change the planned weight instead." if block.job? && block.line_rate
+
+      block.duration_minutes = minutes
+    end
+
+    # locked: true pins the block (at starts_at, snapped, or where it is now).
+    # locked: false returns it to the queue where it sits in time.
+    # starts_at alone moves an already locked block.
+    def apply_lock(blocks, block, locked, starts_at)
+      locked = block.locked? if locked.nil?
+      raise Schedule::Error, AUTOMATIC_MESSAGE if block.automatic? && locked
+
+      if locked
+        block.locked = true
+        block.starts_at = Schedule.snap_up(starts_at) if starts_at
+      elsif block.locked?
+        later = flowing(blocks).detect { _1.starts_at && _1.starts_at >= block.starts_at }
+        block.locked = false
+        block.queue_key = later ? later.queue_key - BigDecimal("0.5") : queue_end(blocks)
+        @anchor = block.starts_at if @anchor.nil? || block.starts_at < @anchor
+      end
     end
 
     def find(blocks, block)

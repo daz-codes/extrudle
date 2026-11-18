@@ -1,0 +1,71 @@
+<section class="card overflow-x-auto" aria-labelledby="queue-heading">
+  <div class="flex flex-wrap items-baseline justify-between gap-3 px-5 pt-5">
+    <h2 id="queue-heading" class="section-title">Queue for line <%= @line.name %></h2>
+    <% if @line.queue_starts_at %>
+      <p class="font-mono text-sm text-ink-600">Starts <%= plan_time(@line.queue_starts_at) %></p>
+    <% end %>
+  </div>
+
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">#</th>
+        <th scope="col" class="px-4 py-3">When</th>
+        <th scope="col" class="px-4 py-3">Block</th>
+        <th scope="col" class="px-4 py-3 text-right">Time</th>
+        <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% movable = @blocks.reject { _1.locked? || _1.automatic? } %>
+      <% @blocks.each do |block| %>
+        <% warnings = @warnings[block] || [] %>
+        <tr id="<%= dom_id(block) %>" class="align-top <%= "bg-lemon-50" if block.job? && block.sales_order.urgent? %>">
+          <td class="px-4 py-3 font-mono text-ink-500 tabular-nums"><%= block.position %></td>
+          <td class="px-4 py-3 text-sm tabular-nums">
+            <div class="whitespace-nowrap"><%= plan_time(block.starts_at) %></div>
+            <div class="whitespace-nowrap text-ink-500">→ <%= plan_finish(block) %></div>
+            <% if block.locked? %><div class="mt-1"><span class="badge badge-quiet gap-1"><%= lock_icon %>Locked</span></div><% end %>
+          </td>
+          <td class="px-4 py-3">
+            <div class="font-semibold text-ink-900">
+              <% if block.job? %>
+                <%= link_to block.sales_order.number, block.sales_order, class: "link" %> · <%= link_to block.product_spec.to_s, block.product_spec, class: "link" %>
+                <% if block.sales_order.urgent? %><span class="badge badge-lemon ml-1">Urgent</span><% end %>
+              <% else %>
+                <%= block_title(block) %>
+              <% end %>
+            </div>
+            <% if (subtitle = block_subtitle(block)) %><div class="text-sm text-ink-600"><%= subtitle %></div><% end %>
+            <% if block.job? %>
+              <div class="text-sm text-ink-500"><%= block.product_spec.paper_gauge %> × <%= block.product_spec.width_mm %> mm · required <%= l(block.sales_order.required_on, format: "%a %-d %b") %></div>
+            <% end %>
+            <% warnings.each do |warning| %>
+              <p class="mt-1 text-sm font-medium <%= warning.code == :late ? "text-bad-700" : "text-ink-800" %>">
+                <span class="badge <%= warning.code == :late ? "bg-bad-50 text-bad-700" : "badge-lemon" %> mr-1"><%= warning.code.to_s.humanize %></span><%= warning.message %>
+              </p>
+            <% end %>
+          </td>
+          <td class="px-4 py-3 text-right font-mono text-sm tabular-nums whitespace-nowrap"><%= duration_text(block.duration_minutes) %></td>
+          <td class="px-4 py-3">
+            <div class="grid w-[6.5rem] grid-cols-2 gap-1.5 sm:w-auto sm:flex sm:justify-end">
+              <% if movable.include?(block) %>
+                <%= button_to "▲", move_schedule_block_path(block, direction: "up", week: @week_start.iso8601), method: :patch,
+                      class: "btn btn-secondary px-3", disabled: movable.first == block, aria: { label: "Move #{block_title(block)} earlier" } %>
+                <%= button_to "▼", move_schedule_block_path(block, direction: "down", week: @week_start.iso8601), method: :patch,
+                      class: "btn btn-secondary px-3", disabled: movable.last == block, aria: { label: "Move #{block_title(block)} later" } %>
+              <% end %>
+              <% unless block.automatic? %>
+                <%= link_to "Edit", edit_schedule_block_path(block, week: @week_start.iso8601), class: "btn btn-secondary px-3",
+                      data: { turbo_frame: "_top" }, aria: { label: "Edit #{block_title(block)}" } %>
+                <%= button_to "✕", schedule_block_path(block, week: @week_start.iso8601), method: :delete, class: "btn btn-secondary px-3",
+                      form: { data: { turbo_confirm: "Remove #{block_title(block)} from line #{@line.name}?" } }, aria: { label: "Remove #{block_title(block)}" } %>
+              <% end %>
+            </div>
+          </td>
+        </tr>
+      <% end %>
+      <% if @blocks.empty? %><%= render "master_data/empty", message: "Nothing planned on line #{@line.name} yet. Add a job from the list.", colspan: 5 %><% end %>
+    </tbody>
+  </table>
+</section>

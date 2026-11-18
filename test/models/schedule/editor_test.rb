@@ -329,4 +329,31 @@ class Schedule::EditorTest < ActiveSupport::TestCase
     assert_equal 190, rate.reload.kg_per_hour
     assert_equal at("2026-11-17 10:00"), job.reload.ends_at
   end
+
+  test "update applies several changes in one reflow" do
+    job = @editor.add_job(@order_line, planned_g: 190_000)
+    reflows = 0
+    counter = Module.new { define_method(:call) { reflows += 1; super() } }
+    Schedule::Reflow.prepend(counter)
+
+    @editor.update(job, planned_g: 380_000, locked: true, starts_at: at("2026-11-17 08:10"), notes: "Trial")
+    assert_equal 1, reflows
+    job.reload
+    assert_equal [ 380_000, true, at("2026-11-17 08:30"), "Trial" ], [ job.planned_g, job.locked?, job.starts_at, job.notes ]
+  ensure
+    counter&.send(:remove_method, :call)
+  end
+
+  test "lock, unlock and notes are refused for orders in production" do
+    job = @editor.add_job(@order_line, planned_g: 190_000)
+    @order_line.sales_order.update_column(:status, "in_production")
+    assert_raises(Schedule::Error) { @editor.lock(job, starts_at: at("2026-11-17 08:00")) }
+    assert_raises(Schedule::Error) { @editor.update(job, notes: "x") }
+  end
+
+  test "a failed edit leaves the line's queue start as stored" do
+    @editor.add(block("no_orders", 60), starts_at: at(MONDAY_6AM))
+    assert_raises(Schedule::Error) { @editor.add(block("no_orders", 45), starts_at: at("2026-11-23 06:00")) }
+    assert_equal at(MONDAY_6AM), @d1.queue_starts_at
+  end
 end
