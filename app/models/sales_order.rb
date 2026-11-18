@@ -94,9 +94,23 @@ class SalesOrder < ApplicationRecord
     required_on.present? && required_on < today && ACTIVE_STATUSES.include?(status)
   end
 
+  # Cancelling takes the order's jobs off the planner too.
   def cancel!
     raise ArgumentError, "only open or scheduled orders can be cancelled" unless editable?
-    cancelled!
+
+    transaction do
+      Schedule::Editor.unschedule(self)
+      reload.cancelled!
+    end
+  end
+
+  # Moves between open and scheduled as the planner covers (or stops covering)
+  # every line. Later statuses are left alone.
+  def refresh_schedule_status!
+    return unless editable?
+
+    fully_planned = lines.reload.any? && lines.all?(&:fully_planned?)
+    update!(status: fully_planned ? "scheduled" : "open") if scheduled? != fully_planned
   end
 
   def reopen!
