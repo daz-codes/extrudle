@@ -1,11 +1,4 @@
 module ApplicationHelper
-  # Candidate designs for the preview switcher (see shared/_theme_switcher).
-  THEMES = { "highlighter" => "Highlighter", "swoosh" => "Swoosh", "lime" => "Lime" }.freeze
-
-  def current_theme
-    THEMES.key?(cookies[:theme]) ? cookies[:theme] : THEMES.keys.first
-  end
-
   # 1_250_500 g => "1,250.5 kg"
   def kg(grams, precision: 1)
     return "—" if grams.nil?

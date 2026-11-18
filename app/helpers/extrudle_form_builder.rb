@@ -52,7 +52,7 @@ class ExtrudleFormBuilder < ActionView::Helpers::FormBuilder
   def check_row(method, label: nil, hint: nil, wrapper: nil)
     @template.tag.div(class: wrapper) do
       @template.tag.label(class: "flex min-h-12 cursor-pointer items-center gap-3") do
-        check_box(method, class: "size-5 accent-primary-700") +
+        check_box(method, class: "size-5 accent-ink-900") +
           @template.tag.span(label || humanize(method), class: "font-semibold") +
           (hint ? @template.tag.span(hint, class: "text-sm text-ink-600") : "".html_safe)
       end + errors_for(method)
@@ -80,7 +80,7 @@ class ExtrudleFormBuilder < ActionView::Helpers::FormBuilder
 
     def radio_option(method, value, text)
       @template.tag.label(class: "choice") do
-        radio_button(method, value, class: "size-5 accent-primary-700") + @template.tag.span(text)
+        radio_button(method, value, class: "size-5 accent-ink-900") + @template.tag.span(text)
       end
     end
 

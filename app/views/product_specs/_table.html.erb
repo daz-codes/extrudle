@@ -26,7 +26,7 @@
           <% if spec.line_rates.any? %>
             <%= safe_join(spec.line_rates.sort_by { _1.line.position }.map { |rate| "#{rate.line.name} #{rate.kg_per_hour}" }, " · ") %>
           <% else %>
-            <span class="badge badge-mark">No rates</span>
+            <span class="badge badge-lemon">No rates</span>
           <% end %>
         </td>
         <td class="px-4 py-3"><%= status_badge(spec) %></td>
