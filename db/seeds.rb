@@ -125,7 +125,37 @@ end
   end
 end
 
+# --- Sales orders ------------------------------------------------------------
+# Required dates are relative to today so the order list always has overdue,
+# this-week and later orders to show.
+today = Date.current
+[
+  # [customer PO, customer, days from today, urgent, status, [[spec code, quantity kg], ...]]
+  [ "M15159", "Brightform Packaging Ltd", -2, true, "open", [ [ "BF-700-250", 10_000 ] ] ],
+  [ "P15745", "Brightform Packaging Ltd", 3, false, "open", [ [ "BF-650-300", 6_500 ], [ "BF-700-250", 4_000 ] ] ],
+  [ "CT-88213", "Castleton Thermoforming", 5, false, "open", [ [ "CT-820-400", 12_000 ] ] ],
+  [ "DBS-4410", "Delta Blister Solutions", 1, true, "open", [ [ "DB-560-200", 3_200 ] ] ],
+  [ "FMT-0921", "Fenwick Medical Trays", 9, false, "open", [ [ "FM-600-350", 8_000 ] ] ],
+  [ "GP-7781", "Greenway Punnets", 12, false, "open", [ [ "GP-750-275", 15_000 ] ] ],
+  [ "KFP-3302", "Kestrel Food Packaging", 16, false, "open", [ [ "KF-900-450", 20_000 ], [ "STK-1000-500", 5_000 ] ] ],
+  [ "LCP-118", "Lumen Cosmetics Packaging", 24, false, "open", [ [ "LC-500-180", 2_500 ] ] ],
+  [ "OFC-5520", "Orchard Fresh Containers", 30, false, "open", [ [ "OF-700-250", 9_000 ] ] ],
+  [ "PIT-207", "Pennine Industrial Trays", 7, false, "cancelled", [ [ "STK-1000-500", 4_000 ] ] ]
+].each do |po, customer_name, days, urgent, status, lines|
+  customer = customers.fetch(customer_name)
+  order = SalesOrder.find_or_create_by!(customer: customer, customer_po_ref: po) do |o|
+    o.required_on = today + days
+    o.urgent = urgent
+  end
+  next unless order.lines.none?
+
+  lines.each do |code, kg|
+    order.lines.create!(product_spec: ProductSpec.find_by!(code: code, revision: 1), quantity: kg.to_s)
+  end
+  order.update!(status: status)
+end
+
 unless Rails.env.test?
   puts "Seeded #{User.count} users (password: #{DEMO_PASSWORD}), #{Line.count} lines, #{Customer.count} customers, " \
-       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs"
+       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders"
 end

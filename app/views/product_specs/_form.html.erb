@@ -5,7 +5,11 @@
   <section class="card space-y-5 p-6">
     <h2 class="section-title">Spec</h2>
     <div class="grid gap-5 sm:grid-cols-2">
-      <%= form.text_row :code, required: true, autofocus: true, hint: "Our spec code. Upper case." %>
+      <% if product_spec.used? %>
+        <%= form.text_row :code, readonly: true, hint: "Fixed: this spec is used on orders." %>
+      <% else %>
+        <%= form.text_row :code, required: true, autofocus: true, hint: "Our spec code. Upper case." %>
+      <% end %>
       <%= form.select_row :customer_id, Customer.active.or(Customer.where(id: product_spec.customer_id)).by_name.map { [ _1.name, _1.id ] },
             select_options: { include_blank: "Stock / any customer" } %>
     </div>

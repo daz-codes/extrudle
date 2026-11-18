@@ -1,0 +1,97 @@
+<% order = @sales_order %>
+<% content_for :title, "Order #{order.number}" %>
+
+<div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="page-title">Order <%= order.number %></h1>
+      <%= order_status_badge(order) %>
+      <%= urgent_badge(order) %>
+    </div>
+    <p class="mt-2 text-ink-600">
+      <%= link_to order.customer.name, order.customer, class: "link" %>
+      <% if order.customer_po_ref %> · PO <%= order.customer_po_ref %><% end %>
+    </p>
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <% if order.editable? %>
+      <%= link_to "Edit order", edit_sales_order_path(order), class: "btn btn-secondary" %>
+      <%= button_to "Cancel order", cancel_sales_order_path(order), method: :patch, class: "btn btn-secondary",
+            form: { data: { turbo_confirm: "Cancel order #{order.number}?" } } %>
+    <% elsif order.cancelled? %>
+      <%= button_to "Reopen order", reopen_sales_order_path(order), method: :patch, class: "btn btn-secondary" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="mb-6 grid gap-4 sm:grid-cols-3">
+  <section class="card p-5">
+    <h2 class="eyebrow">Required by</h2>
+    <p class="mt-2 text-xl font-semibold"><%= required_date(order) %></p>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Total</h2>
+    <p class="mt-2 font-mono text-xl font-semibold tabular-nums"><%= order.lines.any? ? order_quantity(order.total_g) : "—" %></p>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Lines</h2>
+    <p class="mt-2 font-mono text-xl font-semibold tabular-nums"><%= order.lines.size %></p>
+  </section>
+</div>
+
+<% if order.notes.present? %>
+  <section class="card mb-6 p-5">
+    <h2 class="section-title mb-2">Notes</h2>
+    <p class="whitespace-pre-line"><%= order.notes %></p>
+  </section>
+<% end %>
+
+<section class="card mb-6 overflow-x-auto" aria-labelledby="lines-heading">
+  <h2 id="lines-heading" class="section-title px-5 pt-5">Lines</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Spec</th>
+        <th scope="col" class="px-4 py-3 text-right">Micron</th>
+        <th scope="col" class="px-4 py-3 text-right">Width</th>
+        <th scope="col" class="px-4 py-3 text-right">Quantity</th>
+        <th scope="col" class="px-4 py-3">Customer batch</th>
+        <th scope="col" class="px-4 py-3 text-right">Price / t</th>
+        <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% order.lines.each do |line| %>
+        <% spec = line.product_spec %>
+        <tr id="<%= dom_id(line) %>">
+          <td class="px-4 py-3">
+            <%= link_to spec.to_s, spec, class: "link font-semibold" %>
+            <div class="text-sm text-ink-500"><%= silicone_summary(spec) %><%= " · antiblock" if spec.antiblock %></div>
+          </td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= spec.paper_gauge %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= spec.width_mm %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= order_quantity(line.quantity_g, unit: line.quantity_unit) %></td>
+          <td class="px-4 py-3"><%= line.customer_batch_no || "—" %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= money(line.price_per_tonne_cents, line.currency) %></td>
+          <td class="px-4 py-3">
+            <% if order.editable? %>
+              <div class="flex justify-end gap-2">
+                <%= link_to "Edit", edit_sales_order_line_path(order, line), class: "btn btn-secondary", aria: { label: "Edit line for #{spec}" } %>
+                <%= button_to "Remove", sales_order_line_path(order, line), method: :delete, class: "btn btn-secondary",
+                      form: { data: { turbo_confirm: "Remove #{spec} from this order?" } }, aria: { label: "Remove line for #{spec}" } %>
+              </div>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+      <% if order.lines.none? %><%= render "master_data/empty", message: "No lines yet. Add one below.", colspan: 7 %><% end %>
+    </tbody>
+  </table>
+</section>
+
+<% if @line %>
+  <section class="card max-w-3xl p-6" aria-labelledby="add-line-heading">
+    <h2 id="add-line-heading" class="section-title mb-5">Add a line</h2>
+    <%= render "sales_order_lines/form", order: order, line: @line %>
+  </section>
+<% end %>

@@ -14,6 +14,15 @@ Rails.application.routes.draw do
   resources :lines, only: %i[ index new create edit update ]
   resources :product_specs, except: :destroy do
     resources :line_rates, only: %i[ create update destroy ]
+    get :summary, on: :member
+  end
+
+  resources :sales_orders, path: "orders", except: :destroy do
+    member do
+      patch :cancel
+      patch :reopen
+    end
+    resources :lines, controller: "sales_order_lines", only: %i[ create edit update destroy ]
   end
 
   get "floor" => "floor#show", as: :floor_root

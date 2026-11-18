@@ -69,10 +69,25 @@
            "Material type" => spec.material_type.humanize,
            "Core" => "#{spec.core_inches} inch, #{spec.core_orientation}",
            "Max reel weight" => kg(spec.max_reel_g),
-           "Revision" => spec.revision
          }.each do |label, value| %>
         <div class="flex justify-between gap-4 py-2"><dt class="text-ink-600"><%= label %></dt><dd class="font-medium tabular-nums"><%= value %></dd></div>
       <% end %>
+      <div class="flex justify-between gap-4 py-2">
+        <dt class="text-ink-600">Revision</dt>
+        <dd class="flex flex-wrap justify-end gap-2">
+          <% spec.revisions.each do |revision| %>
+            <% if revision == spec %>
+              <span class="badge badge-lime font-mono">rev <%= revision.revision %></span>
+            <% else %>
+              <%= link_to "rev #{revision.revision}", revision, class: "badge badge-quiet font-mono hover:bg-ink-200", aria: { label: "Revision #{revision.revision}" } %>
+            <% end %>
+          <% end %>
+        </dd>
+      </div>
+      <div class="flex justify-between gap-4 py-2">
+        <dt class="text-ink-600">On orders</dt>
+        <dd class="font-medium tabular-nums"><%= spec.sales_order_lines.count %></dd>
+      </div>
     </dl>
   </section>
 

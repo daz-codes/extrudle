@@ -1,0 +1,28 @@
+<%# Read-only spec details shown on the order line form when a spec is chosen. %>
+<%= turbo_frame_tag "spec_summary" do %>
+  <div class="rounded-[11px] border border-ink-200 bg-ink-50 p-4">
+    <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+      <span class="font-semibold text-ink-900"><%= spec %></span>
+      <%= link_to "Open spec", spec, class: "link text-sm", data: { turbo_frame: "_top" } %>
+    </div>
+    <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
+      <% {
+           "Micron" => spec.paper_gauge,
+           "Width" => mm(spec.width_mm),
+           "Silicone" => silicone_summary(spec),
+           "Antiblock" => yes_no(spec.antiblock),
+           "PE" => yes_no(spec.pe),
+           "Core" => "#{spec.core_inches}\" #{spec.core_orientation}",
+           "Reel size" => reel_size_summary(spec),
+           "Rates" => spec.line_rates.includes(:line).map { "#{_1.line.name} #{_1.kg_per_hour} kg/h" }.join(" · ").presence || "None set"
+         }.each do |label, value| %>
+        <div>
+          <dt class="eyebrow">
+            <%= label %>
+          </dt>
+          <dd class="font-medium text-ink-900"><%= value %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+<% end %>

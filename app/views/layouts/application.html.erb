@@ -13,6 +13,7 @@
 
         <div class="flex flex-wrap items-center gap-1">
           <%= nav_link "Home", root_path %>
+          <%= nav_link "Orders", sales_orders_path, active: controller_name.start_with?("sales_order") %>
           <%= nav_link "Master data", master_data_path, active: master_data_page? %>
           <%= nav_link "Floor", floor_root_path, active: false %>
           <% if Current.user&.admin? %>

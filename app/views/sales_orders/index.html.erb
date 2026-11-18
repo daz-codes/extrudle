@@ -1,0 +1,68 @@
+<% content_for :title, "Orders" %>
+
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <h1 class="page-title">Orders</h1>
+  <%= link_to "New order", new_sales_order_path, class: "btn btn-primary" %>
+</div>
+
+<nav aria-label="Required date" class="mb-4 -mx-4 overflow-x-auto px-4">
+  <ul class="tabs">
+    <li><%= link_to "All dates", sales_orders_path(request.query_parameters.except("window")), class: "tab", aria: { current: (@window.nil? ? "page" : nil) } %></li>
+    <% SalesOrder::WINDOWS.each do |key, label| %>
+      <li>
+        <%= link_to sales_orders_path(request.query_parameters.merge("window" => key)), class: "tab gap-2", aria: { current: (@window == key ? "page" : nil) } do %>
+          <%= label %>
+          <span class="badge <%= key == "overdue" && @window_counts[key].positive? ? "bg-bad-50 text-bad-700" : "badge-quiet" %> font-mono"><%= @window_counts[key] %></span>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</nav>
+
+<%= form_with url: sales_orders_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3", data: { turbo_action: "replace" } do |form| %>
+  <% if @window %><%= hidden_field_tag :window, @window %><% end %>
+  <div class="min-w-64 flex-1">
+    <%= label_tag :q, "Search", class: "sr-only" %>
+    <%= search_field_tag :q, @query, placeholder: "Search order no., customer PO or customer", class: "field-input" %>
+  </div>
+  <div>
+    <%= label_tag :status, "Status", class: "sr-only" %>
+    <%= select_tag :status, options_for_select(SalesOrdersController::STATUS_FILTERS.invert, @status), class: "field-input" %>
+  </div>
+  <%= submit_tag "Filter", name: nil, class: "btn btn-secondary" %>
+<% end %>
+
+<div class="card overflow-x-auto">
+  <table class="data-table w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Order</th>
+        <th scope="col" class="px-4 py-3">Customer</th>
+        <th scope="col" class="px-4 py-3">Required by</th>
+        <th scope="col" class="px-4 py-3">Specs</th>
+        <th scope="col" class="px-4 py-3 text-right">Quantity</th>
+        <th scope="col" class="px-4 py-3">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @sales_orders.each do |order| %>
+        <tr id="<%= dom_id(order) %>" class="<%= "text-ink-500" if order.cancelled? %>">
+          <td class="px-4 py-3">
+            <%= link_to order.number, order, class: "link font-semibold" %>
+            <% if order.customer_po_ref %><div class="text-sm text-ink-500">PO <%= order.customer_po_ref %></div><% end %>
+          </td>
+          <td class="px-4 py-3"><%= order.customer.name %></td>
+          <td class="px-4 py-3">
+            <div class="flex flex-wrap items-center gap-2"><%= required_date(order) %> <%= urgent_badge(order) %></div>
+          </td>
+          <td class="px-4 py-3 text-sm">
+            <%= order.lines.map { _1.product_spec.to_s }.uniq.join(", ").presence || tag.span("No lines yet", class: "badge badge-lemon") %>
+          </td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= order.lines.any? ? order_quantity(order.total_g) : "—" %></td>
+          <td class="px-4 py-3"><%= order_status_badge(order) %></td>
+        </tr>
+      <% end %>
+      <% if @sales_orders.empty? %><%= render "master_data/empty", message: "No orders match.", colspan: 6 %><% end %>
+    </tbody>
+  </table>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_120007) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_090003) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -108,6 +108,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_120007) do
     t.check_constraint "width_mm > 0", name: "product_specs_width_positive"
   end
 
+  create_table "sales_order_lines", force: :cascade do |t|
+    t.integer "sales_order_id", null: false
+    t.integer "product_spec_id", null: false
+    t.integer "quantity_g", null: false
+    t.string "customer_batch_no"
+    t.integer "price_per_tonne_cents"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "currency", default: "GBP", null: false
+    t.string "quantity_unit", default: "kg", null: false
+    t.index ["product_spec_id"], name: "index_sales_order_lines_on_product_spec_id"
+    t.index ["sales_order_id"], name: "index_sales_order_lines_on_sales_order_id"
+    t.check_constraint "price_per_tonne_cents IS NULL OR price_per_tonne_cents >= 0", name: "sales_order_lines_price_non_negative"
+    t.check_constraint "quantity_g > 0", name: "sales_order_lines_quantity_positive"
+  end
+
+  create_table "sales_orders", force: :cascade do |t|
+    t.string "number", null: false
+    t.integer "customer_id", null: false
+    t.string "customer_po_ref"
+    t.date "required_on", null: false
+    t.boolean "urgent", default: false, null: false
+    t.string "status", default: "open", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_sales_orders_on_customer_id"
+    t.index ["number"], name: "index_sales_orders_on_number", unique: true
+    t.index ["status", "required_on"], name: "index_sales_orders_on_status_and_required_on"
+  end
+
   create_table "sessions", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "ip_address"
@@ -148,5 +179,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_120007) do
   add_foreign_key "materials", "material_categories"
   add_foreign_key "materials", "suppliers"
   add_foreign_key "product_specs", "customers"
+  add_foreign_key "sales_order_lines", "product_specs"
+  add_foreign_key "sales_order_lines", "sales_orders"
+  add_foreign_key "sales_orders", "customers"
   add_foreign_key "sessions", "users"
 end
