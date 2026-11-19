@@ -25,7 +25,7 @@ class PurchaseOrder < ApplicationRecord
   validate :supplier_is_active, if: -> { new_record? || will_save_change_to_supplier_id? }
   validate :supplier_and_currency_fixed_once_lines_exist, on: :update
 
-  before_validation :take_terms_from_supplier, on: :create
+  before_validation :take_terms_from_supplier, if: -> { new_record? || supplier_id_changed? }
 
   scope :outstanding, -> { where(status: OUTSTANDING_STATUSES) }
   scope :active, -> { where(status: %w[ draft ] + OUTSTANDING_STATUSES) }
@@ -53,9 +53,10 @@ class PurchaseOrder < ApplicationRecord
     expected_on.present? && expected_on < today && OUTSTANDING_STATUSES.include?(status)
   end
 
-  # The date printed on the PO: when it was sent, or today for a draft.
+  # The date printed on the PO: when it was sent, or today for a draft (even
+  # one taken back to draft, which keeps its old sent_at until it's sent again).
   def order_date
-    (sent_at || Time.current).to_date
+    draft? || sent_at.nil? ? Date.current : sent_at.to_date
   end
 
   def mark_sent!
@@ -88,6 +89,8 @@ class PurchaseOrder < ApplicationRecord
   def to_s = number
 
   private
+    # On create, and when a PO without lines moves to another supplier. A currency
+    # or incoterm chosen in the same edit wins over the supplier's.
     def take_terms_from_supplier
       return unless supplier
 

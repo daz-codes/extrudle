@@ -28,4 +28,17 @@ class PurchaseOrderPdfTest < ActiveSupport::TestCase
     suppliers(:pacific).update!(contact_name: "Paweł Łukasz")
     assert_includes pdf_text(purchase_orders(:pacific_draft)), "Pawel Lukasz"
   end
+
+  test "the supplier ref is transliterated too" do
+    purchase_orders(:albion_sent).update_columns(supplier_ref: "Łódź-1")
+    assert_includes pdf_text(purchase_orders(:albion_sent)), "Lódz-1" # ó is in Windows-1252; Ł and ź are not
+  end
+
+  test "long POs run onto more pages with the footer on each" do
+    order = purchase_orders(:pacific_draft)
+    40.times { order.lines.create!(material: order.lines.first.material, quantity_unit: "kg", quantity: "100", price_per_tonne: "1") }
+    text = pdf_text(order.reload)
+    assert_includes text, "Page 1 of 2"
+    assert_includes text, "Page 2 of 2"
+  end
 end

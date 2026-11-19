@@ -74,7 +74,7 @@ class PurchaseOrdersController < ApplicationController
 
   private
     def set_purchase_order
-      @purchase_order = PurchaseOrder.find(params[:id])
+      @purchase_order = PurchaseOrder.includes(lines: { material: %i[ material_category supplier ] }).find(params[:id])
     end
 
     def purchase_order_params

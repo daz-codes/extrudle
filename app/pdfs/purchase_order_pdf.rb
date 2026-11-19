@@ -9,13 +9,15 @@ class PurchaseOrderPdf
   MUTED = "52525B"
   RULE = "D4D4D8"
   FILL = "F4F4F5"
+  FOOTER_HEIGHT = 20
 
   def initialize(order)
     @order = order
   end
 
   def render
-    pdf = Prawn::Document.new(page_size: "A4", margin: 40, info: { Title: title, Creator: "Extrudle" })
+    # The bottom margin leaves room for the footer, drawn below the content area.
+    pdf = Prawn::Document.new(page_size: "A4", margin: [ 40, 40, 40 + FOOTER_HEIGHT, 40 ], info: { Title: title, Creator: "Extrudle" })
     pdf.font "Helvetica"
     pdf.font_size 10
     pdf.fill_color INK
@@ -66,7 +68,7 @@ class PurchaseOrderPdf
     def terms(pdf)
       rows = [ [ "Currency", order.currency ], [ "Incoterm", order.incoterm || "—" ],
                [ "Expected delivery", date(order.expected_on) ], [ "Your ref", order.supplier_ref || "—" ] ]
-      pdf.table([ rows.map(&:first), rows.map(&:last) ], width: pdf.bounds.width,
+      pdf.table([ rows.map(&:first), rows.map { text(_1.last) } ], width: pdf.bounds.width,
                 cell_style: { borders: [], padding: [ 2, 6 ] }) do |table|
         table.row(0).text_color = MUTED
         table.row(0).size = 8
@@ -109,11 +111,11 @@ class PurchaseOrderPdf
     def footer(pdf)
       pdf.text text(Company.po_terms.to_s), size: 8, color: MUTED if Company.po_terms.present?
       pdf.repeat(:all) do
-        pdf.bounding_box([ 0, 10 ], width: pdf.bounds.width, height: 12) do
+        pdf.bounding_box([ 0, -FOOTER_HEIGHT + 10 ], width: pdf.bounds.width * 0.8, height: 12) do
           pdf.text text(([ Company.name ] + Company.registration_lines).join("  ·  ")), size: 7, color: MUTED
         end
       end
-      pdf.number_pages "Page <page> of <total>", at: [ 0, 10 ], width: pdf.bounds.width, align: :right, size: 7, color: MUTED
+      pdf.number_pages "Page <page> of <total>", at: [ 0, -FOOTER_HEIGHT + 10 ], width: pdf.bounds.width, align: :right, size: 7, color: MUTED
     end
 
     def boxes(pdf, sections)

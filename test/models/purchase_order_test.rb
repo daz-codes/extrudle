@@ -68,6 +68,22 @@ class PurchaseOrderTest < ActiveSupport::TestCase
     assert_raises(ArgumentError) { purchase_orders(:pacific_draft).back_to_draft! }
   end
 
+  test "a PO back in draft prints today's date, not when it was first sent" do
+    order = purchase_orders(:albion_sent)
+    assert_equal order.sent_at.to_date, order.order_date
+    order.back_to_draft!
+    assert_equal Date.current, order.order_date
+  end
+
+  test "moving a PO without lines to another supplier takes that supplier's terms" do
+    order = PurchaseOrder.create!(number: "PO-00010", supplier: suppliers(:albion), expected_on: Date.current)
+    order.update!(supplier: suppliers(:pacific))
+    assert_equal [ "USD", "CIF" ], [ order.currency, order.incoterm ]
+
+    order.update!(supplier: suppliers(:albion), currency: "EUR")
+    assert_equal [ "EUR", "DAP" ], [ order.currency, order.incoterm ], "a currency chosen in the same edit wins"
+  end
+
   test "cancel and reopen" do
     order = purchase_orders(:albion_sent)
     order.cancel!

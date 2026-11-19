@@ -3,7 +3,7 @@
   <% if purchase_order.new_record? || purchase_order.lines.none? %>
     <%= form.select_row :supplier_id, Supplier.active.or(Supplier.where(id: purchase_order.supplier_id)).by_name.map { [ _1.name, _1.id ] },
           select_options: { include_blank: "Choose a supplier" }, required: true, autofocus: purchase_order.new_record?,
-          hint: ("The currency and incoterm come from the supplier. You can change them on the next page." if purchase_order.new_record?) %>
+          hint: (purchase_order.new_record? ? "The currency and incoterm come from the supplier. You can change them on the next page." : "Choosing another supplier takes its currency and incoterm.") %>
   <% else %>
     <div>
       <span class="field-label">Supplier</span>
