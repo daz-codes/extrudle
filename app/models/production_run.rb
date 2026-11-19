@@ -7,9 +7,11 @@ class ProductionRun < ApplicationRecord
   belongs_to :sales_order_line
   belongs_to :product_spec
   belongs_to :started_by, class_name: "User", optional: true
+  belongs_to :finished_by, class_name: "User", optional: true
+  has_many :reels, -> { order(:reel_no) }, inverse_of: :production_run, dependent: :restrict_with_error
   has_many :checks, -> { order(:checked_at, :id) }, class_name: "RunCheck", inverse_of: :production_run, dependent: :destroy
 
-  # finished is set by the end-of-run screen (Slice 7b).
+  # finished is set by finish! on the end-of-run screen.
   enum :status, { running: "running", finished: "finished" }, default: :running, validate: true
 
   normalizes :antiblock_batch_no, :silicone_batch_no, :pe_film_batch_no, :technician_days, :technician_nights,
@@ -37,8 +39,8 @@ class ProductionRun < ApplicationRecord
     checks.select { _1.stage == stage.to_s && _1.item == item.to_s }.last
   end
 
-  def measurements(item)
-    checks.select { _1.measurement? && _1.item == item.to_s }
+  def measurements(item, stage: "startup")
+    checks.select { _1.measurement? && _1.stage == stage.to_s && _1.item == item.to_s }
   end
 
   def prestart_complete?
@@ -67,6 +69,72 @@ class ProductionRun < ApplicationRecord
     check.errors.add(:actual, e.message)
     checks.delete(check)
     check
+  end
+
+  # Reels -------------------------------------------------------------------
+
+  def total_g = reels.sum(&:weight_g)
+
+  def order_quantity_g = sales_order_line.quantity_g
+
+  # Whole percent of the order line made so far, rounded down (integer maths).
+  def percent_of_order
+    order_quantity_g.positive? ? total_g * 100 / order_quantity_g : 0
+  end
+
+  def next_reel_no = (reels.filter_map(&:reel_no).max || 0) + 1
+
+  # The pallet the next reel goes on: the last reel's pallet until it holds the
+  # spec's reels per pallet, then the next one. One reel per pallet when the
+  # spec doesn't say. Working assumption, see PLAN.md §11 Q42.
+  def suggested_pallet_no
+    last_pallet = reels.filter_map(&:pallet_no).max
+    return 1 if last_pallet.nil?
+
+    per_pallet = product_spec.reels_per_pallet || 1
+    reels.count { _1.pallet_no == last_pallet } < per_pallet ? last_pallet : last_pallet + 1
+  end
+
+  # A new reel with the number, pallet and initials filled in for a fast entry.
+  # Built by id, not through reels, so it stays out of the totals until saved.
+  def build_next_reel(**attributes)
+    Reel.new(production_run_id: id, reel_no: next_reel_no, pallet_no: suggested_pallet_no, initials: reels.last&.initials, **attributes)
+  end
+
+  # Finishing ---------------------------------------------------------------
+
+  def line_clearance_complete?
+    Checklist.items("line_clearance").keys.all? { answer("line_clearance", _1)&.passed? }
+  end
+
+  # What still stops the log being finished, as messages for the technician.
+  # Working assumption, see PLAN.md §11 Q41.
+  def finish_problems
+    problems = []
+    problems << "Enter at least one reel" if reels.empty?
+    Checklist::MEASUREMENTS.each do |item, info|
+      problems << "Record the end-of-run #{info[:label].downcase}" if measurements(item, stage: "end_of_run").empty?
+    end
+    Checklist.items("line_clearance").each do |item, label|
+      problems << "Line clearance: #{label.downcase_first}" unless answer("line_clearance", item)&.passed?
+    end
+    if out_of_tolerance_at_end? && comments.blank?
+      problems << "An end-of-run reading is out of tolerance: add a comment or corrective action"
+    end
+    problems
+  end
+
+  def out_of_tolerance_at_end?
+    Checklist::MEASUREMENTS.keys.any? { measurements(_1, stage: "end_of_run").last&.passed? == false }
+  end
+
+  def finish!(user: nil, ended_at: Time.current)
+    raise ArgumentError, "Despatch #{despatch_number} is already finished" unless running?
+
+    problems = finish_problems
+    raise ArgumentError, problems.to_sentence if problems.any?
+
+    update!(status: "finished", ended_at:, finished_by: user)
   end
 
   def to_s = "Despatch #{despatch_number}"

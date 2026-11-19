@@ -69,7 +69,7 @@ class ProductionRunsControllerTest < ActionDispatch::IntegrationTest
 
     get production_run_path(run)
     assert_select "#check_prestart_previous_documents_removed", /Pass/
-    assert_select "#measure_thickness .bg-bad-50", /265 µm \(\+15\)/
+    assert_select "#measure_startup_thickness .bg-bad-50", /265 µm \(\+15\)/
   end
 
   test "edit the log's details while it runs, not after" do

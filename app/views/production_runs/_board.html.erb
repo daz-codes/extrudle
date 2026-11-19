@@ -9,8 +9,14 @@
       <% if (run = entry.run) %>
         <p class="font-mono text-2xl font-semibold tabular-nums">Despatch <%= run.despatch_number %></p>
         <p class="mt-1 text-ink-700"><%= run.customer.name %> · <%= run.product_spec %> · <%= run.product_spec.paper_gauge %> × <%= mm(run.product_spec.width_mm) %></p>
-        <p class="text-sm text-ink-600">Started <%= l(run.started_at, format: "%a %-d %b %H:%M") %></p>
-        <%= link_to "Open log", run, class: "btn btn-accent mt-4 w-full sm:w-auto" %>
+        <p class="text-sm text-ink-600">
+          Started <%= l(run.started_at, format: "%a %-d %b %H:%M") %> ·
+          <%= pluralize(run.reels.size, "reel") %>, <%= order_quantity(run.total_g) %> (<%= run.percent_of_order %>%)
+        </p>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <%= link_to "Enter reels", production_run_reels_path(run), class: "btn btn-accent" %>
+          <%= link_to "Open log", run, class: "btn btn-secondary" %>
+        </div>
       <% elsif (job = entry.next_job) %>
         <p class="eyebrow">Next on the plan</p>
         <p class="mt-1 text-lg font-semibold"><%= job.sales_order.customer.name %> · <%= job.product_spec %></p>

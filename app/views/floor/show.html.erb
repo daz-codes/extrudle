@@ -5,8 +5,8 @@
 <%= render "production_runs/board", board: @board %>
 
 <h2 class="section-title mt-10 mb-4">Coming soon</h2>
-<div class="grid gap-4 sm:grid-cols-3">
-  <% [ "Load material", "Finish reel", "Goods in" ].each do |action| %>
+<div class="grid gap-4 sm:grid-cols-2">
+  <% [ "Load material", "Goods in" ].each do |action| %>
     <button type="button" disabled class="btn btn-secondary min-h-20 w-full text-xl">
       <%= action %>
       <span class="sr-only">(coming soon)</span>

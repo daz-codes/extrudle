@@ -6,7 +6,7 @@ class ProductionRun::Board
     @entries ||= begin
       lines = Line.active.order(:position, :name).to_a
       running = ProductionRun.running.where(line: lines)
-        .includes(:product_spec, sales_order_line: { sales_order: :customer }).index_by(&:line_id)
+        .includes(:product_spec, :reels, sales_order_line: { sales_order: :customer }).index_by(&:line_id)
       lines.map { |line| Entry.new(line:, run: running[line.id], next_job: running[line.id] ? nil : self.class.next_job_for(line)) }
     end
   end

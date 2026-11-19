@@ -1,0 +1,90 @@
+<%# locals: (run:, reel:) %>
+<% spec = run.product_spec %>
+<% reels = run.reels.to_a %>
+<% total = run.total_g %>
+<% percent = run.percent_of_order %>
+<div id="reels_panel">
+  <section class="card mb-6 p-5" aria-labelledby="progress-heading">
+    <h2 id="progress-heading" class="sr-only">Progress</h2>
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="eyebrow">Made so far</p>
+        <p class="font-mono text-3xl font-semibold tabular-nums" id="reels_total"><%= order_quantity(total) %></p>
+        <p class="text-ink-600 tabular-nums"><%= pluralize(reels.size, "reel") %> · of <%= order_quantity(run.order_quantity_g, unit: run.sales_order_line.quantity_unit) %> ordered</p>
+      </div>
+      <p class="font-mono text-3xl font-semibold tabular-nums <%= "text-ok-700" if percent >= 100 %>"><%= percent %>%</p>
+    </div>
+    <div class="mt-3 h-4 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-label="Percent of order made"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= [ percent, 100 ].min %>">
+      <div class="h-full rounded-full <%= percent >= 100 ? "bg-ok-600" : "bg-lime-400" %>" style="width: <%= [ percent, 100 ].min %>%"></div>
+    </div>
+  </section>
+
+  <% if run.running? %>
+    <section class="card mb-6 p-5" aria-labelledby="add-reel-heading">
+      <div class="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+        <h2 id="add-reel-heading" class="section-title">Reel <span class="font-mono"><%= reel.reel_no %></span></h2>
+        <% if spec.max_reel_g %><p class="text-sm text-ink-600">Max reel weight <%= kg(spec.max_reel_g) %></p><% end %>
+      </div>
+      <%= form_with model: reel, url: production_run_reels_path(run), scope: :reel, class: "space-y-4" do |form| %>
+        <%= form.error_summary %>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] lg:items-end">
+          <%= form.text_row :weight_kg, label: "Weight", suffix: "kg", required: true, inputmode: "decimal", autocomplete: "off",
+                class: "field-input font-mono text-xl", data: { controller: "autofocus" } %>
+          <%= form.number_row :length_m, label: "Length", suffix: "m", min: 1, inputmode: "numeric", class: "field-input font-mono text-xl" %>
+          <%= form.number_row :pallet_no, label: "Pallet", min: 1, inputmode: "numeric", class: "field-input font-mono text-xl" %>
+          <%= form.text_row :initials, autocomplete: "off", maxlength: 4, class: "field-input font-mono text-xl uppercase" %>
+          <%= form.submit "Add reel", class: "btn btn-accent min-h-14 w-full px-8 text-lg lg:w-auto" %>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+
+  <section class="card overflow-x-auto" aria-labelledby="reels-heading">
+    <h2 id="reels-heading" class="section-title px-5 pt-5">Reels</h2>
+    <table class="data-table mt-3 w-full text-left">
+      <thead>
+        <tr>
+          <th scope="col" class="px-4 py-3 text-right">Reel</th>
+          <th scope="col" class="px-4 py-3">Time</th>
+          <th scope="col" class="px-4 py-3 text-right">Weight</th>
+          <th scope="col" class="px-4 py-3 text-right">Length</th>
+          <th scope="col" class="px-4 py-3 text-right">Pallet</th>
+          <th scope="col" class="px-4 py-3">Initials</th>
+          <th scope="col" class="px-4 py-3 text-right">Running total</th>
+          <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% running = 0 %>
+        <% rows = reels.map { |r| [ r, running += r.weight_g ] } %>
+        <% rows.reverse_each do |r, running_total| %>
+          <tr id="<%= dom_id(r) %>">
+            <td class="px-4 py-3 text-right font-mono font-semibold tabular-nums"><%= r.reel_no %></td>
+            <td class="px-4 py-3 tabular-nums"><%= l(r.produced_at, format: "%a %H:%M") %></td>
+            <td class="px-4 py-3 text-right tabular-nums">
+              <%= Weight.format_kg(r.weight_g) %>
+              <% if r.over_max_weight? %><span class="badge badge-lemon ml-1">Over max</span><% end %>
+            </td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= r.length_m ? "#{number_with_delimiter(r.length_m)} m" : "—" %></td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= r.pallet_no || "—" %></td>
+            <td class="px-4 py-3"><%= r.initials || "—" %></td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= order_quantity(running_total) %></td>
+            <td class="px-4 py-3">
+              <% if run.running? %>
+                <div class="flex justify-end gap-2">
+                  <%= link_to "Edit", edit_production_run_reel_path(run, r), class: "btn btn-secondary", aria: { label: "Edit reel #{r.reel_no}" } %>
+                  <% if r.equal?(reels.last) %>
+                    <%= button_to "Remove", production_run_reel_path(run, r), method: :delete, class: "btn btn-secondary",
+                          form: { data: { turbo_confirm: "Remove reel #{r.reel_no}?" } }, aria: { label: "Remove reel #{r.reel_no}" } %>
+                  <% end %>
+                </div>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if reels.empty? %><%= render "master_data/empty", message: "No reels yet.", colspan: 8 %><% end %>
+      </tbody>
+    </table>
+  </section>
+</div>

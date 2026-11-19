@@ -52,6 +52,8 @@ Rails.application.routes.draw do
 
   resources :production_runs, path: "production", except: :destroy do
     resources :checks, controller: "run_checks", only: :create
+    resources :reels, only: %i[ index create edit update destroy ]
+    resource :finish, controller: "run_finishes", only: %i[ show create ]
   end
 
   get "floor" => "floor#show", as: :floor_root

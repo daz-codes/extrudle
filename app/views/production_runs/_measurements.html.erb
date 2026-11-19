@@ -1,0 +1,42 @@
+<%# locals: (run:, stage:, title:, intro:) %>
+<% spec = run.product_spec %>
+<section id="<%= stage %>" class="card mb-6 p-5" aria-labelledby="<%= stage %>-heading">
+  <h2 id="<%= stage %>-heading" class="section-title mb-1"><%= title %></h2>
+  <p class="mb-4 text-sm text-ink-600"><%= intro %> Green is in tolerance, red is out.</p>
+  <div class="grid gap-6 md:grid-cols-2">
+    <% ProductionRun::Checklist::MEASUREMENTS.each do |item, info| %>
+      <% readings = run.measurements(item, stage:) %>
+      <div id="measure_<%= stage %>_<%= item %>">
+        <h3 class="font-semibold"><%= info[:label] %></h3>
+        <p class="mb-3 text-sm text-ink-600"><%= tolerance_text(item, spec) %></p>
+        <% if run.editable? %>
+          <%= form_with url: production_run_checks_path(run), method: :post, class: "mb-3 flex items-end gap-2" do %>
+            <%= hidden_field_tag :stage, stage, id: nil %>
+            <%= hidden_field_tag :item, item, id: nil %>
+            <div class="flex-1">
+              <%= label_tag "actual_#{stage}_#{item}", "#{info[:label]} actual", class: "sr-only" %>
+              <div class="field-group">
+                <%= text_field_tag :actual, nil, id: "actual_#{stage}_#{item}", inputmode: "decimal", autocomplete: "off", required: true, class: "field-input",
+                      placeholder: (item == "thickness" ? "e.g. #{spec.thickness_micron} or #{spec.paper_gauge}" : "e.g. #{spec.width_mm}") %>
+                <span class="field-suffix"><%= info[:unit] %></span>
+              </div>
+            </div>
+            <%= submit_tag "Record", name: nil, class: "btn btn-primary", aria: { label: "Record #{info[:label].downcase}" } %>
+          <% end %>
+        <% end %>
+        <% if readings.any? %>
+          <ul class="space-y-1">
+            <% readings.reverse_each do |check| %>
+              <li class="flex flex-wrap items-center gap-2 rounded-md px-3 py-2 <%= check.passed? ? "bg-ok-50" : "bg-bad-50" %>">
+                <%= pass_fail_badge(check.passed?) %> <%= reading(check) %>
+                <span class="text-sm text-ink-600"><%= checked_by(check) %></span>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="text-sm text-ink-500">No readings yet.</p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</section>
