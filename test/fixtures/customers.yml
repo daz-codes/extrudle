@@ -2,10 +2,12 @@ brightform:
   name: Brightform Packaging Ltd
   contact_name: Hannah Cole
   currency: GBP
+  address: "Unit 7, Brightform Park\nLeeds\nLS10 1AB"
 
 rhine:
   name: Rhine Valley Verpackung GmbH
   currency: EUR
+  address: "Industriestraße 12\n67059 Ludwigshafen\nGermany"
 
 dormant:
   name: Dormant Trays Ltd

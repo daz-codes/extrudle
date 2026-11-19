@@ -17,6 +17,8 @@ class Reel < ApplicationRecord
   validates :pallet_no, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
   validates :produced_at, presence: true
   validate :run_is_running
+  validate :pallet_not_on_delivery_note
+  before_destroy :ensure_pallet_not_on_delivery_note
 
   before_validation :number_and_time, on: :create
 
@@ -30,6 +32,30 @@ class Reel < ApplicationRecord
     def number_and_time
       self.reel_no ||= production_run&.next_reel_no
       self.produced_at ||= Time.current
+    end
+
+    # A pallet on a delivery note has gone (or is about to): its reels are fixed.
+    def pallet_not_on_delivery_note
+      return if production_run.nil?
+
+      [ pallet_no, (pallet_no_was if persisted?) ].compact.uniq.each do |number|
+        next unless on_delivery_note?(number)
+        next if persisted? && !will_save_change_to_weight_g? && !will_save_change_to_pallet_no? && number == pallet_no
+
+        errors.add(:base, "Pallet #{number} is on a delivery note, so its reels can't change")
+      end
+    end
+
+    # Asks the database, not the run's cached pallets, so a note made since counts.
+    def on_delivery_note?(number)
+      number.present? && DeliveryNotePallet.exists?(production_run_id:, pallet_no: number)
+    end
+
+    def ensure_pallet_not_on_delivery_note
+      return unless production_run && on_delivery_note?(pallet_no)
+
+      errors.add(:base, "Pallet #{pallet_no} is on a delivery note, so its reels can't change")
+      throw :abort
     end
 
     def run_is_running

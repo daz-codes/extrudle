@@ -16,6 +16,7 @@
           <%= nav_link "Orders", sales_orders_path, active: controller_name.start_with?("sales_order") %>
           <%= nav_link "Planner", planner_path, active: controller_name.in?(%w[planner schedule_blocks]) %>
           <%= nav_link "Production", production_runs_path, active: controller_name.in?(%w[production_runs run_checks]) %>
+          <%= nav_link "Dispatch", dispatch_path, active: controller_name.in?(%w[dispatch delivery_notes sage_exports]) %>
           <%= nav_link "Purchasing", purchase_orders_path, active: controller_name.start_with?("purchase_order") %>
           <%= nav_link "Stock", stock_path, active: controller_name.in?(%w[stock lots lot_adjustments goods_receipts]) %>
           <%= nav_link "Master data", master_data_path, active: master_data_page? %>

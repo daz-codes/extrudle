@@ -17,7 +17,8 @@
   <section class="card p-5">
     <h2 class="section-title mb-3">Details</h2>
     <dl class="space-y-2">
-      <% { "Contact" => @customer.contact_name, "Email" => @customer.email, "Phone" => @customer.phone, "Currency" => @customer.currency }.each do |label, value| %>
+      <% { "Contact" => @customer.contact_name, "Email" => @customer.email, "Phone" => @customer.phone, "Currency" => @customer.currency,
+           "Sage account" => @customer.sage_account_ref, "Sage VAT code" => @customer.sage_tax_code }.each do |label, value| %>
         <div class="flex justify-between gap-4"><dt class="text-ink-600"><%= label %></dt><dd class="text-right font-medium"><%= value.presence || "—" %></dd></div>
       <% end %>
     </dl>

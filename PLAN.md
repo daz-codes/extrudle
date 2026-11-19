@@ -131,7 +131,8 @@ Goal: replace the Word production plan and give a live stock figure.
   - Publish, in one transaction: copy the draft's changes onto the live blocks (so a started job keeps its production log), add new blocks, remove live blocks the draft dropped (never a started job), reflow both lines and refresh order statuses. Before publishing, show what changed in reality since the draft began (jobs started, orders cancelled or added) and what will happen to each.
   - Planner UI: "Start a new plan", a draft banner showing who started it and when, Publish / Discard, switch between the draft and the live plan, and print either. Working assumptions Q52–Q55 are in §11.
   - Built as `PlanDraft` (+ `PlanDraftLine` for queue starts), `Schedule::Plan` (live or draft, passed to `Schedule::Editor`, `Schedule::Warnings` and the board) and `Schedule::Publish` (changes per line, notes on what happened meanwhile, one-transaction publish). `Line#schedule_blocks`, `SalesOrderLine#schedule_blocks` and `ScheduleBlock.live` read the live plan only. Cancelling an order takes its jobs off the draft straight away, as well as the live plan.
-- [ ] **Slice 8 – Dispatch**: pallets from reels, delivery note PDF, mark order dispatched; **Sage CSV export** of dispatched-but-not-invoiced notes.
+- [x] **Slice 8 – Dispatch**: pallets from reels, delivery note PDF, mark order dispatched; **Sage CSV export** of dispatched-but-not-invoiced notes.
+  - Built as: `Pallet` (worked out from a log's reels and pallet numbers), `DeliveryNote` (`DN-00001`, draft → dispatched, back to draft until exported) with `DeliveryNotePallet` (a pallet goes out once, and its reels are then fixed), `DeliveryNotePdf`, and `SageExport` (Sage 50 Audit Trail Transactions CSV, kept for re-download). Dispatching sets the order `dispatched` once every line has gone in full (or by hand for a short delivery); exporting sets it `invoiced` once all its notes have gone. Customers have a Sage account reference and VAT code. The log PDF's "No. of deliveries" box is filled in. Working assumptions Q63–Q68 are in §11.
 - [ ] **Slice 8a – Approved computers**: only computers an admin has approved can use Extrudle. Stu's admin account can sign in from any computer and approve the one it's on (Stu, 19 Nov 2026). IP addresses aren't used: every computer on the site shares one public address.
   - `Device`: name, token digest, approved by, last used at, last IP, active. Approving sets a long-lived signed, httponly, secure cookie holding a random token; only its digest is stored. Every request checks the device, not just sign-in, so revoking a computer signs it out at once.
   - `users.sign_in_anywhere` (admins only, set on Stu's account). Admin › Computers lists, renames and revokes them. An unapproved computer sees "This computer isn't approved for Extrudle. Ask an admin to approve it."; password reset still works there, but signing in doesn't.
@@ -172,7 +173,7 @@ Goal: replace the Word production plan and give a live stock figure.
 We're building ahead of some answers. Each question has a **best guess** that the app uses for now, plus where it shows up, so it's quick to correct. When an answer comes back, tick the box, write the answer under it, and fix anything listed in **Update**.
 
 - [ ] **Q1. Which Sage exactly (Sage 50 / Sage Business Cloud / Sage 200)?**
-  - Guess: Sage 50 with a CSV import, built in Slice 8. Order lines have an optional price per tonne so the export has amounts to send.
+  - Guess: Sage 50 with its Audit Trail Transactions CSV import (sales invoices, type SI), built in Slice 8. Order lines have an optional price per tonne so the export has amounts to send; a note without one waits.
   - Update: Slice 8 export format. Drop `sales_order_lines.price_per_tonne_cents` if Sage prices invoices itself.
 - [ ] **Q2. Rough kg/hour per line for typical specs? Does it vary much by width/thickness?** (Log 731: 10,040 kg in ~52 h including a gap. Was that a stop?)
   - Guess: 150–230 kg/h, a bit faster on D1. Seeded per spec as `LineRate`s.
@@ -181,7 +182,8 @@ We're building ahead of some answers. Each question has a **best guess** that th
   - Guess: a flat 60 min on D1 and 90 min on D2 (`lines.default_changeover_minutes`). There's no spec-to-spec matrix until Phase 3.
   - Update: line settings and seeds. Bring the changeover matrix forward if it varies a lot.
 - [ ] **Q4. A sample delivery note and the current reel/pallet labels.**
-  - Guess: nothing yet. Needed by Slice 8 (delivery note PDF) and Phase 2 (labels).
+  - Guess: the Slice 8 delivery note is laid out from the fields we hold: our details, customer and delivery address, our order and their PO, haulier and vehicle, one row per pallet (reels, reel numbers, net kg), totals and a "received in good condition" box. Labels are still Phase 2.
+  - Update: `DeliveryNotePdf` to match his sample.
 - [ ] **Q5. Is "Virgin Co‑Ex" the shared capping polymer? One shared hopper, or split into each line?**
   - Guess: yes, Co‑Ex is the capping layer, fed from one shared hopper. Seeded as the "Capping polymer" category.
   - Update: §4 allocation design (Slice 7c) if each line has its own hopper.
@@ -266,6 +268,14 @@ We're building ahead of some answers. Each question has a **best guess** that th
 - [ ] **Q53. Who can start, publish or discard a draft?** Guess: anyone who can use the planner (admin and office). There's one draft at a time and anyone can carry on with it. Update: the roles on the draft plan controller.
 - [ ] **Q54. What happens to a draft that's never published?** Guess: it stays until someone publishes or discards it; the planner shows how old it is. Update: discard drafts automatically after a number of days.
 - [ ] **Q55. What does publishing do with what happened meanwhile?** Guess: a job started since the draft began stays as it really is (it can't be moved or removed); jobs for orders cancelled meanwhile come off the draft as soon as the order is cancelled; orders added meanwhile appear under "Orders to plan" in the draft. All of this is listed before Publish. Update: `Schedule::Publish` (`#notes` and `#publish_line`).
+
+### Slice 8 (dispatch and Sage) assumptions
+- [ ] **Q63. Which Sage nominal code and VAT codes do sales go to?** Guess: nominal 4000, department 0, VAT code T1 (20%) for UK customers and T4 (0%) for EU customers, set per customer with their Sage account reference. Update: `config/sage.yml` and each customer's Sage fields.
+- [ ] **Q64. When is a pallet ready to go?** Guess: once its log has finished, a later pallet has been started, or it holds the spec's reels per pallet. Pallets can go out while a long run carries on (up to 3 deliveries a log). Update: `Pallet#complete?`.
+- [ ] **Q65. How are delivery notes numbered?** Guess: our own `DN-00001`, `DN-00002`… separate from despatch numbers, as one load can carry pallets from more than one log. Update: `numbered_with "DN"` in `DeliveryNote`.
+- [ ] **Q66. When is an order "dispatched"?** (Follows on from Q13.) Guess: once every line has gone out in full by weight. A short delivery is closed by hand ("Mark dispatched" on the order); over-runs are fine. Update: `SalesOrder#refresh_dispatch_status!`.
+- [ ] **Q67. How should invoices go into Sage?** Guess: one invoice line per spec on each delivery note, at the order's price per tonne, dated the dispatch date, with the delivery note number as the reference and their PO as the extra reference. Non-GBP customers are exported in their own currency, leaving the exchange rate to Sage. Update: `SageExport.rows_for`.
+- [ ] **Q68. Who does dispatch: the office or the warehouse?** Guess: the office, on the office screens; nothing on the floor screens yet. Update: the roles on `DispatchController`, `DeliveryNotesController` and `SageExportsController`.
 
 ### Slice 8a (approved computers) assumptions
 - [ ] **Q56. Who can sign in from a computer that isn't approved?** Guess: only Stu's admin account. Any admin can approve the computer they're signed in on, but only from an approved one or as Stu. Update: `users.sign_in_anywhere`.

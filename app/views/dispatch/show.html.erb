@@ -1,0 +1,67 @@
+<% content_for :title, "Dispatch" %>
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <h1 class="page-title">Dispatch</h1>
+  <%= link_to "Sage export#{" (#{@to_export.size})" if @to_export.any?}", sage_exports_path, class: "btn btn-secondary" %>
+</div>
+
+<section class="card mb-6 overflow-x-auto" aria-labelledby="ready-heading">
+  <div class="px-5 pt-5">
+    <h2 id="ready-heading" class="section-title">Ready to go</h2>
+    <p class="mt-2 text-sm text-ink-600">Finished pallets not yet on a delivery note, most pressing order first.</p>
+  </div>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Order</th>
+        <th scope="col" class="px-4 py-3">Customer</th>
+        <th scope="col" class="px-4 py-3">Required</th>
+        <th scope="col" class="px-4 py-3 text-right">Pallets</th>
+        <th scope="col" class="px-4 py-3 text-right">Weight</th>
+        <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @ready.each do |order, pallets| %>
+        <tr id="<%= dom_id(order, :ready) %>">
+          <td class="px-4 py-3 font-mono"><%= link_to order.number, order, class: "link" %></td>
+          <td class="px-4 py-3"><%= order.customer.name %></td>
+          <td class="px-4 py-3 tabular-nums"><%= l(order.required_on, format: "%a %-d %b") %> <%= urgent_badge(order) %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= pallets.size %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= kg(pallets.sum(&:weight_g)) %></td>
+          <td class="px-4 py-3 text-right"><%= link_to "New delivery note", new_delivery_note_path(order: order.id), class: "btn btn-primary" %></td>
+        </tr>
+      <% end %>
+      <% if @ready.empty? %><%= render "master_data/empty", message: "No finished pallets waiting.", colspan: 6 %><% end %>
+    </tbody>
+  </table>
+</section>
+
+<% [ [ "drafts", "Drafts", @drafts, "No drafts." ], [ "export", "Dispatched, not yet in Sage", @to_export, "Nothing waiting for Sage." ],
+     [ "recent", "Sent to Sage recently", @recent, "None yet." ] ].each do |key, heading, notes, empty| %>
+  <section class="card mb-6 overflow-x-auto" aria-labelledby="<%= key %>-heading">
+    <h2 id="<%= key %>-heading" class="section-title px-5 pt-5"><%= heading %></h2>
+    <table class="data-table mt-3 w-full text-left">
+      <thead>
+        <tr>
+          <th scope="col" class="px-4 py-3">Note</th>
+          <th scope="col" class="px-4 py-3">Order</th>
+          <th scope="col" class="px-4 py-3">Customer</th>
+          <th scope="col" class="px-4 py-3">Dispatched</th>
+          <th scope="col" class="px-4 py-3">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% notes.each do |note| %>
+          <tr id="<%= dom_id(note, key) %>">
+            <td class="px-4 py-3 font-mono"><%= link_to note.number, note, class: "link" %></td>
+            <td class="px-4 py-3 font-mono"><%= note.sales_order.number %></td>
+            <td class="px-4 py-3"><%= note.customer.name %></td>
+            <td class="px-4 py-3 tabular-nums"><%= note.dispatched_on ? l(note.dispatched_on, format: "%a %-d %b %Y") : "—" %></td>
+            <td class="px-4 py-3"><%= delivery_note_badge(note) %></td>
+          </tr>
+        <% end %>
+        <% if notes.empty? %><%= render "master_data/empty", message: empty, colspan: 5 %><% end %>
+      </tbody>
+    </table>
+  </section>
+<% end %>

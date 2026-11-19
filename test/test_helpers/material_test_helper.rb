@@ -40,3 +40,29 @@ module MaterialTestHelper
     run.reload.finish!
   end
 end
+
+module DispatchTestHelper
+  # A production log for an order line with reels on pallets:
+  #   run_with_pallets(pallets: [ [ 500, 500 ], [ 400 ] ])  # pallet 1: two reels, pallet 2: one
+  def run_with_pallets(order_line = sales_order_lines(:bf_open_700), line: lines(:d1), pallets: [ [ 500, 500 ], [ 400 ] ], finish: false)
+    start = ProductionRun::Start.new(schedule_block: planned_job(order_line, line:))
+    assert start.save, start.errors.full_messages.to_sentence
+    run = start.run
+    pallets.each.with_index(1) do |kgs, pallet_no|
+      kgs.each { run.reels.create!(weight_kg: _1.to_s, pallet_no:) }
+    end
+    run.reels.reset
+    if finish
+      run.update_columns(status: "finished", ended_at: Time.current)
+    end
+    run
+  end
+
+  def delivery_note_for(run, pallet_nos, dispatch: false)
+    note = run.sales_order.delivery_notes.build
+    assert note.save_with_number
+    note.set_pallets!(pallet_nos.map { [ run.id, _1 ] })
+    note.mark_dispatched! if dispatch
+    note
+  end
+end
