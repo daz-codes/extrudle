@@ -45,29 +45,29 @@ class ProductionRun < ApplicationRecord
     Checklist.items("prestart").keys.all? { answer("prestart", _1)&.passed? }
   end
 
-# Records a yes/no answer. A later answer replaces an earlier one on screen,
-# but both are kept for the record.
-def record_check(stage:, item:, passed:, user: nil, note: nil)
-  checks.create(stage:, item:, passed: ActiveModel::Type::Boolean.new.cast(passed), user:, note: note.presence)
-end
-
-# Records a width or thickness reading, judged against the spec's target and
-# tolerance. Thickness can be typed in microns ("252") or as on the paper
-# plan (".252" or "0.252" mm).
-def record_measurement(stage:, item:, actual:, user: nil, note: nil)
-  check = checks.build(stage:, item:, user:, note: note.presence)
-  if ProductionRun::Checklist.measurement?(stage, item)
-    check.target, check.min_value, check.max_value = ProductionRun::Checklist.range(item, product_spec)
-    check.unit = ProductionRun::Checklist.unit(item)
-    check.actual = RunCheck.parse_reading(item, actual)
+  # Records a yes/no answer. A later answer replaces an earlier one on screen,
+  # but both are kept for the record.
+  def record_check(stage:, item:, passed:, user: nil, note: nil)
+    checks.create(stage:, item:, passed: ActiveModel::Type::Boolean.new.cast(passed), user:, note: note.presence)
   end
-  check.save
-  check
-rescue ArgumentError => e
-  check.errors.add(:actual, e.message)
-  checks.delete(check)
-  check
-end
+
+  # Records a width or thickness reading, judged against the spec's target and
+  # tolerance. Thickness can be typed in microns ("252") or as on the paper
+  # plan (".252" or "0.252" mm).
+  def record_measurement(stage:, item:, actual:, user: nil, note: nil)
+    check = checks.build(stage:, item:, user:, note: note.presence)
+    if ProductionRun::Checklist.measurement?(stage, item)
+      check.target, check.min_value, check.max_value = ProductionRun::Checklist.range(item, product_spec)
+      check.unit = ProductionRun::Checklist.unit(item)
+      check.actual = RunCheck.parse_reading(item, actual)
+    end
+    check.save
+    check
+  rescue ArgumentError => e
+    check.errors.add(:actual, e.message)
+    checks.delete(check)
+    check
+  end
 
   def to_s = "Despatch #{despatch_number}"
 

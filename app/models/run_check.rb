@@ -15,21 +15,21 @@ class RunCheck < ApplicationRecord
   before_validation { self.checked_at ||= Time.current }
   before_validation :judge, if: :measurement?
 
-# "252" µm, or ".252" / "0.252" mm as written on the paper plan. Widths are whole mm.
-def self.parse_reading(item, input)
-  text = input.to_s.strip
-  raise ArgumentError, "can't be blank" if text.empty?
+  # "252" µm, or ".252" / "0.252" mm as written on the paper plan. Widths are whole mm.
+  def self.parse_reading(item, input)
+    text = input.to_s.strip
+    raise ArgumentError, "can't be blank" if text.empty?
 
-  if item.to_s == "thickness" && text.include?(".")
-    DecimalInput.to_scaled_integer(text, 1_000, exact: true)
-  else
-    DecimalInput.to_scaled_integer(text, 1, exact: true)
+    if item.to_s == "thickness" && text.include?(".")
+      DecimalInput.to_scaled_integer(text, 1_000, exact: true)
+    else
+      DecimalInput.to_scaled_integer(text, 1, exact: true)
+    end
+  rescue DecimalInput::TooPrecise
+    raise ArgumentError, item.to_s == "thickness" ? "can't be finer than 1 µm" : "must be whole millimetres"
+  rescue DecimalInput::Invalid
+    raise ArgumentError, "is not a number"
   end
-rescue DecimalInput::TooPrecise
-  raise ArgumentError, item.to_s == "thickness" ? "can't be finer than 1 µm" : "must be whole millimetres"
-rescue DecimalInput::Invalid
-  raise ArgumentError, "is not a number"
-end
 
   def measurement? = ProductionRun::Checklist.measurement?(stage, item)
 

@@ -73,6 +73,46 @@ class ProductionRunTest < ActiveSupport::TestCase
     assert_raises(Schedule::Error) { Schedule::Editor.new(lines(:d1)).remove(job) }
   end
 
+  test "starting one job keeps the rest of the order plannable, but the started job stays put" do
+    order_line = sales_order_lines(:bf_open_700) # 10 t
+    editor = Schedule::Editor.new(lines(:d1))
+    job = editor.add_job(order_line, planned_g: 4_000_000)
+    gap = editor.add(block("no_orders", 60))
+    assert start(job).save
+    assert sales_orders(:bf_open).reload.in_production?
+
+    rest = editor.add_job(order_line.reload) # the other 6 t, on the same order
+    assert_equal 6_000_000, rest.planned_g
+    editor.move(rest, :up) # past the gap
+    editor.update(job.reload, notes: "Running long")
+    assert_equal "Running long", job.reload.notes
+
+    error = assert_raises(Schedule::Error) { editor.move(job, :down) }
+    assert_match "has started", error.message
+    editor.move(gap.reload, :up) # queue: job, gap, rest
+    assert_raises(Schedule::Error) { editor.move(gap.reload, :up) } # would swap with the started job
+    assert_raises(Schedule::Error) { editor.remove(job) }
+  end
+
+  test "the database allows one running log per line" do
+    assert start.save
+    second = ProductionRun.new(line: lines(:d1), sales_order_line: sales_order_lines(:bf_overdue_700), product_spec: product_specs(:bf_700),
+                               despatch_number: 99, started_at: Time.current)
+    assert_raises(ActiveRecord::RecordNotUnique) { second.save(validate: false) }
+    second.status = "finished"
+    assert second.save(validate: false), "finished logs don't count"
+  end
+
+  test "two people starting the same job at once are told it already has a log" do
+    job = planned_job
+    s = start(job)
+    s.define_singleton_method(:block_is_a_job_without_a_log) { } # the other user's log isn't visible yet
+    assert start(job).save
+    ProductionRun.update_all(status: "finished")
+    assert_not s.save
+    assert_equal [ "This job already has a production log" ], s.errors.full_messages
+  end
+
   test "prestart answers: the latest counts, all are kept" do
     s = start
     s.save

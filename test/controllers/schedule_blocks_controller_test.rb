@@ -127,9 +127,9 @@ class ScheduleBlocksControllerTest < ActionDispatch::IntegrationTest
 
   # --- Review fixes ---
 
-  test "a job for an order in production can't be locked, unlocked or re-noted from the form" do
+  test "a job for a dispatched order can't be locked, unlocked or re-noted from the form" do
     job = Schedule::Editor.new(@d1).add_job(@order_line, planned_g: 1_900_000, starts_at: at(MONDAY_6AM))
-    @order_line.sales_order.update_column(:status, "in_production")
+    @order_line.sales_order.update_column(:status, "dispatched")
 
     get edit_schedule_block_path(job)
     assert_select "input[name=locked][disabled]", count: 2
@@ -138,7 +138,7 @@ class ScheduleBlocksControllerTest < ActionDispatch::IntegrationTest
 
     patch schedule_block_path(job), params: { locked: "1", starts_at: "2026-11-17T08:00", notes: "Moved" }
     assert_response :unprocessable_content
-    assert_select "#alert", /in production, so its plan can't change/
+    assert_select "#alert", /dispatched, so its plan can't change/
     job.reload
     assert_not job.locked?
     assert_nil job.notes

@@ -31,10 +31,10 @@ class ProductionRun::Start
     super(**attributes)
   end
 
-# The form sends UK local time ("2026-07-01T06:00"); read it in Europe/London, not UTC.
-def started_at=(value)
-  super(value.is_a?(String) && value.present? ? Time.zone.parse(value) : value)
-end
+  # The form sends UK local time ("2026-07-01T06:00"); read it in Europe/London, not UTC.
+  def started_at=(value)
+    super(value.is_a?(String) && value.present? ? Time.zone.parse(value) : value)
+  end
 
   delegate :line, :sales_order_line, :product_spec, :sales_order, to: :schedule_block
 
@@ -54,8 +54,15 @@ end
       sales_order.in_production! if sales_order.editable?
     end
     errors.empty?
-  rescue ActiveRecord::RecordNotUnique
-    errors.add(:despatch_number, :taken)
+  rescue ActiveRecord::RecordNotUnique => e
+    # Two people starting at once: say which unique index was hit.
+    if e.message.include?("schedule_block_id")
+      errors.add(:base, "This job already has a production log")
+    elsif e.message.include?("line_id")
+      errors.add(:base, "Line #{line.name} is already running another log. Finish that log first.")
+    else
+      errors.add(:despatch_number, :taken)
+    end
     false
   end
 

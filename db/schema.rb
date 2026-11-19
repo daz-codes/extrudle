@@ -151,6 +151,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_105000) do
     t.index ["despatch_number"], name: "index_production_runs_on_despatch_number", unique: true
     t.index ["line_id", "status"], name: "index_production_runs_on_line_id_and_status"
     t.index ["line_id"], name: "index_production_runs_on_line_id"
+    t.index ["line_id"], name: "index_production_runs_one_running_per_line", unique: true, where: "status = 'running'"
     t.index ["product_spec_id"], name: "index_production_runs_on_product_spec_id"
     t.index ["sales_order_line_id"], name: "index_production_runs_on_sales_order_line_id"
     t.index ["schedule_block_id"], name: "index_production_runs_on_schedule_block_id", unique: true

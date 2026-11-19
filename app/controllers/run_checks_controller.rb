@@ -8,13 +8,15 @@ class RunChecksController < ApplicationController
     stage, item = params.require(:stage), params.require(:item)
     if ProductionRun::Checklist.measurement?(stage, item)
       check = @run.record_measurement(stage:, item:, actual: params[:actual], user: Current.user, note: params[:note])
-      notice = check.persisted? && "#{check.label} #{check.actual} #{check.unit}: #{check.passed? ? "in tolerance" : "OUT OF TOLERANCE"}."
+      notice = check.persisted? && "#{check.label} #{check.actual} #{check.unit}: #{check.passed? ? "in tolerance" : "out of tolerance"}."
     else
       check = @run.record_check(stage:, item:, passed: params[:passed], user: Current.user, note: params[:note])
       notice = check.persisted? && "#{check.label}: #{check.passed? ? "yes" : "no"}."
     end
 
-    if check.persisted?
+    if check.persisted? && !check.passed? && check.measurement?
+      redirect_to run_path_at(stage), alert: notice, status: :see_other
+    elsif check.persisted?
       redirect_to run_path_at(stage), notice:, status: :see_other
     else
       redirect_to run_path_at(stage), alert: "#{ProductionRun::Checklist.label(item)} wasn't saved: #{check.errors.full_messages.to_sentence.downcase}.", status: :see_other

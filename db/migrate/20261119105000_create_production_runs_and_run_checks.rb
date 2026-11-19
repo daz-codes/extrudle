@@ -22,6 +22,8 @@ class CreateProductionRunsAndRunChecks < ActiveRecord::Migration[8.1]
 
       t.index :despatch_number, unique: true
       t.index %i[ line_id status ]
+      # One running log per line (Q34), enforced by the database too.
+      t.index :line_id, unique: true, where: "status = 'running'", name: "index_production_runs_one_running_per_line"
       t.check_constraint "despatch_number > 0", name: "production_runs_despatch_number_positive"
       t.check_constraint "ended_at IS NULL OR ended_at >= started_at", name: "production_runs_end_after_start"
     end

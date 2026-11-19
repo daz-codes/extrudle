@@ -62,7 +62,7 @@ class ProductionRunsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Previous documents and labels removed: yes.", flash[:notice]
 
     post production_run_checks_path(run), params: { stage: "startup", item: "thickness", actual: ".265" }
-    assert_equal "Thickness 265 µm: OUT OF TOLERANCE.", flash[:notice]
+    assert_equal "Thickness 265 µm: out of tolerance.", flash[:alert]
 
     post production_run_checks_path(run), params: { stage: "startup", item: "width", actual: "wide" }
     assert_match "wasn't saved", flash[:alert]
