@@ -20,6 +20,13 @@ class ReelsControllerTest < ActionDispatch::IntegrationTest
     assert_select "[role=progressbar][aria-valuenow='10']"
   end
 
+  test "a corrected reel shows its note" do
+    reel = @run.reels.create!(weight_kg: "1,000")
+    reel.update!(note: "Reweighed")
+    get production_run_reels_path(@run)
+    assert_select "##{ActionView::RecordIdentifier.dom_id(reel, :note)}", /Note: Reweighed/
+  end
+
   test "adding a reel with Turbo replaces the panel" do
     post production_run_reels_path(@run), params: { reel: { weight_kg: "1,042.5", length_m: "5620", pallet_no: "1", initials: "dh" } },
          as: :turbo_stream
