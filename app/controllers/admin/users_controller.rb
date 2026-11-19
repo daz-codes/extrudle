@@ -30,7 +30,7 @@ class Admin::UsersController < ApplicationController
     @user.assign_attributes(attributes)
 
     if locking_self_out?
-      @user.errors.add(:base, "You can't remove your own admin access or deactivate yourself.")
+      @user.errors.add(:base, "You can't remove your own admin access, deactivate yourself, or stop signing in anywhere from a computer that isn't approved.")
       render :edit, status: :unprocessable_content
     elsif @user.save
       end_other_sessions
@@ -53,11 +53,15 @@ class Admin::UsersController < ApplicationController
       @user.sessions.where.not(id: Current.session.id).destroy_all
     end
 
+    # Admins can't remove their own admin access, deactivate themselves, or
+    # stop signing in anywhere while on a computer that isn't approved.
     def locking_self_out?
-      @user == Current.user && (!@user.admin? || !@user.active?)
+      @user == Current.user && (!@user.admin? || !@user.active? || (!@user.sign_in_anywhere? && !computer_approved?))
     end
 
     def user_params
-      params.expect(user: %i[ name email_address role active password password_confirmation ])
+      params.expect(user: %i[ name email_address role active sign_in_anywhere password password_confirmation ]).tap do |attributes|
+        attributes[:sign_in_anywhere] = false if attributes.key?(:role) && attributes[:role] != "admin"
+      end
     end
 end

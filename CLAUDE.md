@@ -81,6 +81,7 @@ Forms use `ExtrudleFormBuilder` (the default builder): `text_row`, `number_row`,
 - `MasterData` controller concern: office/admin only, plus `search_query` and `include_inactive?` for index filters.
 
 ## Roles
+Only approved computers can use Extrudle when `Device.required?` (`REQUIRE_APPROVED_COMPUTERS`, on in production, off on the preview, in development and in test). `ApprovedComputers` (in `ApplicationController`) checks the device cookie on every request after sign-in; sign-in and password reset skip it (`allow_unapproved_computers`), and only `users.sign_in_anywhere` admins can sign in on an unapproved computer, then approve it under Users › Computers. Only a digest of each computer's token is stored. Tests switch it on with `Rails.configuration.x.require_approved_computers = true` (and restore it in teardown).
 `User#role` is `admin`, `office` or `floor`. Use `require_role :admin, :office` in controllers (`Authorization` concern). Floor users only see `/floor` and are redirected there from office pages. Deactivated users can't sign in.
 
 ## Conventions

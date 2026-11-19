@@ -44,6 +44,8 @@ env:
     SOLID_QUEUE_IN_PUMA: true
     # The preview gets the demo data (password in credentials: demo_password). Never on the real box.
     DEMO_SEEDS: <%= ENV.fetch("DEMO_SEEDS", preview.to_s) %>
+    # Only approved computers can use the real system; the preview stays open to show people (PLAN.md §11 Q58).
+    REQUIRE_APPROVED_COMPUTERS: <%= ENV.fetch("REQUIRE_APPROVED_COMPUTERS", (!preview).to_s) %>
 
 aliases:
   console: app exec --interactive --reuse "bin/rails console"

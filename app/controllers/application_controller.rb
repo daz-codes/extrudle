@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include Authentication
+  include ApprovedComputers
   include Authorization
 
   default_form_builder ExtrudleFormBuilder

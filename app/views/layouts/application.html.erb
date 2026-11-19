@@ -22,7 +22,7 @@
           <%= nav_link "Master data", master_data_path, active: master_data_page? %>
           <%= nav_link "Floor", floor_root_path, active: false %>
           <% if Current.user&.admin? %>
-            <%= nav_link "Users", admin_users_path, active: controller_path == "admin/users" %>
+            <%= nav_link "Users", admin_users_path, active: controller_path.in?(%w[admin/users admin/devices]) %>
           <% end %>
         </div>
 

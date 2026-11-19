@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_150000) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -59,6 +59,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_140000) do
     t.index ["sales_order_id"], name: "index_delivery_notes_on_sales_order_id"
     t.check_constraint "status = 'draft' OR dispatched_on IS NOT NULL", name: "delivery_notes_dispatched_on"
     t.check_constraint "status IN ('draft', 'dispatched')", name: "delivery_notes_status"
+  end
+
+  create_table "devices", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "token_digest", null: false
+    t.integer "approved_by_id"
+    t.datetime "last_used_at"
+    t.string "last_ip"
+    t.string "user_agent"
+    t.datetime "revoked_at"
+    t.integer "revoked_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approved_by_id"], name: "index_devices_on_approved_by_id"
+    t.index ["revoked_by_id"], name: "index_devices_on_revoked_by_id"
+    t.index ["token_digest"], name: "index_devices_on_token_digest", unique: true
   end
 
   create_table "line_rates", force: :cascade do |t|
@@ -447,6 +463,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_140000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "sign_in_anywhere", default: false, null: false
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
@@ -455,6 +472,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_140000) do
   add_foreign_key "delivery_notes", "sage_exports"
   add_foreign_key "delivery_notes", "sales_orders"
   add_foreign_key "delivery_notes", "users", column: "dispatched_by_id"
+  add_foreign_key "devices", "users", column: "approved_by_id"
+  add_foreign_key "devices", "users", column: "revoked_by_id"
   add_foreign_key "line_rates", "lines"
   add_foreign_key "line_rates", "product_specs"
   add_foreign_key "lots", "materials"
