@@ -25,6 +25,16 @@ Rails.application.routes.draw do
     resources :lines, controller: "sales_order_lines", only: %i[ create edit update destroy ]
   end
 
+  resources :purchase_orders, path: "purchasing", except: :destroy do
+    member do
+      patch :mark_sent
+      patch :back_to_draft
+      patch :cancel
+      patch :reopen
+    end
+    resources :lines, controller: "purchase_order_lines", only: %i[ create edit update destroy ]
+  end
+
   get "planner" => "planner#show", as: :planner
   get "planner/print" => "planner#print", as: :planner_print
   resources :schedule_blocks, path: "planner/blocks", only: %i[ create edit update destroy ] do

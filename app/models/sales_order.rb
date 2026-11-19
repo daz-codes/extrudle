@@ -1,5 +1,6 @@
 class SalesOrder < ApplicationRecord
-  NUMBER_FORMAT = "SO-%05d" # Working assumption, see PLAN.md §11 Q11.
+  include SequentialNumber
+  numbered_with "SO" # Working assumption, see PLAN.md §11 Q11.
 
   belongs_to :customer
   has_many :lines, -> { order(:id) }, class_name: "SalesOrderLine", inverse_of: :sales_order, dependent: :destroy
@@ -16,12 +17,9 @@ class SalesOrder < ApplicationRecord
 
   normalizes :customer_po_ref, with: ->(ref) { ref.strip.upcase.presence }
 
-  validates :number, presence: true, uniqueness: true
   validates :required_on, presence: true
   validate :customer_is_active, if: -> { new_record? || will_save_change_to_customer_id? }
   validate :customer_fixed_once_lines_exist, on: :update
-
-  before_validation :assign_number, on: :create
 
   scope :active, -> { where(status: ACTIVE_STATUSES) }
   scope :by_required_date, -> { order(required_on: :asc, urgent: :desc, number: :asc) }
@@ -66,22 +64,6 @@ class SalesOrder < ApplicationRecord
     WINDOWS.keys.zip(unscope(:includes, :order).pick(*sums)).to_h
   end
 
-  # Compares the numeric part, so SO-100000 comes after SO-99999.
-  def self.next_number
-    last = where("number LIKE 'SO-%'").pick(Arel.sql("MAX(CAST(SUBSTR(number, 4) AS INTEGER))"))
-    format(NUMBER_FORMAT, last.to_i + 1)
-  end
-
-  # Like save, but if another user took the same number at the same moment, takes the next one.
-  def save_with_number(attempts: 3)
-    save
-  rescue ActiveRecord::RecordNotUnique
-    raise if (attempts -= 1).zero?
-
-    self.number = nil
-    retry
-  end
-
   def total_g
     lines.sum(&:quantity_g)
   end
@@ -123,10 +105,6 @@ class SalesOrder < ApplicationRecord
   def to_s = number
 
   private
-    def assign_number
-      self.number ||= self.class.next_number
-    end
-
     def customer_is_active
       errors.add(:customer, "is inactive") if customer && !customer.active?
     end

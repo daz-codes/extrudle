@@ -1,0 +1,35 @@
+<%= form_with model: purchase_order, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <% if purchase_order.new_record? || purchase_order.lines.none? %>
+    <%= form.select_row :supplier_id, Supplier.active.or(Supplier.where(id: purchase_order.supplier_id)).by_name.map { [ _1.name, _1.id ] },
+          select_options: { include_blank: "Choose a supplier" }, required: true, autofocus: purchase_order.new_record?,
+          hint: (purchase_order.new_record? ? "The currency and incoterm come from the supplier. You can change them on the next page." : "Choosing another supplier takes its currency and incoterm.") %>
+  <% else %>
+    <div>
+      <span class="field-label">Supplier</span>
+      <p class="font-medium text-ink-900"><%= purchase_order.supplier.name %></p>
+      <p class="field-hint">The supplier and currency can't change once the PO has lines.</p>
+    </div>
+  <% end %>
+
+  <% if purchase_order.persisted? %>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <% if purchase_order.lines.none? %>
+        <%= form.select_row :currency, Currency::CODES %>
+      <% else %>
+        <div>
+          <span class="field-label">Currency</span>
+          <p class="font-medium text-ink-900"><%= purchase_order.currency %></p>
+        </div>
+      <% end %>
+      <%= form.select_row :incoterm, incoterm_options, select_options: { include_blank: "None" }, hint: "Who pays for shipping and insurance." %>
+    </div>
+  <% end %>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.date_row :expected_on, required: true, label: "Expected delivery" %>
+    <%= form.text_row :supplier_ref, label: "Supplier ref", hint: "Their quote or order confirmation number." %>
+  </div>
+  <%= form.text_area_row :notes, hint: "Printed on the PO, e.g. delivery instructions." %>
+  <%= render "master_data/form_actions", form: form, cancel_path: purchase_order.persisted? ? purchase_order : purchase_orders_path %>
+<% end %>

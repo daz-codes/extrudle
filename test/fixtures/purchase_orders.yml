@@ -1,0 +1,25 @@
+pacific_draft:
+  number: PO-00001
+  supplier: pacific
+  currency: USD
+  incoterm: CIF
+  status: draft
+  expected_on: <%= Date.current + 14 %>
+
+albion_sent:
+  number: PO-00002
+  supplier: albion
+  currency: GBP
+  incoterm: DAP
+  status: sent
+  supplier_ref: OC-1182
+  expected_on: <%= Date.current - 1 %>
+  sent_at: <%= 1.week.ago.to_fs(:db) %>
+
+albion_received:
+  number: PO-00003
+  supplier: albion
+  currency: GBP
+  status: received
+  expected_on: <%= Date.current - 20 %>
+  sent_at: <%= 4.weeks.ago.to_fs(:db) %>

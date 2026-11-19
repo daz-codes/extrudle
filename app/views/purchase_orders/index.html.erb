@@ -1,0 +1,58 @@
+<% content_for :title, "Purchasing" %>
+
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <h1 class="page-title">Purchasing</h1>
+  <%= link_to "New purchase order", new_purchase_order_path(supplier: @supplier&.id), class: "btn btn-primary" %>
+</div>
+
+<%= form_with url: purchase_orders_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3", data: { turbo_action: "replace" } do |form| %>
+  <div class="min-w-64 flex-1">
+    <%= label_tag :q, "Search", class: "sr-only" %>
+    <%= search_field_tag :q, @query, placeholder: "Search PO no., supplier ref or supplier", class: "field-input" %>
+  </div>
+  <div>
+    <%= label_tag :supplier, "Supplier", class: "sr-only" %>
+    <%= select_tag :supplier, options_from_collection_for_select(Supplier.by_name, :id, :name, @supplier&.id),
+          include_blank: "All suppliers", class: "field-input" %>
+  </div>
+  <div>
+    <%= label_tag :status, "Status", class: "sr-only" %>
+    <%= select_tag :status, options_for_select(PurchaseOrdersController::STATUS_FILTERS.invert, @status), class: "field-input" %>
+  </div>
+  <%= submit_tag "Filter", name: nil, class: "btn btn-secondary" %>
+<% end %>
+
+<div class="card overflow-x-auto">
+  <table class="data-table w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">PO</th>
+        <th scope="col" class="px-4 py-3">Supplier</th>
+        <th scope="col" class="px-4 py-3">Expected</th>
+        <th scope="col" class="px-4 py-3">Materials</th>
+        <th scope="col" class="px-4 py-3 text-right">Quantity</th>
+        <th scope="col" class="px-4 py-3 text-right">Value</th>
+        <th scope="col" class="px-4 py-3">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @purchase_orders.each do |order| %>
+        <tr id="<%= dom_id(order) %>" class="<%= "text-ink-500" if order.cancelled? %>">
+          <td class="px-4 py-3">
+            <%= link_to order.number, order, class: "link font-semibold" %>
+            <% if order.supplier_ref %><div class="text-sm text-ink-500">Ref <%= order.supplier_ref %></div><% end %>
+          </td>
+          <td class="px-4 py-3"><%= order.supplier.name %></td>
+          <td class="px-4 py-3"><%= expected_date(order) %></td>
+          <td class="px-4 py-3 text-sm">
+            <%= order.lines.map { _1.material.name }.uniq.join(", ").presence || tag.span("No lines yet", class: "badge badge-lemon") %>
+          </td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= order.lines.any? ? order_quantity(order.total_g) : "—" %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= order.lines.any? ? money(order.total_cents, order.currency) : "—" %></td>
+          <td class="px-4 py-3"><%= po_status_badge(order) %></td>
+        </tr>
+      <% end %>
+      <% if @purchase_orders.empty? %><%= render "master_data/empty", message: "No purchase orders match.", colspan: 7 %><% end %>
+    </tbody>
+  </table>
+</div>

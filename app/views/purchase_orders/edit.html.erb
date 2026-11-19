@@ -1,0 +1,3 @@
+<% content_for :title, "Edit #{@purchase_order.number}" %>
+<h1 class="page-title mb-6">Edit <%= @purchase_order.number %></h1>
+<%= render "form", purchase_order: @purchase_order %>
