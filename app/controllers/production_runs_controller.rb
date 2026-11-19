@@ -21,11 +21,11 @@ class ProductionRunsController < ApplicationController
   end
 
   def new
-    @start = ProductionRun::Start.new(schedule_block: ScheduleBlock.jobs.find(params[:block]))
+    @start = ProductionRun::Start.new(schedule_block: ScheduleBlock.live.jobs.find(params[:block]))
   end
 
   def create
-    block = ScheduleBlock.jobs.find(params.dig(:production_run_start, :schedule_block_id))
+    block = ScheduleBlock.live.jobs.find(params.dig(:production_run_start, :schedule_block_id))
     @start = ProductionRun::Start.new(schedule_block: block, **start_params)
     @start.user = Current.user
 

@@ -49,6 +49,9 @@ Rails.application.routes.draw do
 
   get "planner" => "planner#show", as: :planner
   get "planner/print" => "planner#print", as: :planner_print
+  resource :plan_draft, path: "planner/draft", only: %i[ show create destroy ] do
+    post :publish
+  end
   resources :schedule_blocks, path: "planner/blocks", only: %i[ create edit update destroy ] do
     patch :move, on: :member
   end

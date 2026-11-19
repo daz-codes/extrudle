@@ -7,7 +7,7 @@ class PlannerController < ApplicationController
     line = @lines.detect { _1.name == params[:line].to_s.upcase } || @lines.first
     return redirect_to(lines_path, alert: "Add a line before planning.") unless line
 
-    load_board(line, Schedule::Timeline.week_start_for(week_param))
+    load_board(line, Schedule::Timeline.week_start_for(week_param), shown_plan)
   end
 
   # Printable plan, laid out like paper form 5.4.1.1 with calculated times.
@@ -15,11 +15,18 @@ class PlannerController < ApplicationController
     @lines = Line.active.ordered
     @lines = @lines.where(name: params[:line].to_s.upcase) if params[:line].present?
     @from = Time.current.beginning_of_day
+    @plan = shown_plan.preload_planned!
     @plans = @lines.to_h do |line|
-      all = line.schedule_blocks.ordered
-        .includes(sales_order_line: [ :schedule_blocks, { sales_order: :customer }, { product_spec: :line_rates } ]).to_a
-      [ line, { blocks: all.select { _1.ends_at > @from }, warnings: Schedule::Warnings.for_line(line, all) } ]
+      all = @plan.blocks_for(line).ordered
+        .includes(sales_order_line: [ { sales_order: :customer }, { product_spec: :line_rates } ]).to_a
+      [ line, { blocks: all.select { _1.ends_at > @from }, warnings: Schedule::Warnings.for_line(line, all, plan: @plan) } ]
     end
     render layout: "print"
   end
+
+  private
+    # The draft if there is one, unless the live plan is asked for (?plan=live).
+    def shown_plan
+      params[:plan] == "live" ? Schedule::Plan.live : Schedule::Plan.current
+    end
 end

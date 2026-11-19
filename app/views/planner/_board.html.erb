@@ -4,9 +4,11 @@
 
   <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
     <%= render "planner/queue" %>
-    <div class="space-y-6">
-      <%= render "planner/add_job" %>
-      <%= render "planner/add_block" %>
-    </div>
+    <% unless @read_only %>
+      <div class="space-y-6">
+        <%= render "planner/add_job" %>
+        <%= render "planner/add_block" %>
+      </div>
+    <% end %>
   </div>
 </div>

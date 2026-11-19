@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_130000) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -116,6 +116,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_120000) do
     t.index ["material_category_id"], name: "index_materials_on_material_category_id"
     t.index ["name"], name: "index_materials_on_name", unique: true
     t.index ["supplier_id"], name: "index_materials_on_supplier_id"
+  end
+
+  create_table "plan_draft_lines", force: :cascade do |t|
+    t.integer "plan_draft_id", null: false
+    t.integer "line_id", null: false
+    t.datetime "queue_starts_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["line_id"], name: "index_plan_draft_lines_on_line_id"
+    t.index ["plan_draft_id", "line_id"], name: "index_plan_draft_lines_on_plan_draft_id_and_line_id", unique: true
+    t.index ["plan_draft_id"], name: "index_plan_draft_lines_on_plan_draft_id"
+  end
+
+  create_table "plan_drafts", force: :cascade do |t|
+    t.integer "started_by_id"
+    t.boolean "current", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["current"], name: "index_plan_drafts_on_current", unique: true
+    t.index ["started_by_id"], name: "index_plan_drafts_on_started_by_id"
+    t.check_constraint "current = 1", name: "plan_drafts_one_at_a_time"
   end
 
   create_table "product_specs", force: :cascade do |t|
@@ -303,10 +324,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "automatic", default: false, null: false
+    t.integer "plan_draft_id"
+    t.integer "source_block_id"
     t.index ["line_id", "position"], name: "index_schedule_blocks_on_line_id_and_position"
     t.index ["line_id", "starts_at"], name: "index_schedule_blocks_on_line_id_and_starts_at"
     t.index ["line_id"], name: "index_schedule_blocks_on_line_id"
+    t.index ["plan_draft_id"], name: "index_schedule_blocks_on_plan_draft_id"
     t.index ["sales_order_line_id"], name: "index_schedule_blocks_on_sales_order_line_id"
+    t.index ["source_block_id"], name: "index_schedule_blocks_on_source_block_id"
     t.check_constraint "duration_minutes > 0 AND duration_minutes % 30 = 0", name: "schedule_blocks_duration_in_slots"
     t.check_constraint "ends_at > starts_at", name: "schedule_blocks_ends_after_start"
     t.check_constraint "kind <> 'job' OR (sales_order_line_id IS NOT NULL AND planned_g > 0)", name: "schedule_blocks_jobs_have_order_line"
@@ -388,6 +413,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_120000) do
   add_foreign_key "material_loads", "users"
   add_foreign_key "materials", "material_categories"
   add_foreign_key "materials", "suppliers"
+  add_foreign_key "plan_draft_lines", "lines"
+  add_foreign_key "plan_draft_lines", "plan_drafts"
+  add_foreign_key "plan_drafts", "users", column: "started_by_id"
   add_foreign_key "product_specs", "customers"
   add_foreign_key "production_runs", "lines"
   add_foreign_key "production_runs", "product_specs"
@@ -406,7 +434,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_120000) do
   add_foreign_key "sales_order_lines", "sales_orders"
   add_foreign_key "sales_orders", "customers"
   add_foreign_key "schedule_blocks", "lines"
+  add_foreign_key "schedule_blocks", "plan_drafts"
   add_foreign_key "schedule_blocks", "sales_order_lines"
+  add_foreign_key "schedule_blocks", "schedule_blocks", column: "source_block_id", on_delete: :nullify
   add_foreign_key "sessions", "users"
   add_foreign_key "spec_ingredients", "product_specs"
   add_foreign_key "stock_movements", "lots"

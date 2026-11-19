@@ -14,10 +14,10 @@
             <span class="font-semibold text-ink-900"><%= order.number %> · <%= order_line.product_spec %></span>
             <span class="text-sm"><%= required_date(order) %> <%= urgent_badge(order) %></span>
           </div>
-          <p class="text-sm text-ink-600"><%= order.customer.name %> · <%= kg(order_line.unplanned_g) %> to plan<%= " of #{kg(order_line.quantity_g)}" if order_line.planned_g.positive? %></p>
+          <p class="text-sm text-ink-600"><%= order.customer.name %> · <%= kg(@plan.unplanned_g(order_line)) %> to plan<%= " of #{kg(order_line.quantity_g)}" if @plan.planned_g(order_line).positive? %></p>
           <p class="text-sm <%= rate ? "text-ink-500" : "font-medium text-ink-800" %>">
             <% if rate %>
-              <%= rate.kg_per_hour %> kg/h on <%= @line.name %> ≈ <%= duration_text(Schedule.job_minutes(order_line.unplanned_g, rate.kg_per_hour)) %>
+              <%= rate.kg_per_hour %> kg/h on <%= @line.name %> ≈ <%= duration_text(Schedule.job_minutes(@plan.unplanned_g(order_line), rate.kg_per_hour)) %>
             <% else %>
               <span class="badge badge-lemon mr-1">No rate</span><%= @line.name %> has no rate for this spec. Enter an estimated time.
             <% end %>
@@ -29,7 +29,7 @@
             <div class="w-32">
               <%= label_tag "planned_kg_#{order_line.id}", "Planned kg", class: "field-label" %>
               <div class="field-group">
-                <%= text_field_tag :planned_kg, DecimalInput.from_scaled_integer(order_line.unplanned_g, Weight::GRAMS_PER_KG), id: "planned_kg_#{order_line.id}", inputmode: "decimal", class: "field-input" %>
+                <%= text_field_tag :planned_kg, DecimalInput.from_scaled_integer(@plan.unplanned_g(order_line), Weight::GRAMS_PER_KG), id: "planned_kg_#{order_line.id}", inputmode: "decimal", class: "field-input" %>
               </div>
             </div>
             <% unless rate %>
