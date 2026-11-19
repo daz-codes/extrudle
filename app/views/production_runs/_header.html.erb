@@ -12,7 +12,7 @@
     </p>
   </div>
   <div class="flex flex-wrap gap-3">
-    <%= link_to "Print log", production_run_path(run, format: :pdf), class: "btn btn-secondary", target: "_blank", data: { turbo: false } %>
+    <%= link_to "Print log", production_run_path(run, format: :pdf), class: "btn btn-secondary", target: ("_blank" unless Current.user.floor?), data: { turbo: false } %>
     <% if run.editable? && current == :log %>
       <%= link_to "Edit details", edit_production_run_path(run), class: "btn btn-secondary" %>
     <% end %>

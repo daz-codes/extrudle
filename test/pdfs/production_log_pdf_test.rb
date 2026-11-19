@@ -53,4 +53,14 @@ class ProductionLogPdfTest < ActiveSupport::TestCase
     @run.update!(technician_nights: "Łukasz Wójcik")
     assert_includes pdf_text(@run), "Lukasz Wójcik"
   end
+
+  test "reel corrections and reading notes are printed for the record" do
+    @run.reels.first.update!(weight_kg: "1,040", note: "Reweighed on the floor scale")
+    @run.record_measurement(stage: "startup", item: "width", actual: "705", note: "Edge trim adjusted")
+    text = pdf_text(@run)
+    assert_includes text, "Reel 1 note: Reweighed on the floor scale"
+    assert_includes text, "Edge trim adjusted"
+    assert_includes text, "Tolerance"
+    assert_not_includes text, "Passes"
+  end
 end

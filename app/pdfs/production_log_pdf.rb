@@ -121,10 +121,10 @@ class ProductionLogPdf
         [ check.label, "#{check.target} #{check.unit}", "#{check.min_value}–#{check.max_value} #{check.unit}",
           { content: "#{check.actual} #{check.unit}", font_style: :bold },
           { content: check.passed? ? "Pass" : "Fail", text_color: check.passed? ? OK : BAD, font_style: :bold },
-          text(check.user&.name || "—"), date_time(check.checked_at) ]
+          text(check.user&.name || "—"), date_time(check.checked_at), text(check.note.to_s) ]
       end
-      rows = [ [ { content: "No readings recorded.", colspan: 7, text_color: MUTED } ] ] if rows.empty?
-      grid(pdf, [ "Reading", "Target", "Passes", "Actual", "Result", "By", "When" ], rows)
+      rows = [ [ { content: "No readings recorded.", colspan: 8, text_color: MUTED } ] ] if rows.empty?
+      grid(pdf, [ "Reading", "Target", "Tolerance", "Actual", "Result", "By", "When", "Note" ], rows)
     end
 
     def materials(pdf)
@@ -155,11 +155,15 @@ class ProductionLogPdf
 
     def reels(pdf)
       running = 0
-      rows = run.reels.map do |reel|
+      rows = run.reels.flat_map do |reel|
         running += reel.weight_g
-        [ reel.reel_no.to_s, date_time(reel.produced_at), kg_number(reel.weight_g),
-          reel.length_m ? number_with_delimiter(reel.length_m) : "—", reel.pallet_no&.to_s || "—",
-          text(reel.initials || "—"), kg_number(running) ]
+        row = [ reel.reel_no.to_s, date_time(reel.produced_at), kg_number(reel.weight_g),
+                reel.length_m ? number_with_delimiter(reel.length_m) : "—", reel.pallet_no&.to_s || "—",
+                text(reel.initials || "—"), kg_number(running) ]
+        # A corrected reel shows why it was changed (an audit asks).
+        next [ row ] if reel.note.blank?
+
+        [ row, [ { content: "Reel #{reel.reel_no} note: #{text(reel.note)}", colspan: 7, text_color: MUTED, size: 7.5 } ] ]
       end
       if rows.empty?
         rows = [ [ { content: "No reels entered.", colspan: 7, text_color: MUTED } ] ]
@@ -184,7 +188,7 @@ class ProductionLogPdf
       field_grid(pdf, {
         "Started by" => "#{run.started_by&.name || "—"}, #{date_time(run.started_at)}",
         "Finished by" => run.finished? ? "#{run.finished_by&.name || "—"}, #{date_time(run.ended_at)}" : "Still running",
-        "No. of deliveries" => "—"
+        "No. of deliveries" => "" # written in by hand until dispatch (Slice 8) can fill it
       }, per_row: 3)
       pdf.move_down 18
       width = (pdf.bounds.width - 24) / 2

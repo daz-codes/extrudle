@@ -101,6 +101,7 @@ class ProductionRunsControllerTest < ActionDispatch::IntegrationTest
       sign_in_as user
       get production_run_path(run)
       assert_select "a[href='#{production_run_path(run, format: :pdf)}']", "Print log"
+      assert_select "a[href='#{production_run_path(run, format: :pdf)}'][target=_blank]", count: user.floor? ? 0 : 1
 
       get production_run_path(run, format: :pdf)
       assert_response :success
