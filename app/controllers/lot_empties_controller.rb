@@ -7,6 +7,8 @@ class LotEmptiesController < ApplicationController
   def create
     Stock::Reconciliation.mark_empty(@lot, user: Current.user)
     redirect_to @lot, notice: "#{@lot.code} was marked empty.", status: :see_other
+  rescue ArgumentError => e
+    redirect_to @lot, alert: e.message, status: :see_other
   end
 
   def destroy

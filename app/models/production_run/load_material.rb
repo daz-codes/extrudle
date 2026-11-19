@@ -56,9 +56,11 @@ class ProductionRun::LoadMaterial
 
     MaterialLoad.transaction do
       previous = previous_load
-      @load = run.material_loads.create!(lot:, feed: chosen_feed, from_reel_no:, initials:, note:, user:)
+      empties_previous = previous.present? && previous.lot_id != lot.id && previous_empty && !previous.lot.emptied?
+      @load = run.material_loads.create!(lot:, feed: chosen_feed, from_reel_no:, initials:, note:, user:,
+                                         marked_previous_empty: empties_previous)
       Stock::Transfer.call(lot, to: "on_site", user:, note: "Loaded on line #{run.line.name}") if lot.storage?
-      Stock::Reconciliation.mark_empty(previous.lot, user:) if previous && previous.lot_id != lot.id && previous_empty
+      Stock::Reconciliation.mark_empty(previous.lot, user:) if empties_previous
     end
     run.material_loads.reset
     true
@@ -84,23 +86,8 @@ class ProductionRun::LoadMaterial
         errors.add(:feed, "can't be blank")
       elsif run.current_loads[chosen_feed]&.lot_id == lot.id
         errors.add(:lot_code, "#{lot.code} is already on #{MaterialLoad.feed_label(chosen_feed)}")
-      elsif (elsewhere = on_another_feed)
+      elsif (elsewhere = MaterialLoad.feeding_elsewhere(lot, run:, feed: chosen_feed))
         errors.add(:lot_code, "#{lot.code} is on #{elsewhere}. Mark it empty or load another bag there first")
       end
-    end
-
-    # Where else the bag is feeding right now. A bag is on one feed at a time,
-    # except the shared Co-Ex feed, which can take the same bag on both lines.
-    def on_another_feed
-      ProductionRun.running.includes(:line, material_loads: :lot).find_each do |other|
-        other.current_loads.each_value do |current|
-          next unless current.lot_id == lot.id
-          next if other.id == run.id && current.feed == chosen_feed
-          next if other.line_id != run.line_id && current.shared_feed? && chosen_feed == current.feed
-
-          return "line #{other.line.name} #{current.feed_label}"
-        end
-      end
-      nil
     end
 end

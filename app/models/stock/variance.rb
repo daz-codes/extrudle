@@ -19,7 +19,7 @@ class Stock::Variance
   def reconciled
     @reconciled ||= lots.where.not(reconciled_at: nil).where(reconciled_at: @since..).order(reconciled_at: :desc).map do |lot|
       movements = lot.movements.to_a
-      variance = movements.find { _1.adjustment? && _1.note == Stock::Reconciliation::NOTE }&.quantity_g.to_i
+      variance = movements.find(&:bag_variance?)&.quantity_g.to_i
       used = -movements.select(&:issue_to_production?).sum(&:quantity_g)
       Row.new(lot:, in_g: movements.sum(&:quantity_g) + used - variance, used_g: used, variance_g: variance)
     end

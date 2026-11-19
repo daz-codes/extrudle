@@ -88,6 +88,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_120000) do
     t.integer "from_reel_no", null: false
     t.datetime "loaded_at", null: false
     t.boolean "carried_over", default: false, null: false
+    t.boolean "marked_previous_empty", default: false, null: false
     t.string "initials"
     t.integer "user_id"
     t.text "note"
@@ -344,6 +345,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "production_run_id"
+    t.boolean "bag_variance", default: false, null: false
     t.index ["lot_id", "moved_at"], name: "index_stock_movements_on_lot_id_and_moved_at"
     t.index ["lot_id"], name: "index_stock_movements_on_lot_id"
     t.index ["production_run_id"], name: "index_stock_movements_on_production_run_id"

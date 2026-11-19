@@ -65,4 +65,23 @@ class MaterialLoadsControllerTest < ActionDispatch::IntegrationTest
     post production_run_material_loads_path(@run), params: { material_load: { lot_code: lots(:regrind_bag).code } }
     assert_match "is finished", flash[:alert]
   end
+
+  test "taking off a bag scanned by mistake puts the bag before it back" do
+    jade = load_bag(@run, lots(:jade_opening)).lot
+    wrong = load_bag(@run, bag(materials(:jade)))
+    assert jade.reload.emptied?
+
+    delete production_run_material_load_path(@run, wrong)
+    assert_match "was taken off", flash[:notice]
+    assert_not jade.reload.emptied?
+  end
+
+  test "a bag with no weight left on the books can go on, with a warning" do
+    used_up = bag(materials(:regrind), kg: 100)
+    Stock::Adjustment.new(lot: used_up, counted_kg: "0", reason: "Count").save!
+
+    post production_run_material_loads_path(@run), params: { material_load: { lot_code: used_up.code } }
+    assert_match "is on Regrind", flash[:notice]
+    assert_match "no weight left on the books", flash[:alert]
+  end
 end

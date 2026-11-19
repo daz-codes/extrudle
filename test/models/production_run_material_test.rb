@@ -34,6 +34,7 @@ class ProductionRunMaterialTest < ActiveSupport::TestCase
   test "unknown, emptied and off-site bags can't go on" do
     assert_load_error "L-1999-000001 isn't a lot code we know", "L-1999-000001"
 
+    load_bag(@run, @jade)
     Stock::Reconciliation.mark_empty(@jade)
     assert_load_error "#{@jade.code} was marked empty", @jade.code
 
@@ -190,7 +191,10 @@ class ProductionRunMaterialTest < ActiveSupport::TestCase
     assert_equal 0, small.reload.quantity_g
   end
 
-  test "a bag not on any running log is reconciled straight away, and can't be unmarked after" do
+  test "a bag whose logs have all finished is reconciled straight away, and can't be unmarked after" do
+    load_bag(@run, @jade)
+    add_reels(@run, 900)
+    finish_cleanly(@run)
     Stock::Reconciliation.mark_empty(@jade)
     assert @jade.reload.reconciled?
     assert_equal 0, @jade.quantity_g
@@ -202,6 +206,60 @@ class ProductionRunMaterialTest < ActiveSupport::TestCase
     Stock::Reconciliation.mark_empty(@jade)
     Stock::Reconciliation.unmark_empty(@jade)
     assert_not @jade.reload.emptied?
+  end
+
+  test "a bag that has never been on a line can't be marked empty" do
+    error = assert_raises(ArgumentError) { Stock::Reconciliation.mark_empty(@jade) }
+    assert_match "hasn't been on a line", error.message
+    assert_not @jade.reload.emptied?
+  end
+
+  test "the variance is found by its flag, not its note" do
+    load_bag(@run, @jade)
+    add_reels(@run, 900)
+    Stock::Reconciliation.mark_empty(@jade)
+    finish_cleanly(@run)
+    variance = @jade.movements.reload.last
+    assert variance.bag_variance?
+    StockMovement.where(id: variance.id).update_all(note: "Reworded later")
+    assert_equal(-100_000, Stock::Variance.new.reconciled.sole.variance_g)
+  end
+
+  # Mistakes and carry-over --------------------------------------------------
+
+  test "removing a bag scanned by mistake puts the bag before it back on the feed" do
+    load_bag(@run, @jade)
+    wrong = load_bag(@run, bag(materials(:jade)))
+    assert @jade.reload.emptied?
+
+    @run.reload.material_loads.find(wrong.id).remove!
+    assert_not @jade.reload.emptied?
+    assert_equal @jade, @run.reload.current_loads.fetch("virgin_mainex").lot
+  end
+
+  test "removing a bag leaves the bag before it empty if it was already marked empty" do
+    load_bag(@run, @jade)
+    Stock::Reconciliation.mark_empty(@jade)
+    next_bag = load_bag(@run, bag(materials(:jade)))
+    assert_not next_bag.marked_previous_empty?
+
+    @run.reload.material_loads.find(next_bag.id).remove!
+    assert @jade.reload.emptied?
+  end
+
+  test "bags don't carry over once they're on the other line or off site" do
+    pcw = bag(pcw_flake)
+    load_bag(@run, @jade)
+    load_bag(@run, pcw)
+    add_reels(@run, 900)
+    finish_cleanly(@run)
+
+    other_line = start_run(stock_order_line, line: lines(:d2))
+    load_bag(other_line, @jade)
+    Stock::Transfer.call(pcw.reload, to: "storage")
+
+    following = start_run(stock_order_line)
+    assert_empty following.material_loads
   end
 
   private

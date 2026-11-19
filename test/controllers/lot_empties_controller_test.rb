@@ -21,8 +21,22 @@ class LotEmptiesControllerTest < ActionDispatch::IntegrationTest
     assert_not lot.reload.emptied?
   end
 
-  test "a bag on no log is reconciled at once and can't be undone" do
+  test "a bag that has never been on a line can't be marked empty" do
     lot = lots(:jade_opening)
+    get lot_path(lot)
+    assert_select "button", text: "Mark empty", count: 0
+
+    post lot_empty_path(lot)
+    assert_match "hasn't been on a line", flash[:alert]
+    assert_not lot.reload.emptied?
+  end
+
+  test "a bag whose logs have finished is reconciled at once and can't be undone" do
+    run = start_run
+    lot = load_bag(run, lots(:jade_opening)).lot
+    add_reels(run, 900)
+    finish_cleanly(run)
+
     post lot_empty_path(lot)
     assert lot.reload.reconciled?
     assert_equal 0, lot.quantity_g

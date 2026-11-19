@@ -16,7 +16,7 @@
   <div class="flex flex-wrap gap-3">
     <%= link_to "Print label", labels_lots_path(ids: [ lot.id ]), class: "btn btn-secondary", target: "_blank" %>
     <%= link_to "Adjust weight", new_lot_adjustment_path(lot), class: "btn btn-secondary" %>
-    <% if !lot.emptied? %>
+    <% if !lot.emptied? && @loads.any? %>
       <%= button_to "Mark empty", lot_empty_path(lot), method: :post, class: "btn btn-secondary",
             form: { data: { turbo_confirm: "Mark #{lot.code} empty? Its weight is zeroed once every log that used it has finished." } } %>
     <% elsif !lot.reconciled? %>

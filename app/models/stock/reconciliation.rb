@@ -8,7 +8,11 @@
 class Stock::Reconciliation
   NOTE = "Bag empty: variance against what production used"
 
+  # Only for bags that have been on a line: anything else is written off with
+  # a weight adjustment and a reason (Stock::Adjustment).
   def self.mark_empty(lot, user: nil, at: Time.current)
+    raise ArgumentError, "#{lot.code} hasn't been on a line. Use Adjust weight to write it off, with a reason" unless lot.material_loads.exists?
+
     lot.update!(emptied_at: at) unless lot.emptied_at
     call(lot, user:)
   end
@@ -33,7 +37,7 @@ class Stock::Reconciliation
     Lot.transaction do
       lot.lock!
       remaining = lot.movements.sum(:quantity_g)
-      movement = lot.movements.create!(kind: "adjustment", quantity_g: -remaining, user:, note: NOTE) unless remaining.zero?
+      movement = lot.movements.create!(kind: "adjustment", quantity_g: -remaining, user:, note: NOTE, bag_variance: true) unless remaining.zero?
       lot.update!(reconciled_at: Time.current)
       movement
     end

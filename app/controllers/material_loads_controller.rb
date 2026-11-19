@@ -16,17 +16,22 @@ class MaterialLoadsController < ApplicationController
 
     if @loading.save
       load = @loading.load
-      redirect_to production_run_material_loads_path(@run), notice: "#{load.lot.code} (#{load.lot.material.name}) is on #{load.feed_label} from reel #{load.from_reel_no}."
+      notice = "#{load.lot.code} (#{load.lot.material.name}) is on #{load.feed_label} from reel #{load.from_reel_no}."
+      if load.lot.reload.empty?
+        redirect_to production_run_material_loads_path(@run), notice:, alert: "#{load.lot.code} has no weight left on the books. Check the bag, and tell the office if it's still full."
+      else
+        redirect_to production_run_material_loads_path(@run), notice:
+      end
     else
       render :index, status: :unprocessable_content
     end
   end
 
   # A bag recorded by mistake. Only the latest bag on a feed can be removed,
-  # so the reel ranges stay right. It doesn't undo marking the bag before empty.
+  # so the reel ranges stay right. The bag before it goes back on the feed.
   def destroy
     load = @run.material_loads.find(params[:id])
-    if @run.current_loads[load.feed] == load && load.destroy
+    if @run.current_loads[load.feed] == load && load.remove!
       redirect_to production_run_material_loads_path(@run), notice: "#{load.lot.code} was taken off #{load.feed_label}.", status: :see_other
     else
       redirect_to production_run_material_loads_path(@run), alert: "Only the latest bag on a feed can be removed.", status: :see_other

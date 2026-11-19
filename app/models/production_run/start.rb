@@ -70,12 +70,15 @@ class ProductionRun::Start
   private
     # Bags still on the feeds when the line's last log finished carry on
     # feeding this one from reel 1. Working assumption, see PLAN.md §11 Q47.
+    # Not if the bag has since been marked empty, moved off site, or gone on
+    # a feed of the other line's running log.
     def carry_over_bags
       previous = ProductionRun.finished.where(line:).where.not(id: @run.id).order(ended_at: :desc, id: :desc).first
       return unless previous
 
       previous.current_loads.each_value do |load|
-        next if load.lot.emptied?
+        next if load.lot.emptied? || !load.lot.on_site?
+        next if MaterialLoad.feeding_elsewhere(load.lot, run: @run, feed: load.feed)
 
         @run.material_loads.create!(lot: load.lot, feed: load.feed, from_reel_no: 1, carried_over: true,
                                     loaded_at: started_at, initials: load.initials, user:)

@@ -21,6 +21,8 @@ class CreateMaterialLoadsAndRecipes < ActiveRecord::Migration[8.1]
       t.integer :from_reel_no, null: false
       t.datetime :loaded_at, null: false
       t.boolean :carried_over, null: false, default: false
+      # This load marked the bag it replaced empty (undone if the load is removed).
+      t.boolean :marked_previous_empty, null: false, default: false
       t.string :initials
       t.references :user, foreign_key: true
       t.text :note
@@ -32,6 +34,8 @@ class CreateMaterialLoadsAndRecipes < ActiveRecord::Migration[8.1]
 
     # Material used by a run is an issue_to_production movement against the run.
     add_reference :stock_movements, :production_run, foreign_key: true
+    # The adjustment that zeroes a bag marked empty: its variance (Stock::Reconciliation).
+    add_column :stock_movements, :bag_variance, :boolean, null: false, default: false
 
     # A bag marked empty is reconciled once every run that used it has finished.
     add_column :lots, :emptied_at, :datetime

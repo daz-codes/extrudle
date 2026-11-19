@@ -9,7 +9,10 @@ class StockVariancesControllerTest < ActionDispatch::IntegrationTest
     on_line = load_bag(run, lots(:jade_opening)).lot
     waiting = load_bag(run, lots(:regrind_bag)).lot
     Stock::Reconciliation.mark_empty(waiting)
-    reconciled = bag(materials(:jade))
+    earlier = start_run(stock_order_line, line: lines(:d2))
+    reconciled = load_bag(earlier, bag(materials(:jade))).lot
+    add_reels(earlier, 500)
+    finish_cleanly(earlier)
     Stock::Reconciliation.mark_empty(reconciled)
 
     sign_in_as users(:office)
