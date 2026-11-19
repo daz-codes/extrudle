@@ -29,6 +29,8 @@ class ImportsController < ApplicationController
 
   def run
     @csv = params[:csv].to_s
+    return redirect_to(import_path(@kind), alert: "That file is too big (2 MB at most).") if @csv.bytesize > MAX_BYTES
+
     @import = @kind_class.new(@csv)
     if @import.save
       counts = @import.counts.map { |action, count| "#{count} #{action}" }.to_sentence

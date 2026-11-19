@@ -28,8 +28,10 @@ class Import::Base
   def self.normalise(header) = header.to_s.downcase.gsub("%", " pct ").gsub(/[^a-z0-9]+/, "_").delete_prefix("_").delete_suffix("_")
 
   def self.template_csv
-    rows = [ template_headers, template_example ]
-    rows.map { |row| row.map { |value| value.to_s.match?(/[",\n]/) ? "\"#{value.to_s.gsub('"', '""')}\"" : value.to_s }.join(",") }.join("\r\n") + "\r\n"
+    CSV.generate(row_sep: "\r\n", quote_empty: false) do |csv|
+      csv << template_headers
+      csv << template_example
+    end
   end
 
   def self.template_headers = columns.map(&:label)
@@ -74,6 +76,7 @@ class Import::Base
 
     # Each row in its own savepoint, so a failed row leaves nothing half done.
     def process(values, line:)
+      @line = line
       label, action = ActiveRecord::Base.transaction(requires_new: true) { import_row(values) }
       Result.new(line:, label:, action:, errors: [])
     rescue RowError => e
@@ -101,6 +104,11 @@ class Import::Base
       columns.select(&:required).reject { @mapping.value?(_1.name) }.each do |column|
         @problems << "The \"#{column.label}\" column is missing"
       end
+    end
+
+    # A note shown on the preview that doesn't stop the import.
+    def warn_about_row(message)
+      @warnings << "Line #{@line}: #{message}"
     end
 
     # Subclasses can accept columns beyond the declared ones (e.g. a rate per line).

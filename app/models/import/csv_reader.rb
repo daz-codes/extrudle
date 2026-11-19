@@ -1,10 +1,8 @@
-# Reads a spreadsheet saved as CSV (RFC 4180): quoted fields, "" for a quote,
-# line breaks inside quotes, CRLF or LF, and Excel's UTF-8 byte order mark.
-# The separator is guessed from the header line (comma, semicolon or tab), as
-# Excel in some locales saves with semicolons. Text that isn't valid UTF-8 is
-# read as Windows-1252, which is what older Excel saves.
-#
-# Written by hand because the csv gem isn't in the bundle (CLAUDE.md: no extra gems).
+# Reads a spreadsheet saved as CSV with Ruby's csv library, plus the things
+# Excel needs: its UTF-8 byte order mark, text that isn't valid UTF-8 (older
+# Excel saves Windows-1252), and a separator guessed from the header line
+# (comma, semicolon or tab, as Excel in some locales saves with semicolons).
+# Blank rows are dropped.
 #
 #   Import::CsvReader.parse("name,currency\r\nBrightform,GBP\r\n") #=> [["name", "currency"], ["Brightform", "GBP"]]
 module Import::CsvReader
@@ -16,49 +14,17 @@ module Import::CsvReader
 
   def parse(text)
     text = normalise(text)
-    separator = guess_separator(text)
-    rows = []
-    row = []
-    field = +""
-    quoted = false
-    index = 0
-
-    while index < text.length
-      char = text[index]
-      if quoted
-        if char == '"' && text[index + 1] == '"'
-          field << '"'
-          index += 1
-        elsif char == '"'
-          quoted = false
-        else
-          field << char
-        end
-      elsif char == '"' && field.empty?
-        quoted = true
-      elsif char == separator
-        row << field
-        field = +""
-      elsif char == "\n"
-        rows << (row << field)
-        row = []
-        field = +""
-      else
-        field << char
-      end
-      index += 1
-    end
-
-    raise MalformedError, "A quoted field isn't closed (a \" is missing)" if quoted
-
-    rows << (row << field) unless row.empty? && field.empty?
-    rows.reject { |cells| cells.all? { _1.strip.empty? } }
+    CSV.parse(text, col_sep: guess_separator(text), row_sep: "\n", nil_value: "")
+       .reject { |cells| cells.all? { _1.strip.empty? } }
+  rescue CSV::MalformedCSVError => e
+    line = e.line_number ? " on line #{e.line_number}" : ""
+    raise MalformedError, "The file isn't valid CSV#{line}: check for a \" that isn't closed or a stray \" inside a cell"
   end
 
   def normalise(text)
     text = text.to_s.dup.force_encoding(Encoding::UTF_8)
     text = text.force_encoding(Encoding::Windows_1252).encode(Encoding::UTF_8) unless text.valid_encoding?
-    text.delete_prefix("\uFEFF").gsub(/\r\n?/, "\n")
+    text.delete_prefix("﻿").gsub(/\r\n?/, "\n")
   end
 
   # The separator used most in the header line, outside quotes.

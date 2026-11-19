@@ -66,14 +66,9 @@ class SageExport < ApplicationRecord
   # "1234.56": two decimals, no thousands separator.
   def self.amount(cents) = DecimalInput.from_scaled_integer(cents, 100, pad: true)
 
-  # RFC 4180: quote fields with commas, quotes or line breaks; CRLF line ends.
+  # RFC 4180: fields with commas, quotes or line breaks are quoted; CRLF line ends.
   def self.to_csv(rows)
-    rows.map { |row| row.map { csv_field(_1) }.join(",") }.join("\r\n") + "\r\n"
+    CSV.generate(row_sep: "\r\n", quote_empty: false) { |csv| rows.each { csv << _1 } }
   end
-
-  def self.csv_field(value)
-    text = value.to_s
-    text.match?(/[",\r\n]/) ? "\"#{text.gsub('"', '""')}\"" : text
-  end
-  private_class_method :rows_for, :amount, :to_csv, :csv_field
+  private_class_method :rows_for, :amount, :to_csv
 end

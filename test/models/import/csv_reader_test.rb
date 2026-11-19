@@ -27,6 +27,11 @@ class Import::CsvReaderTest < ActiveSupport::TestCase
   end
 
   test "an unclosed quote is an error" do
-    assert_raises(Import::CsvReader::MalformedError) { parse(%(a,b\n"oops,1\n)) }
+    error = assert_raises(Import::CsvReader::MalformedError) { parse(%(a,b\n"oops,1\n)) }
+    assert_match "isn't valid CSV", error.message
+  end
+
+  test "a semicolon file keeps commas inside cells" do
+    assert_equal [ %w[ name address ], [ "Rhine", "Industriestraße 12, Ludwigshafen" ] ], parse("name;address\nRhine;Industriestraße 12, Ludwigshafen\n")
   end
 end

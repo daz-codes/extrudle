@@ -96,6 +96,15 @@ class ImportTest < ActiveSupport::TestCase
     assert_equal Date.new(2026, 11, 1), lots.first.received_on
   end
 
+  test "opening stock: a batch already in stock is flagged, but not one repeated within the file" do
+    text = "Material,Total kg,Supplier batch\nJADE,1000,CZ-9\nJADE,500,CZ-9\n"
+    assert import("opening_stock", text).warnings.empty?
+
+    again = Import.for("opening_stock", text).tap(&:preview)
+    assert again.ok?
+    assert_equal [ "Line 2: JADE batch CZ-9 is already in stock. Has this file been imported before?" ], again.warnings
+  end
+
   test "templates have every column and an example that checks out" do
     Import::KINDS.each_key do |kind|
       klass = Import.kind_class(kind)

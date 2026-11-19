@@ -17,6 +17,12 @@ class Import::OpeningStock < Import::Base
   private
     def import_row(values)
       material = find_by_name(Material, require_value(values, "material", "Material"), "material")
+      # Every row adds new lots, so the same batch already in stock usually means the file was imported before.
+      # (Rows earlier in this file don't count: they're in the same rolled-back preview.)
+      batch = [ material.id, values["supplier_lot_ref"] ]
+      if batch.last && (@batches_in_file ||= Set.new).add?(batch) && material.lots.exists?(supplier_lot_ref: batch.last)
+        warn_about_row "#{material.name} batch #{values["supplier_lot_ref"]} is already in stock. Has this file been imported before?"
+      end
       receipt = Stock::Receipt.new(
         material_id: material.id, quantity: require_value(values, "quantity_kg", "Total kg"), quantity_unit: "kg",
         bags: values["bags"] || 1, supplier_lot_ref: values["supplier_lot_ref"], first_bag_no: values["first_bag_no"],
