@@ -8,6 +8,12 @@
   </div>
   <%= form.text_area_row :address %>
   <%= form.radio_row :currency, Currency::CODES, hint: "Prices and invoices for this customer use this currency." %>
+  <div class="grid gap-5 sm:grid-cols-[1fr_2fr]">
+    <%= form.text_row :sage_account_ref, label: "Sage account reference", maxlength: 8, class: "field-input font-mono uppercase",
+          hint: "As in Sage 50, e.g. BRIGHT01. Needed to export invoices." %>
+    <%= form.radio_row :sage_tax_code, SageExport.tax_codes, label: "Sage VAT code",
+          labels: { "T0" => "T0 zero rated", "T1" => "T1 standard 20%", "T2" => "T2 exempt", "T4" => "T4 EU sales" } %>
+  </div>
   <%= form.text_area_row :notes %>
   <%= form.check_row :active, hint: "Inactive customers are hidden from new orders." %>
   <%= render "master_data/form_actions", form: form, cancel_path: customer.persisted? ? customer : customers_path %>

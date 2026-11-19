@@ -4,6 +4,7 @@ class SalesOrder < ApplicationRecord
 
   belongs_to :customer
   has_many :lines, -> { order(:id) }, class_name: "SalesOrderLine", inverse_of: :sales_order, dependent: :destroy
+  has_many :delivery_notes, -> { order(:created_at, :id) }, dependent: :restrict_with_error
 
   # scheduled, in_production, dispatched and invoiced are set by later slices
   # (planner, production log, dispatch). Slice 2 only cancels and reopens.
@@ -95,6 +96,60 @@ class SalesOrder < ApplicationRecord
     planned = ScheduleBlock.live.jobs.where(sales_order_line_id: order_lines.map(&:id)).group(:sales_order_line_id).sum(:planned_g)
     fully_planned = order_lines.any? && order_lines.all? { planned.fetch(_1.id, 0) >= _1.quantity_g }
     update!(status: fully_planned ? "scheduled" : "open") if scheduled? != fully_planned
+  end
+
+  # Finished pallets from this order's production logs that aren't on a delivery note yet.
+  def pallets_to_dispatch
+    ProductionRun.where(sales_order_line_id: lines.map(&:id))
+      .includes(:reels, :product_spec, :delivery_note_pallets, sales_order_line: :product_spec).order(:despatch_number)
+      .flat_map(&:pallets).select { _1.complete? && !_1.run.pallet_on_delivery_note?(_1.pallet_no) }
+  end
+
+  # Orders with pallets waiting to go, most pressing first.
+  def self.ready_to_dispatch
+    where(status: %w[ in_production dispatched ]).includes(:customer, :lines).by_required_date
+      .filter_map { |order| (pallets = order.pallets_to_dispatch).any? ? [ order, pallets ] : nil }
+  end
+
+  # Weight gone out on dispatched delivery notes, per order line id.
+  def dispatched_g_by_line
+    Reel.joins(<<~SQL.squish).where(production_runs: { sales_order_line_id: lines.map(&:id) }).group("production_runs.sales_order_line_id").sum(:weight_g)
+      JOIN production_runs ON production_runs.id = reels.production_run_id
+      JOIN delivery_note_pallets ON delivery_note_pallets.production_run_id = reels.production_run_id
+        AND delivery_note_pallets.pallet_no = reels.pallet_no
+      JOIN delivery_notes ON delivery_notes.id = delivery_note_pallets.delivery_note_id AND delivery_notes.status = 'dispatched'
+    SQL
+  end
+
+  # In production until every order line has gone out in full, then dispatched.
+  # Working assumption, see PLAN.md §11 Q13 and Q66: no tolerance, so a short
+  # delivery is closed by hand with mark_dispatched!.
+  def refresh_dispatch_status!
+    return unless in_production? || dispatched?
+
+    dispatched = dispatched_g_by_line
+    complete = lines.reload.any? && lines.all? { dispatched.fetch(_1.id, 0) >= _1.quantity_g }
+    if complete && in_production?
+      dispatched!
+    elsif !complete && dispatched?
+      in_production! # a delivery was undone; close it by hand again if it went out short
+    end
+  end
+
+  # Closes an order that's gone out short (or over) by hand.
+  def mark_dispatched!
+    raise ArgumentError, "Only orders in production can be marked dispatched" unless in_production?
+    raise ArgumentError, "Dispatch at least one delivery note first" unless delivery_notes.dispatched.exists?
+
+    dispatched!
+  end
+
+  # Invoiced once it's dispatched and every delivery note has gone to Sage.
+  def refresh_invoice_status!
+    return unless dispatched?
+
+    notes = delivery_notes.reload
+    invoiced! if notes.any? && notes.all? { _1.dispatched? && _1.exported? }
   end
 
   def reopen!

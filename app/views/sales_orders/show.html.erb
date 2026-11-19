@@ -20,6 +20,9 @@
             form: { data: { turbo_confirm: "Cancel order #{order.number}?" } } %>
     <% elsif order.cancelled? %>
       <%= button_to "Reopen order", reopen_sales_order_path(order), method: :patch, class: "btn btn-secondary" %>
+    <% elsif order.in_production? && order.delivery_notes.any?(&:dispatched?) %>
+      <%= button_to "Mark dispatched", mark_dispatched_sales_order_path(order), method: :patch, class: "btn btn-secondary",
+            form: { data: { turbo_confirm: "Mark #{order.number} dispatched, though not everything ordered has gone?" } } %>
     <% end %>
   </div>
 </div>
@@ -88,6 +91,40 @@
     </tbody>
   </table>
 </section>
+
+<% if order.delivery_notes.any? %>
+  <% dispatched = order.dispatched_g_by_line %>
+  <section class="card mb-6 overflow-x-auto" aria-labelledby="deliveries-heading">
+    <div class="px-5 pt-5">
+      <h2 id="deliveries-heading" class="section-title">Deliveries</h2>
+      <p class="mt-2 text-sm text-ink-600">
+        <% order.lines.each do |line| %>
+          <span class="mr-4"><%= line.product_spec %>: <%= order_quantity(dispatched.fetch(line.id, 0)) %> of <%= order_quantity(line.quantity_g, unit: line.quantity_unit) %> gone</span>
+        <% end %>
+      </p>
+    </div>
+    <table class="data-table mt-3 w-full text-left">
+      <thead>
+        <tr>
+          <th scope="col" class="px-4 py-3">Note</th>
+          <th scope="col" class="px-4 py-3">Dispatched</th>
+          <th scope="col" class="px-4 py-3 text-right">Weight</th>
+          <th scope="col" class="px-4 py-3">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% order.delivery_notes.each do |note| %>
+          <tr>
+            <td class="px-4 py-3 font-mono"><%= link_to note.number, note, class: "link" %></td>
+            <td class="px-4 py-3 tabular-nums"><%= note.dispatched_on ? l(note.dispatched_on, format: "%a %-d %b %Y") : "—" %></td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= kg(note.total_g) %></td>
+            <td class="px-4 py-3"><%= delivery_note_badge(note) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+<% end %>
 
 <% if @line %>
   <section class="card max-w-3xl p-6" aria-labelledby="add-line-heading">

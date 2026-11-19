@@ -1,0 +1,18 @@
+# The Sage 50 export (PLAN.md §11 Q1, Q63, Q67). Guesses until Stu confirms
+# his Sage setup: the sales nominal code, department and VAT rates per tax code.
+shared: &shared
+  sales_nominal: "4000"
+  department: "0"
+  # Basis points (2000 = 20%).
+  tax_rates_bp:
+    T0: 0     # zero rated (exports outside the UK)
+    T1: 2000  # standard rate
+    T2: 0     # exempt
+    T4: 0     # sales to EU VAT-registered customers
+
+development:
+  <<: *shared
+test:
+  <<: *shared
+production:
+  <<: *shared

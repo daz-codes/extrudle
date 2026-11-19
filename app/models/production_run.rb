@@ -10,6 +10,7 @@ class ProductionRun < ApplicationRecord
   belongs_to :finished_by, class_name: "User", optional: true
   has_many :reels, -> { order(:reel_no) }, inverse_of: :production_run, dependent: :restrict_with_error
   has_many :checks, -> { order(:checked_at, :id) }, class_name: "RunCheck", inverse_of: :production_run, dependent: :destroy
+  has_many :delivery_note_pallets, dependent: :restrict_with_error
   has_many :material_loads, -> { order(:from_reel_no, :loaded_at, :id) }, inverse_of: :production_run, dependent: :restrict_with_error
   has_many :consumptions, -> { issue_to_production }, class_name: "StockMovement", inverse_of: :production_run, dependent: :restrict_with_error
 
@@ -96,6 +97,7 @@ class ProductionRun < ApplicationRecord
   def suggested_pallet_no
     last_pallet = reels.filter_map(&:pallet_no).max
     return 1 if last_pallet.nil?
+    return last_pallet + 1 if pallet_on_delivery_note?(last_pallet)
 
     per_pallet = product_spec.reels_per_pallet || 1
     reels.count { _1.pallet_no == last_pallet } < per_pallet ? last_pallet : last_pallet + 1
@@ -105,6 +107,20 @@ class ProductionRun < ApplicationRecord
   # Built by id, not through reels, so it stays out of the totals until saved.
   def build_next_reel(**attributes)
     Reel.new(production_run_id: id, reel_no: next_reel_no, pallet_no: suggested_pallet_no, initials: reels.last&.initials, **attributes)
+  end
+
+  # Pallets ----------------------------------------------------------------
+
+  def pallets = Pallet.for_run(self)
+
+  # Pallets that have gone on a delivery note can't take more reels.
+  def pallet_on_delivery_note?(pallet_no)
+    pallet_no.present? && delivery_note_pallets.any? { _1.pallet_no == pallet_no }
+  end
+
+  # The delivery notes its pallets went out on ("No. of deliveries" on the log).
+  def delivery_notes
+    DeliveryNote.where(id: delivery_note_pallets.select(:delivery_note_id)).order(:number)
   end
 
   # Finishing ---------------------------------------------------------------

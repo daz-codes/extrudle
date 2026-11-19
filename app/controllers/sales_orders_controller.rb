@@ -1,6 +1,6 @@
 class SalesOrdersController < ApplicationController
   require_role :admin, :office
-  before_action :set_sales_order, only: %i[ show edit update cancel reopen ]
+  before_action :set_sales_order, only: %i[ show edit update cancel reopen mark_dispatched ]
 
   STATUS_FILTERS = { "active" => "Active", "all" => "All" }.merge(SalesOrder.statuses.keys.index_with(&:humanize)).freeze
 
@@ -56,6 +56,14 @@ class SalesOrdersController < ApplicationController
     redirect_to @sales_order, notice: "Order #{@sales_order.number} was cancelled.", status: :see_other
   rescue ArgumentError => e
     redirect_to @sales_order, alert: e.message.capitalize, status: :see_other
+  end
+
+  # Closes an order that went out short, by hand (PLAN.md §11 Q66).
+  def mark_dispatched
+    @sales_order.mark_dispatched!
+    redirect_to @sales_order, notice: "Order #{@sales_order.number} is dispatched.", status: :see_other
+  rescue ArgumentError => e
+    redirect_to @sales_order, alert: e.message, status: :see_other
   end
 
   def reopen

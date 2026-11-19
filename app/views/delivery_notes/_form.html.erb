@@ -1,0 +1,52 @@
+<%# locals: (note:, order:, pallets:, selected:) %>
+<%= form_with model: note, url: note.persisted? ? delivery_note_path(note) : delivery_notes_path, method: note.persisted? ? :patch : :post,
+      class: "space-y-6" do |form| %>
+  <%= form.error_summary %>
+  <%= form.hidden_field :sales_order_id, value: order.id unless note.persisted? %>
+
+  <section class="card overflow-x-auto" aria-labelledby="pallets-heading">
+    <div class="px-5 pt-5">
+      <h2 id="pallets-heading" class="section-title">Pallets</h2>
+      <p class="mt-2 text-sm text-ink-600">Finished pallets from <%= order.number %>'s production logs. Untick any that aren't going on this load.</p>
+    </div>
+    <table class="data-table mt-3 w-full text-left">
+      <thead>
+        <tr>
+          <th scope="col" class="px-4 py-3"><span class="sr-only">On this note</span></th>
+          <th scope="col" class="px-4 py-3">Pallet</th>
+          <th scope="col" class="px-4 py-3">Spec</th>
+          <th scope="col" class="px-4 py-3">Reels</th>
+          <th scope="col" class="px-4 py-3 text-right">Weight</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% pallets.each do |pallet| %>
+          <tr>
+            <td class="px-4 py-3">
+              <%= check_box_tag "pallets[]", pallet.key, selected.include?(pallet.key), id: "pallet_#{pallet.key}", class: "size-6 accent-ink-900" %>
+            </td>
+            <td class="px-4 py-3 font-mono font-semibold"><label for="pallet_<%= pallet.key %>">Pallet <%= pallet.label %></label></td>
+            <td class="px-4 py-3"><%= pallet.product_spec %></td>
+            <td class="px-4 py-3 tabular-nums"><%= pluralize(pallet.reel_count, "reel") %> (<%= reel_numbers_text(pallet.reel_numbers) %>)</td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= kg(pallet.weight_g) %></td>
+          </tr>
+        <% end %>
+        <% if pallets.empty? %><%= render "master_data/empty", message: "No finished pallets for this order.", colspan: 5 %><% end %>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card space-y-5 p-6" aria-labelledby="delivery-heading">
+    <h2 id="delivery-heading" class="section-title">Delivery</h2>
+    <%= form.text_area_row :delivery_address, rows: 4, hint: "From the customer's address. Change it for a different site." %>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <%= form.text_row :haulier %>
+      <%= form.text_row :vehicle_reg, label: "Vehicle registration", class: "field-input uppercase" %>
+    </div>
+    <%= form.text_area_row :notes, hint: "Printed on the delivery note." %>
+    <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
+      <%= form.submit note.persisted? ? "Save" : "Create delivery note", class: "btn btn-primary" %>
+      <%= link_to "Cancel", note.persisted? ? note : dispatch_path, class: "btn btn-secondary" %>
+    </div>
+  </section>
+<% end %>

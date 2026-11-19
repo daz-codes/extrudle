@@ -1,0 +1,77 @@
+<% content_for :title, "Sage export" %>
+<% ready, blocked = @waiting.partition { _1.export_problems.empty? } %>
+<p class="mb-2"><%= link_to "← Dispatch", dispatch_path, class: "link text-sm" %></p>
+<h1 class="page-title mb-3">Sage export</h1>
+<p class="mb-6 max-w-3xl text-ink-600">
+  Dispatched delivery notes go to Sage 50 as a CSV of sales invoices (Audit Trail Transactions import), one line per spec on each note,
+  at the order's price per tonne. Exporting marks them sent, and the order invoiced once all its notes have gone.
+</p>
+
+<section class="card mb-6 overflow-x-auto" aria-labelledby="ready-heading">
+  <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
+    <h2 id="ready-heading" class="section-title">Ready to export</h2>
+    <% if ready.any? %>
+      <%= button_to "Export #{pluralize(ready.size, "note")}", sage_exports_path, method: :post, class: "btn btn-accent",
+            form: { data: { turbo_confirm: "Export #{pluralize(ready.size, "delivery note")} to Sage? They'll be marked as sent." } } %>
+    <% end %>
+  </div>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Note</th>
+        <th scope="col" class="px-4 py-3">Customer</th>
+        <th scope="col" class="px-4 py-3">Sage account</th>
+        <th scope="col" class="px-4 py-3">Dispatched</th>
+        <th scope="col" class="px-4 py-3 text-right">Net</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% ready.each do |note| %>
+        <tr>
+          <td class="px-4 py-3 font-mono"><%= link_to note.number, note, class: "link" %></td>
+          <td class="px-4 py-3"><%= note.customer.name %></td>
+          <td class="px-4 py-3 font-mono"><%= note.customer.sage_account_ref %> · <%= note.customer.sage_tax_code %></td>
+          <td class="px-4 py-3 tabular-nums"><%= l(note.dispatched_on, format: "%-d %b %Y") %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= money(note.lines.sum(&:net_cents), note.sales_order.lines.first&.currency || "GBP") %></td>
+        </tr>
+      <% end %>
+      <% if ready.empty? %><%= render "master_data/empty", message: "Nothing ready to export.", colspan: 5 %><% end %>
+    </tbody>
+  </table>
+</section>
+
+<% if blocked.any? %>
+  <section class="card mb-6 p-5" aria-labelledby="blocked-heading">
+    <h2 id="blocked-heading" class="section-title mb-3">Can't export yet</h2>
+    <ul class="space-y-2">
+      <% blocked.each do |note| %>
+        <li><%= link_to note.number, note, class: "link font-mono" %>: <%= note.export_problems.to_sentence %></li>
+      <% end %>
+    </ul>
+  </section>
+<% end %>
+
+<section class="card overflow-x-auto" aria-labelledby="exports-heading">
+  <h2 id="exports-heading" class="section-title px-5 pt-5">Past exports</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">File</th>
+        <th scope="col" class="px-4 py-3">When</th>
+        <th scope="col" class="px-4 py-3">By</th>
+        <th scope="col" class="px-4 py-3 text-right">Invoice lines</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @exports.each do |export| %>
+        <tr>
+          <td class="px-4 py-3 font-mono"><%= link_to export.filename, sage_export_path(export), class: "link" %></td>
+          <td class="px-4 py-3 tabular-nums"><%= l(export.created_at, format: "%-d %b %Y %H:%M") %></td>
+          <td class="px-4 py-3"><%= export.created_by&.name || "—" %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= export.rows_count %></td>
+        </tr>
+      <% end %>
+      <% if @exports.empty? %><%= render "master_data/empty", message: "No exports yet.", colspan: 4 %><% end %>
+    </tbody>
+  </table>
+</section>

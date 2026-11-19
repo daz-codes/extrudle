@@ -1,0 +1,117 @@
+<% note = @note %>
+<% order = note.sales_order %>
+<% lines = note.lines %>
+<% content_for :title, note.number %>
+
+<p class="mb-2"><%= link_to "← Dispatch", dispatch_path, class: "link text-sm" %></p>
+<div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="page-title font-mono"><%= note.number %></h1>
+      <%= delivery_note_badge(note) %>
+    </div>
+    <p class="mt-2 text-ink-600">
+      <%= link_to order.number, order, class: "link" %> · <%= order.customer.name %><%= " · PO #{order.customer_po_ref}" if order.customer_po_ref %>
+    </p>
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <%= link_to note.draft? ? "Print draft" : "Print delivery note", delivery_note_path(note, format: :pdf), class: "btn btn-secondary", target: "_blank", data: { turbo: false } %>
+    <% if note.draft? %>
+      <%= link_to "Edit", edit_delivery_note_path(note), class: "btn btn-secondary" %>
+      <%= button_to "Delete draft", delivery_note_path(note), method: :delete, class: "btn btn-secondary",
+            form: { data: { turbo_confirm: "Delete draft #{note.number}?" } } %>
+    <% end %>
+  </div>
+</div>
+
+<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <section class="card p-5">
+    <h2 class="eyebrow">Weight</h2>
+    <p class="mt-2 font-mono text-xl font-semibold tabular-nums"><%= order_quantity(note.total_g) %></p>
+    <p class="text-sm text-ink-600"><%= pluralize(note.note_pallets.size, "pallet") %>, <%= pluralize(lines.sum(&:reel_count), "reel") %></p>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Dispatched</h2>
+    <p class="mt-2 text-xl font-semibold"><%= note.dispatched_on ? l(note.dispatched_on, format: "%a %-d %b %Y") : "Not yet" %></p>
+    <% if note.dispatched_by %><p class="text-sm text-ink-600">by <%= note.dispatched_by.name %></p><% end %>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Haulier</h2>
+    <p class="mt-2 text-xl font-semibold"><%= note.haulier || "—" %></p>
+    <% if note.vehicle_reg %><p class="font-mono text-sm text-ink-600"><%= note.vehicle_reg %></p><% end %>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Sage</h2>
+    <p class="mt-2 text-xl font-semibold"><%= note.exported? ? "Sent #{l(note.exported_at, format: "%-d %b %Y")}" : "Not sent" %></p>
+    <% if note.sage_export %><p class="text-sm"><%= link_to note.sage_export.filename, sage_export_path(note.sage_export), class: "link" %></p><% end %>
+  </section>
+</div>
+
+<% if note.dispatched? && !note.exported? && (problems = note.export_problems).any? %>
+  <div class="mb-6 rounded-[11px] border border-lemon-400 bg-lemon-100 p-4">
+    <p class="font-semibold">Can't go to Sage yet:</p>
+    <ul class="mt-1 list-disc pl-6"><% problems.each do |problem| %><li><%= problem %></li><% end %></ul>
+  </div>
+<% end %>
+
+<section class="card mb-6 overflow-x-auto" aria-labelledby="pallets-heading">
+  <h2 id="pallets-heading" class="section-title px-5 pt-5">Pallets</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Pallet</th>
+        <th scope="col" class="px-4 py-3">Spec</th>
+        <th scope="col" class="px-4 py-3">Reels</th>
+        <th scope="col" class="px-4 py-3 text-right">Weight</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% lines.each do |line| %>
+        <% line.pallets.each do |pallet| %>
+          <tr>
+            <td class="px-4 py-3 font-mono font-semibold"><%= link_to pallet.label, production_run_reels_path(pallet.run), class: "link" %></td>
+            <td class="px-4 py-3"><%= pallet.product_spec %></td>
+            <td class="px-4 py-3 tabular-nums"><%= pluralize(pallet.reel_count, "reel") %> (<%= reel_numbers_text(pallet.reel_numbers) %>)</td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= kg(pallet.weight_g) %></td>
+          </tr>
+        <% end %>
+        <tr class="font-semibold">
+          <td class="px-4 py-3" colspan="3"><%= line.order_line.product_spec %>: <%= pluralize(line.pallets.size, "pallet") %>
+            <% if (net = line.net_cents) %><span class="font-normal text-ink-600"> · <%= money(net, line.order_line.currency) %></span><% end %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= kg(line.weight_g) %></td>
+        </tr>
+      <% end %>
+      <% if lines.empty? %><%= render "master_data/empty", message: "No pallets.", colspan: 4 %><% end %>
+    </tbody>
+  </table>
+</section>
+
+<div class="grid gap-6 lg:grid-cols-2">
+  <section class="card p-5">
+    <h2 class="section-title mb-3">Deliver to</h2>
+    <p class="whitespace-pre-line"><%= note.delivery_address || "No address given." %></p>
+    <% if note.notes %><h2 class="section-title mt-5 mb-2">Notes</h2><p class="whitespace-pre-line"><%= note.notes %></p><% end %>
+  </section>
+
+  <section class="card p-5">
+    <% if note.draft? %>
+      <h2 class="section-title mb-3">Dispatch</h2>
+      <p class="mb-4 text-ink-700">When the lorry leaves, mark it dispatched. The pallets can't change after that.</p>
+      <%= form_with url: mark_dispatched_delivery_note_path(note), method: :patch, class: "flex flex-wrap items-end gap-3" do %>
+        <div>
+          <%= label_tag :dispatched_on, "Dispatched on", class: "field-label" %>
+          <%= date_field_tag :dispatched_on, Date.current.iso8601, max: Date.current.iso8601, class: "field-input" %>
+        </div>
+        <%= submit_tag "Mark dispatched", class: "btn btn-accent" %>
+      <% end %>
+    <% elsif !note.exported? %>
+      <h2 class="section-title mb-3">Dispatched</h2>
+      <p class="mb-4 text-ink-700">It goes to Sage with the next export. A mistake can still be undone until then.</p>
+      <%= button_to "Back to draft", undo_dispatch_delivery_note_path(note), method: :patch, class: "btn btn-secondary",
+            form: { data: { turbo_confirm: "Put #{note.number} back to draft?" } } %>
+    <% else %>
+      <h2 class="section-title mb-3">In Sage</h2>
+      <p class="text-ink-700">Exported, so it can't change.</p>
+    <% end %>
+  </section>
+</div>

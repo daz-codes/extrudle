@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_140000) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -22,7 +22,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_130000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "sage_account_ref"
+    t.string "sage_tax_code", default: "T1", null: false
     t.index ["name"], name: "index_customers_on_name", unique: true
+  end
+
+  create_table "delivery_note_pallets", force: :cascade do |t|
+    t.integer "delivery_note_id", null: false
+    t.integer "production_run_id", null: false
+    t.integer "pallet_no", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["delivery_note_id"], name: "index_delivery_note_pallets_on_delivery_note_id"
+    t.index ["production_run_id", "pallet_no"], name: "index_delivery_note_pallets_on_production_run_id_and_pallet_no", unique: true
+    t.index ["production_run_id"], name: "index_delivery_note_pallets_on_production_run_id"
+    t.check_constraint "pallet_no > 0", name: "delivery_note_pallets_pallet_positive"
+  end
+
+  create_table "delivery_notes", force: :cascade do |t|
+    t.string "number", null: false
+    t.integer "sales_order_id", null: false
+    t.string "status", default: "draft", null: false
+    t.date "dispatched_on"
+    t.integer "dispatched_by_id"
+    t.string "haulier"
+    t.string "vehicle_reg"
+    t.text "delivery_address"
+    t.text "notes"
+    t.integer "sage_export_id"
+    t.datetime "exported_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dispatched_by_id"], name: "index_delivery_notes_on_dispatched_by_id"
+    t.index ["number"], name: "index_delivery_notes_on_number", unique: true
+    t.index ["sage_export_id"], name: "index_delivery_notes_on_sage_export_id"
+    t.index ["sales_order_id"], name: "index_delivery_notes_on_sales_order_id"
+    t.check_constraint "status = 'draft' OR dispatched_on IS NOT NULL", name: "delivery_notes_dispatched_on"
+    t.check_constraint "status IN ('draft', 'dispatched')", name: "delivery_notes_status"
   end
 
   create_table "line_rates", force: :cascade do |t|
@@ -279,6 +315,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_130000) do
     t.index ["user_id"], name: "index_run_checks_on_user_id"
   end
 
+  create_table "sage_exports", force: :cascade do |t|
+    t.integer "created_by_id"
+    t.string "filename", null: false
+    t.text "csv", null: false
+    t.integer "rows_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_sage_exports_on_created_by_id"
+  end
+
   create_table "sales_order_lines", force: :cascade do |t|
     t.integer "sales_order_id", null: false
     t.integer "product_spec_id", null: false
@@ -404,6 +450,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_130000) do
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
+  add_foreign_key "delivery_note_pallets", "delivery_notes"
+  add_foreign_key "delivery_note_pallets", "production_runs"
+  add_foreign_key "delivery_notes", "sage_exports"
+  add_foreign_key "delivery_notes", "sales_orders"
+  add_foreign_key "delivery_notes", "users", column: "dispatched_by_id"
   add_foreign_key "line_rates", "lines"
   add_foreign_key "line_rates", "product_specs"
   add_foreign_key "lots", "materials"
@@ -430,6 +481,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_130000) do
   add_foreign_key "reels", "users"
   add_foreign_key "run_checks", "production_runs"
   add_foreign_key "run_checks", "users"
+  add_foreign_key "sage_exports", "users", column: "created_by_id"
   add_foreign_key "sales_order_lines", "product_specs"
   add_foreign_key "sales_order_lines", "sales_orders"
   add_foreign_key "sales_orders", "customers"

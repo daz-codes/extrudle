@@ -22,6 +22,7 @@ Rails.application.routes.draw do
     member do
       patch :cancel
       patch :reopen
+      patch :mark_dispatched
     end
     resources :lines, controller: "sales_order_lines", only: %i[ create edit update destroy ]
   end
@@ -64,6 +65,15 @@ Rails.application.routes.draw do
     resources :reels, only: %i[ index create edit update destroy ]
     resource :finish, controller: "run_finishes", only: %i[ show create ]
   end
+
+  get "dispatch" => "dispatch#show", as: :dispatch
+  resources :delivery_notes, path: "dispatch/notes" do
+    member do
+      patch :mark_dispatched
+      patch :undo_dispatch
+    end
+  end
+  resources :sage_exports, path: "dispatch/sage", only: %i[ index create show ]
 
   get "floor" => "floor#show", as: :floor_root
 

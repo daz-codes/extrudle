@@ -188,7 +188,7 @@ class ProductionLogPdf
       field_grid(pdf, {
         "Started by" => "#{run.started_by&.name || "—"}, #{date_time(run.started_at)}",
         "Finished by" => run.finished? ? "#{run.finished_by&.name || "—"}, #{date_time(run.ended_at)}" : "Still running",
-        "No. of deliveries" => "" # written in by hand until dispatch (Slice 8) can fill it
+        "No. of deliveries" => (count = run.delivery_notes.count).positive? ? "#{count} (#{run.delivery_notes.pluck(:number).join(", ")})" : ""
       }, per_row: 3)
       pdf.move_down 18
       width = (pdf.bounds.width - 24) / 2

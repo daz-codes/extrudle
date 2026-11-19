@@ -62,7 +62,10 @@ customers = [
   [ "Pennine Industrial Trays", "Chris Walsh", "GBP" ],
   [ "Rhine Valley Verpackung GmbH", "Jonas Weber", "EUR" ]
 ].to_h do |name, contact, currency|
-  [ name, Customer.find_or_create_by!(name: name) { _1.assign_attributes(contact_name: contact, currency: currency) } ]
+  # Sage 50 style account references (BRIGHT01). EU customers use T4, the rest T1.
+  sage_ref = "#{name.gsub(/[^A-Za-z]/, "").first(6).upcase}01"
+  [ name, Customer.find_or_create_by!(name: name) { _1.assign_attributes(contact_name: contact, currency: currency, sage_account_ref: sage_ref,
+                                                                         sage_tax_code: currency == "EUR" ? "T4" : "T1") } ]
 end
 
 # --- Suppliers ---------------------------------------------------------------
@@ -160,7 +163,9 @@ today = Date.current
   next unless order.lines.none?
 
   lines.each do |code, kg|
-    order.lines.create!(product_spec: ProductSpec.find_by!(code: code, revision: 1), quantity: kg.to_s)
+    # Prices per tonne in the customer's currency, so the Sage export has amounts.
+    order.lines.create!(product_spec: ProductSpec.find_by!(code: code, revision: 1), quantity: kg.to_s,
+                        price_per_tonne: (1_550 + code.sum % 300).to_s)
   end
   order.update!(status: status)
 end
@@ -283,7 +288,19 @@ if ProductionRun.none? && (job = ProductionRun::Board.next_job_for(lines.fetch("
   end
 end
 
+# --- Dispatch ----------------------------------------------------------------
+# Despatch 731's first two pallets went out this morning on DN-00001, which is
+# waiting for the Sage export. Pallet 3 is ready for the next load.
+if DeliveryNote.none? && (run = ProductionRun.find_by(despatch_number: 731))
+  admin = User.find_by(role: "admin")
+  order = run.sales_order
+  note = order.delivery_notes.build(delivery_address: order.customer.address, haulier: "Pennine Haulage", vehicle_reg: "YX24 KLM")
+  note.save_with_number || raise(note.errors.full_messages.to_sentence)
+  note.set_pallets!([ [ run.id, 1 ], [ run.id, 2 ] ])
+  note.mark_dispatched!(user: admin)
+end
+
 unless Rails.env.test?
   puts "Seeded #{User.count} users (password: #{demo_in_production ? "demo_password in credentials" : DEMO_PASSWORD}), #{Line.count} lines, #{Customer.count} customers, " \
-       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{PurchaseOrder.count} POs, #{Lot.count} lots, #{ScheduleBlock.count} plan blocks, #{ActionController::Base.helpers.pluralize(ProductionRun.count, "production log")}"
+       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{PurchaseOrder.count} POs, #{Lot.count} lots, #{ScheduleBlock.count} plan blocks, #{ActionController::Base.helpers.pluralize(ProductionRun.count, "production log")}, #{ActionController::Base.helpers.pluralize(DeliveryNote.count, "delivery note")}"
 end
