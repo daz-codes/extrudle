@@ -68,13 +68,17 @@ class PurchaseOrdersController < ApplicationController
     transition(:cancel!, "#{@purchase_order.number} was cancelled.")
   end
 
+  def close_short
+    transition(:close_short!, "#{@purchase_order.number} is closed. Nothing more is expected against it.")
+  end
+
   def reopen
     transition(:reopen!, "#{@purchase_order.number} was reopened as a draft.")
   end
 
   private
     def set_purchase_order
-      @purchase_order = PurchaseOrder.includes(lines: { material: %i[ material_category supplier ] }).find(params[:id])
+      @purchase_order = PurchaseOrder.includes(lines: [ :lots, { material: %i[ material_category supplier ] } ]).find(params[:id])
     end
 
     def purchase_order_params

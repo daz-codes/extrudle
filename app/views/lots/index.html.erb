@@ -1,0 +1,73 @@
+<% content_for :title, "Lots" %>
+<% filters = request.query_parameters.slice("q", "material", "location", "po_line", "received_on", "unlinked", "empty") %>
+
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <div>
+    <h1 class="page-title">Lots</h1>
+    <p class="mt-2 text-ink-600">
+      <%= link_to "Stock on hand", stock_path, class: "link" %>
+      <% if @po_line %> · <%= @po_line.material.name %> on <%= link_to @po_line.purchase_order.number, @po_line.purchase_order, class: "link" %><% end %>
+      <% if @received_on %> · received <%= l(@received_on, format: "%-d %b %Y") %><% end %>
+    </p>
+  </div>
+  <% if @lots.any? %>
+    <%= link_to "Print #{pluralize(@lots.size, "label")}", labels_lots_path(filters), class: "btn btn-accent", target: "_blank" %>
+  <% end %>
+</div>
+
+<%= form_with url: lots_path, method: :get, class: "mb-4 flex flex-wrap items-end gap-3", data: { turbo_action: "replace" } do %>
+  <% filters.slice("po_line", "received_on", "unlinked").each do |name, value| %><%= hidden_field_tag name, value %><% end %>
+  <div class="min-w-64 flex-1">
+    <%= label_tag :q, "Search", class: "sr-only" %>
+    <%= search_field_tag :q, @query, placeholder: "Search lot code, supplier batch, bag or delivery note", class: "field-input" %>
+  </div>
+  <div>
+    <%= label_tag :material, "Material", class: "sr-only" %>
+    <%= select_tag :material, options_from_collection_for_select(Material.by_name, :id, :name, @material&.id), include_blank: "All materials", class: "field-input" %>
+  </div>
+  <div>
+    <%= label_tag :location, "Location", class: "sr-only" %>
+    <%= select_tag :location, options_for_select(Lot::LOCATIONS.invert, @location), include_blank: "All locations", class: "field-input" %>
+  </div>
+  <label class="choice">
+    <%= check_box_tag :empty, "1", @include_empty, class: "size-5 accent-ink-900" %> Include used-up lots
+  </label>
+  <%= submit_tag "Filter", name: nil, class: "btn btn-secondary" %>
+<% end %>
+
+<div class="card overflow-x-auto">
+  <table class="data-table w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Lot</th>
+        <th scope="col" class="px-4 py-3">Material</th>
+        <th scope="col" class="px-4 py-3">Supplier batch</th>
+        <th scope="col" class="px-4 py-3">Received</th>
+        <th scope="col" class="px-4 py-3">Location</th>
+        <th scope="col" class="px-4 py-3 text-right">Weight</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @lots.each do |lot| %>
+        <tr id="<%= dom_id(lot) %>" class="<%= "text-ink-500" if lot.empty? %>">
+          <td class="px-4 py-3">
+            <%= link_to lot.code, lot, class: "link font-mono font-semibold" %>
+            <% if lot.bag_no %><div class="text-sm text-ink-500">Bag <%= lot.bag_no %></div><% end %>
+          </td>
+          <td class="px-4 py-3"><%= lot.material %></td>
+          <td class="px-4 py-3"><%= lot.supplier_lot_ref || "—" %></td>
+          <td class="px-4 py-3">
+            <%= l(lot.received_on, format: "%-d %b %Y") %>
+            <% if (po = lot.purchase_order) %><div class="text-sm text-ink-500"><%= po.number %></div><% end %>
+          </td>
+          <td class="px-4 py-3"><%= location_badge(lot.location) %></td>
+          <td class="px-4 py-3 text-right tabular-nums">
+            <%= lot.empty? ? "Used up" : Weight.format_kg(lot.quantity_g) %>
+            <% if lot.quantity_g != lot.initial_g && !lot.empty? %><div class="text-sm text-ink-500">of <%= Weight.format_kg(lot.initial_g) %></div><% end %>
+          </td>
+        </tr>
+      <% end %>
+      <% if @lots.empty? %><%= render "master_data/empty", message: "No lots match.", colspan: 6 %><% end %>
+    </tbody>
+  </table>
+</div>

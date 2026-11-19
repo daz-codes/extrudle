@@ -1,0 +1,22 @@
+jade_opening:
+  code: L-2026-000001
+  material: jade
+  supplier_lot_ref: CZ302-26-001
+  bag_no: "101"
+  location: on_site
+  received_on: <%= Date.current - 10 %>
+  initial_g: 1000000
+
+regrind_bag:
+  code: L-2026-000002
+  material: regrind
+  location: storage
+  received_on: <%= Date.current - 2 %>
+  initial_g: 500000
+
+jade_used_up:
+  code: L-2026-000003
+  material: jade
+  location: on_site
+  received_on: <%= Date.current - 20 %>
+  initial_g: 800000

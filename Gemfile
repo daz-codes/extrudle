@@ -69,3 +69,5 @@ end
 
 gem "prawn", "~> 2.4"
 gem "prawn-table", "~> 0.2.2"
+
+gem "rqrcode", "~> 3.2"

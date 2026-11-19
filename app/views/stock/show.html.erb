@@ -1,0 +1,66 @@
+<% content_for :title, "Stock" %>
+<% locations = Lot::LOCATIONS %>
+
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <h1 class="page-title">Stock on hand</h1>
+  <div class="flex flex-wrap gap-3">
+    <%= link_to "All lots", lots_path, class: "btn btn-secondary" %>
+    <%= link_to "Add stock without a PO", new_lot_path, class: "btn btn-secondary" %>
+    <%= link_to "Receive against a PO", purchase_orders_path(status: "active"), class: "btn btn-primary" %>
+  </div>
+</div>
+
+<div class="mb-6 grid gap-4 sm:grid-cols-2">
+  <section class="card p-5">
+    <h2 class="eyebrow">In stock, all locations</h2>
+    <p class="mt-2 font-mono text-xl font-semibold tabular-nums"><%= stock_weight(@report.total_g, blank: "0 kg") %></p>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Still on order</h2>
+    <p class="mt-2 font-mono text-xl font-semibold tabular-nums"><%= stock_weight(@report.on_order_g, blank: "0 kg") %></p>
+  </section>
+</div>
+
+<div class="card overflow-x-auto">
+  <table class="data-table w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Material</th>
+        <th scope="col" class="px-4 py-3 text-right">Bags</th>
+        <% locations.each_value do |label| %><th scope="col" class="px-4 py-3 text-right"><%= label %></th><% end %>
+        <th scope="col" class="px-4 py-3 text-right">Total</th>
+        <th scope="col" class="px-4 py-3 text-right">On order</th>
+      </tr>
+    </thead>
+    <% @report.groups.each do |group| %>
+      <tbody>
+        <tr class="bg-ink-50">
+          <th scope="rowgroup" colspan="2" class="px-4 py-2 font-semibold text-ink-900"><%= group.category.name %></th>
+          <% locations.each_key do |location| %>
+            <td class="px-4 py-2 text-right font-semibold tabular-nums"><%= stock_weight(group.by_location(location), blank: "") %></td>
+          <% end %>
+          <td class="px-4 py-2 text-right font-semibold tabular-nums"><%= stock_weight(group.total_g, blank: "") %></td>
+          <td class="px-4 py-2 text-right font-semibold tabular-nums"><%= stock_weight(group.on_order_g, blank: "") %></td>
+        </tr>
+        <% group.rows.each do |row| %>
+          <tr id="<%= dom_id(row.material, :stock) %>" class="<%= "text-ink-500" if row.total_g.zero? %>">
+            <th scope="row" class="px-4 py-3 font-normal">
+              <%= link_to row.material, lots_path(material: row.material.id), class: "link font-semibold" %>
+              <% if row.material.internal? %><span class="badge badge-quiet ml-1">In-house</span><% end %>
+            </th>
+            <td class="px-4 py-3 text-right tabular-nums"><%= row.lots.nonzero? || "—" %></td>
+            <% locations.each_key do |location| %>
+              <td class="px-4 py-3 text-right tabular-nums">
+                <% grams = row.by_location.fetch(location, 0) %>
+                <%= grams.zero? ? "—" : link_to(stock_weight(grams), lots_path(material: row.material.id, location:), class: "link") %>
+              </td>
+            <% end %>
+            <td class="px-4 py-3 text-right font-semibold tabular-nums"><%= stock_weight(row.total_g) %></td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= stock_weight(row.on_order_g) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    <% end %>
+    <% if @report.groups.empty? %><tbody><%= render "master_data/empty", message: "No materials yet.", colspan: locations.size + 4 %></tbody><% end %>
+  </table>
+</div>

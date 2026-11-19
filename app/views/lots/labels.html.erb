@@ -1,0 +1,29 @@
+<% content_for :title, "Lot labels" %>
+<%# An A4 sheet of 8 labels (2 × 4, 99 × 67 mm, e.g. Avery L7165).
+    Working assumption, see PLAN.md §11 Q29: Zebra printers come in Phase 2. %>
+<div class="print-toolbar mx-auto flex max-w-[210mm] flex-wrap items-center justify-between gap-3 p-4">
+  <p><strong><%= pluralize(@lots.size, "label") %></strong>, 8 to an A4 sheet.</p>
+  <button type="button" class="btn btn-primary" onclick="window.print()">Print</button>
+</div>
+
+<% @lots.each_slice(8) do |sheet| %>
+  <div class="lot-sheet">
+    <% sheet.each do |lot| %>
+      <article class="lot-label" id="<%= dom_id(lot, :label) %>">
+        <div class="lot-label-qr"><%= lot_qr_svg(lot) %></div>
+        <div class="min-w-0">
+          <p class="font-mono text-[15pt] font-bold leading-tight"><%= lot.code %></p>
+          <p class="mt-1 text-[12pt] font-semibold leading-tight"><%= lot.material.name %></p>
+          <% if lot.material.grade %><p class="text-[10pt]"><%= lot.material.grade %></p><% end %>
+          <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-2 text-[9pt] leading-snug">
+            <dt class="text-ink-600">Weight</dt><dd class="font-mono font-semibold"><%= Weight.format_kg(lot.initial_g) %></dd>
+            <% if lot.supplier_lot_ref %><dt class="text-ink-600">Batch</dt><dd><%= lot.supplier_lot_ref %></dd><% end %>
+            <% if lot.bag_no %><dt class="text-ink-600">Bag</dt><dd><%= lot.bag_no %></dd><% end %>
+            <dt class="text-ink-600">In</dt><dd><%= l(lot.received_on, format: "%-d %b %Y") %></dd>
+            <% if (po = lot.purchase_order) %><dt class="text-ink-600">PO</dt><dd><%= po.number %> · <%= po.supplier.name %></dd><% end %>
+          </dl>
+        </div>
+      </article>
+    <% end %>
+  </div>
+<% end %>

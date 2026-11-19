@@ -1,0 +1,14 @@
+<% content_for :title, "Adjust #{@lot.code}" %>
+<h1 class="page-title mb-2">Adjust <span class="font-mono"><%= @lot.code %></span></h1>
+<p class="mb-6 text-ink-600"><%= @lot.material %> · weighs <%= Weight.format_kg(@lot.quantity_g) %> now</p>
+
+<%= form_with model: @adjustment, url: lot_adjustment_path(@lot), method: :post, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <%= form.text_row :counted_kg, label: "Weight now", required: true, inputmode: "decimal", autocomplete: "off", suffix: "kg",
+        hint: "What the bag weighs after a recount or reweigh. Enter 0 if it's empty or written off." %>
+  <%= form.text_row :reason, required: true, hint: "e.g. Reweighed, Spilt, Damaged bag, Stock count" %>
+  <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
+    <%= form.submit "Save adjustment", class: "btn btn-primary" %>
+    <%= link_to "Cancel", @lot, class: "btn btn-secondary" %>
+  </div>
+<% end %>

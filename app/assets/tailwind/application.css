@@ -397,3 +397,49 @@
   }
 }
 
+
+/* Lot labels: A4 portrait sheets of 8 (2 × 4 at 99.1 × 67.7 mm, Avery L7165 layout). */
+@layer components {
+  .lot-sheet {
+    page: lot-labels;
+    display: grid;
+    grid-template-columns: repeat(2, 99.1mm);
+    grid-auto-rows: 67.7mm;
+    column-gap: 2.5mm;
+    width: 210mm;
+    height: 297mm;
+    padding: 13.1mm 4.65mm;
+    margin: 0 auto;
+    break-after: page;
+  }
+  .lot-sheet:last-child {
+    break-after: auto;
+  }
+  .lot-label {
+    display: grid;
+    grid-template-columns: 30mm 1fr;
+    gap: 4mm;
+    align-items: start;
+    padding: 5mm;
+    overflow: hidden;
+  }
+  .lot-label-qr {
+    width: 30mm;
+    height: 30mm;
+  }
+}
+
+@media screen {
+  .lot-sheet {
+    @apply my-4 shadow-sm ring-1 ring-ink-200;
+  }
+  .lot-label {
+    outline: 1px dashed var(--color-ink-200);
+    outline-offset: -1px;
+  }
+}
+
+@page lot-labels {
+  size: A4 portrait;
+  margin: 0;
+}

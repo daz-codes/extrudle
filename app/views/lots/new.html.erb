@@ -1,0 +1,4 @@
+<% content_for :title, "Add stock" %>
+<h1 class="page-title mb-2">Add stock without a PO</h1>
+<p class="mb-6 text-ink-600">For opening stock at go-live and bags of in-house regrind.</p>
+<%= render "stock/receipt_form", receipt: @receipt, url: lots_path, cancel_path: stock_path %>

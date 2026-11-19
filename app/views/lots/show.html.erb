@@ -1,0 +1,86 @@
+<% lot = @lot %>
+<% content_for :title, lot.code %>
+
+<div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="page-title font-mono">Lot <%= lot.code %></h1>
+      <%= location_badge(lot.location) %>
+    </div>
+    <p class="mt-2 text-ink-600">
+      <%= link_to lot.material, lots_path(material: lot.material_id), class: "link" %>
+      <% if (po = lot.purchase_order) %> · <%= link_to po.number, po, class: "link" %> from <%= po.supplier.name %><% end %>
+    </p>
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <%= link_to "Print label", labels_lots_path(ids: [ lot.id ]), class: "btn btn-secondary", target: "_blank" %>
+    <%= link_to "Adjust weight", new_lot_adjustment_path(lot), class: "btn btn-secondary" %>
+  </div>
+</div>
+
+<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <section class="card p-5">
+    <h2 class="eyebrow">Weight now</h2>
+    <p class="mt-2 font-mono text-xl font-semibold tabular-nums"><%= lot.empty? ? "Used up" : Weight.format_kg(lot.quantity_g) %></p>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Received</h2>
+    <p class="mt-2 font-mono text-xl font-semibold tabular-nums"><%= Weight.format_kg(lot.initial_g) %></p>
+    <p class="text-sm text-ink-600"><%= l(lot.received_on, format: "%a %-d %b %Y") %></p>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Supplier batch</h2>
+    <p class="mt-2 text-xl font-semibold"><%= lot.supplier_lot_ref || "—" %></p>
+    <% if lot.bag_no %><p class="text-sm text-ink-600">Bag <%= lot.bag_no %></p><% end %>
+  </section>
+  <section class="card p-5">
+    <h2 class="eyebrow">Delivery note</h2>
+    <p class="mt-2 text-xl font-semibold"><%= lot.delivery_ref || "—" %></p>
+  </section>
+</div>
+
+<section class="card mb-6 p-6" aria-labelledby="move-heading">
+  <h2 id="move-heading" class="section-title mb-4">Move to</h2>
+  <div class="flex flex-wrap gap-2">
+    <% Lot::LOCATIONS.each do |location, label| %>
+      <% if location == lot.location %>
+        <span class="choice border-ink-900 bg-lime-100 font-semibold" aria-current="true"><%= label %> (here now)</span>
+      <% else %>
+        <%= button_to label, move_lot_path(lot), params: { location: }, method: :patch, class: "choice" %>
+      <% end %>
+    <% end %>
+  </div>
+</section>
+
+<% if lot.notes.present? %>
+  <section class="card mb-6 p-5">
+    <h2 class="section-title mb-2">Notes</h2>
+    <p class="whitespace-pre-line"><%= lot.notes %></p>
+  </section>
+<% end %>
+
+<section class="card overflow-x-auto" aria-labelledby="history-heading">
+  <h2 id="history-heading" class="section-title px-5 pt-5">History</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">When</th>
+        <th scope="col" class="px-4 py-3">What</th>
+        <th scope="col" class="px-4 py-3 text-right">Weight</th>
+        <th scope="col" class="px-4 py-3">By</th>
+        <th scope="col" class="px-4 py-3">Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @movements.each do |movement| %>
+        <tr id="<%= dom_id(movement) %>">
+          <td class="px-4 py-3 tabular-nums"><%= l(movement.moved_at, format: "%-d %b %Y %H:%M") %></td>
+          <td class="px-4 py-3"><%= movement_summary(movement) %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= signed_weight(movement.quantity_g) %></td>
+          <td class="px-4 py-3"><%= movement.user&.name || "—" %></td>
+          <td class="px-4 py-3 text-sm"><%= movement.note %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>
