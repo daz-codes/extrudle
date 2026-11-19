@@ -70,6 +70,10 @@ class DeliveryNotesController < ApplicationController
       @note.set_pallets!(keys)
     end
     redirect_to @note, notice: "#{@note.number} was updated."
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+    @note.errors.add(:base, "Those pallets couldn't be saved. One may have just gone on another note.")
+    @pallets = (@note.pallets + @order.pallets_to_dispatch).uniq
+    render :edit, status: :unprocessable_content
   end
 
   def destroy

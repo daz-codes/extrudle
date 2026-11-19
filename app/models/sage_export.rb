@@ -18,6 +18,8 @@ class SageExport < ApplicationRecord
   has_many :delivery_notes, dependent: :restrict_with_error
 
   class NothingToExport < StandardError; end
+  # Someone else exported some of the same notes at the same moment.
+  class AlreadyExported < StandardError; end
 
   def self.settings = Rails.application.config_for(:sage)
 
@@ -38,7 +40,10 @@ class SageExport < ApplicationRecord
     transaction do
       export = create!(created_by: user, rows_count: rows.size, csv: to_csv([ HEADER ] + rows),
                        filename: "sage-invoices-#{at.strftime("%Y%m%d-%H%M")}.csv")
-      DeliveryNote.where(id: notes.map(&:id)).update_all(exported_at: at, sage_export_id: export.id, updated_at: at)
+      # Only notes still unexported: if another export took any of them first,
+      # roll back rather than send the same invoices to Sage twice.
+      claimed = DeliveryNote.where(id: notes.map(&:id), exported_at: nil).update_all(exported_at: at, sage_export_id: export.id, updated_at: at)
+      raise AlreadyExported, "Some of these delivery notes were exported a moment ago. Check the exports below before trying again." if claimed != notes.size
       notes.map(&:sales_order).uniq.each(&:refresh_invoice_status!)
       export
     end

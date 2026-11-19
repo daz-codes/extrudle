@@ -49,23 +49,30 @@ lines = [
 
 # --- Customers ---------------------------------------------------------------
 customers = [
-  [ "Brightform Packaging Ltd", "Hannah Cole", "GBP" ],
-  [ "Castleton Thermoforming", "Raj Patel", "GBP" ],
-  [ "Delta Blister Solutions", "Mark Ellis", "GBP" ],
-  [ "Fenwick Medical Trays", "Sarah Odum", "GBP" ],
-  [ "Greenway Punnets", "Tom Hirst", "GBP" ],
-  [ "Harbour Point Displays", "Lucy Barnes", "GBP" ],
-  [ "Kestrel Food Packaging", "Ian McLeod", "GBP" ],
-  [ "Lumen Cosmetics Packaging", "Amira Shah", "EUR" ],
-  [ "Northgate Clamshells", "Dan Price", "GBP" ],
-  [ "Orchard Fresh Containers", "Megan Lloyd", "GBP" ],
-  [ "Pennine Industrial Trays", "Chris Walsh", "GBP" ],
-  [ "Rhine Valley Verpackung GmbH", "Jonas Weber", "EUR" ]
-].to_h do |name, contact, currency|
+  [ "Brightform Packaging Ltd", "Hannah Cole", "GBP", "Unit 7, Brightform Park\nLeeds\nLS10 1AB" ],
+  [ "Castleton Thermoforming", "Raj Patel", "GBP", "Castleton Works, Mill Lane\nSheffield\nS9 2RT" ],
+  [ "Delta Blister Solutions", "Mark Ellis", "GBP", "14 Delta Way\nTelford\nTF3 3BD" ],
+  [ "Fenwick Medical Trays", "Sarah Odum", "GBP", "Fenwick House, Kingsway\nGateshead\nNE11 0SX" ],
+  [ "Greenway Punnets", "Tom Hirst", "GBP", "Greenway Farm Estate\nSpalding\nPE11 3YT" ],
+  [ "Harbour Point Displays", "Lucy Barnes", "GBP", "3 Harbour Point\nBristol\nBS11 9FG" ],
+  [ "Kestrel Food Packaging", "Ian McLeod", "GBP", "Kestrel Road\nLivingston\nEH54 5DA" ],
+  [ "Lumen Cosmetics Packaging", "Amira Shah", "EUR", "ZI des Bruyères, 8 rue Lumière\n27000 Évreux\nFrance" ],
+  [ "Northgate Clamshells", "Dan Price", "GBP", "Northgate Industrial Park\nWarrington\nWA2 8TX" ],
+  [ "Orchard Fresh Containers", "Megan Lloyd", "GBP", "Orchard Way\nEvesham\nWR11 1BP" ],
+  [ "Pennine Industrial Trays", "Chris Walsh", "GBP", "Unit 22, Pennine Business Park\nHuddersfield\nHD2 1GQ" ],
+  [ "Rhine Valley Verpackung GmbH", "Jonas Weber", "EUR", "Industriestraße 12\n67059 Ludwigshafen\nGermany" ]
+].to_h do |name, contact, currency, address|
   # Sage 50 style account references (BRIGHT01). EU customers use T4, the rest T1.
   sage_ref = "#{name.gsub(/[^A-Za-z]/, "").first(6).upcase}01"
-  [ name, Customer.find_or_create_by!(name: name) { _1.assign_attributes(contact_name: contact, currency: currency, sage_account_ref: sage_ref,
-                                                                         sage_tax_code: currency == "EUR" ? "T4" : "T1") } ]
+  customer = Customer.find_or_create_by!(name: name) do
+    _1.assign_attributes(contact_name: contact, currency: currency, address: address, sage_account_ref: sage_ref,
+                         sage_tax_code: currency == "EUR" ? "T4" : "T1")
+  end
+  # Fill in what was added to the seeds after this customer was created (the preview keeps its data).
+  missing = { address: address, sage_account_ref: sage_ref }.select { |field, _| customer[field].blank? }
+  missing[:sage_tax_code] = "T4" if currency == "EUR" && missing.key?(:sage_account_ref)
+  customer.update!(missing) if missing.any?
+  [ name, customer ]
 end
 
 # --- Suppliers ---------------------------------------------------------------

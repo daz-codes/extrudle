@@ -144,12 +144,13 @@ class SalesOrder < ApplicationRecord
     dispatched!
   end
 
-  # Invoiced once it's dispatched and every delivery note has gone to Sage.
+  # Invoiced once it's dispatched and every dispatched delivery note has gone
+  # to Sage. A draft note left behind (never sent) doesn't hold it up.
   def refresh_invoice_status!
     return unless dispatched?
 
-    notes = delivery_notes.reload
-    invoiced! if notes.any? && notes.all? { _1.dispatched? && _1.exported? }
+    sent = delivery_notes.reload.select(&:dispatched?)
+    invoiced! if sent.any? && sent.all?(&:exported?)
   end
 
   def reopen!

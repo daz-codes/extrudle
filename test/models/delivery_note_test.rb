@@ -103,4 +103,16 @@ class DeliveryNoteTest < ActiveSupport::TestCase
     assert_equal "DN-00001", @order.delivery_notes.create!.number
     assert_equal "DN-00002", @order.delivery_notes.create!.number
   end
+
+  test "a note can't be dispatched with nowhere to deliver to" do
+    run = run_with_pallets(finish: true)
+    run.sales_order.customer.update!(address: nil)
+    note = delivery_note_for(run, [ 1 ])
+    error = assert_raises(ArgumentError) { note.mark_dispatched! }
+    assert_equal "Add a delivery address first", error.message
+
+    note.update!(delivery_address: "Gate 3, Leeds")
+    note.mark_dispatched!
+    assert note.dispatched?
+  end
 end

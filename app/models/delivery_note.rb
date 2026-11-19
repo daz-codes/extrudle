@@ -51,6 +51,9 @@ class DeliveryNote < ApplicationRecord
 
   def total_g = pallets.sum(&:weight_g)
 
+  # Where it's going: the note's own address, or the customer's.
+  def delivery_address_or_customers = delivery_address.presence || customer.address.presence
+
   # Replaces the pallets on a draft note: [[run_id, pallet_no], …].
   def set_pallets!(keys)
     raise ArgumentError, "#{number} has been dispatched, so its pallets can't change" unless draft?
@@ -65,6 +68,7 @@ class DeliveryNote < ApplicationRecord
   def mark_dispatched!(user: nil, on: Date.current)
     raise ArgumentError, "#{number} has already been dispatched" unless draft?
     raise ArgumentError, "Add at least one pallet first" if note_pallets.none?
+    raise ArgumentError, "Add a delivery address first" if delivery_address_or_customers.blank?
     raise ArgumentError, "The dispatch date can't be in the future" if on > Date.current
 
     transaction do

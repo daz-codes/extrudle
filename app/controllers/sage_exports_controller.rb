@@ -11,7 +11,7 @@ class SageExportsController < ApplicationController
   def create
     export = SageExport.create_from!(SageExport.ready_notes, user: Current.user)
     redirect_to sage_exports_path, notice: "Exported #{helpers.pluralize(export.delivery_notes.count, "delivery note")} to #{export.filename}. Download it below and import it into Sage."
-  rescue SageExport::NothingToExport => e
+  rescue SageExport::NothingToExport, SageExport::AlreadyExported => e
     redirect_to sage_exports_path, alert: e.message
   end
 

@@ -72,4 +72,23 @@ class SageExportTest < ActiveSupport::TestCase
     assert customer.errors.key?(:sage_tax_code)
     assert customer.errors.key?(:sage_account_ref)
   end
+
+  test "notes another export took first aren't sent to Sage twice" do
+    delivery_note_for(@run, [ 1, 2 ], dispatch: true)
+    ready = SageExport.ready_notes # both people loaded the same notes
+    SageExport.create_from!(ready)
+
+    assert_raises(SageExport::AlreadyExported) { SageExport.create_from!(ready) }
+    assert_equal 1, SageExport.count
+  end
+
+  test "a draft note left behind doesn't stop the order being invoiced" do
+    @run.update_columns(status: "running")
+    @run.reels.create!(weight_kg: "300", pallet_no: 3) # an over-run
+    @run.update_columns(status: "finished")
+    delivery_note_for(@run, [ 1, 2 ], dispatch: true)
+    delivery_note_for(@run.reload, [ 3 ]) # drafted, never sent
+    SageExport.create_from!(SageExport.ready_notes)
+    assert @order.reload.invoiced?
+  end
 end
