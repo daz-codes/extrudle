@@ -105,4 +105,16 @@ class PurchaseOrderTest < ActiveSupport::TestCase
     assert_includes PurchaseOrder.search("pacific"), purchase_orders(:pacific_draft)
     assert_equal 2, PurchaseOrder.active.count
   end
+
+  test "close short accepts a short delivery" do
+    order = purchase_orders(:albion_sent)
+    Stock::Receipt.new(purchase_order_line: purchase_order_lines(:albion_jade), quantity: "900").save!
+    assert order.reload.part_received?
+    assert_raises(ArgumentError) { order.cancel! }
+
+    order.close_short!
+    assert order.received?
+    assert order.closed_short?
+    assert_raises(ArgumentError) { order.close_short! }
+  end
 end

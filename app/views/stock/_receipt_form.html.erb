@@ -1,0 +1,57 @@
+<%# locals: (receipt:, url:, cancel_path:, order: nil) %>
+<%= form_with model: receipt, scope: :receipt, url: url, method: :post, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+
+  <% if order %>
+    <fieldset>
+      <legend class="field-label">Material</legend>
+      <div class="flex flex-wrap gap-2">
+        <% order.lines.each do |line| %>
+          <label class="choice py-2">
+            <%= form.radio_button :purchase_order_line_id, line.id, checked: receipt.purchase_order_line == line, class: "size-5 shrink-0 accent-ink-900" %>
+            <span>
+              <span class="font-semibold"><%= line.material %></span>
+              <span class="block text-sm text-ink-600 tabular-nums">
+                <%= order_quantity(line.received_g) %> of <%= order_quantity(line.quantity_g, unit: line.quantity_unit) %> received
+              </span>
+            </span>
+          </label>
+        <% end %>
+      </div>
+    </fieldset>
+  <% else %>
+    <%= form.select_row :material_id, Material.active.by_name.map { [ _1.to_s, _1.id ] }, label: "Material",
+          select_options: { include_blank: "Choose a material" }, required: true,
+          hint: "For opening stock and in-house regrind. Bought-in deliveries go through their purchase order." %>
+  <% end %>
+
+  <div class="grid gap-5 sm:grid-cols-[1fr_auto]">
+    <%= form.text_row :quantity, label: "Total net weight", required: true, inputmode: "decimal", autocomplete: "off",
+          hint: "From the delivery note. It's split evenly across the bags." %>
+    <%= form.radio_row :quantity_unit, EnteredQuantity::UNITS.keys, label: "Unit", labels: EnteredQuantity::UNIT_LABELS %>
+  </div>
+  <% if receipt.large_delivery_needs_confirming? %>
+    <%= form.check_row :confirm_large_delivery, label: "Yes, this much was delivered" %>
+  <% end %>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.number_row :bags, label: "Number of bags", required: true, min: 1, max: Stock::Receipt::MAX_BAGS, hint: "Each bag gets its own lot and label." %>
+    <%= form.text_row :first_bag_no, label: "First bag no.", hint: "Optional. Counts up from here, e.g. 939, 940, 941." %>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.text_row :supplier_lot_ref, label: "Supplier batch no." %>
+    <%= form.text_row :delivery_ref, label: "Delivery note no." %>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.date_row :received_on, label: "Received on", required: true, max: Date.current %>
+  </div>
+  <%= form.radio_row :location, Lot::LOCATIONS.keys, label: "Location", labels: Lot::LOCATIONS %>
+  <%= form.text_area_row :notes, rows: 2 %>
+
+  <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
+    <%= form.submit order ? "Receive goods" : "Add stock", class: "btn btn-primary" %>
+    <%= link_to "Cancel", cancel_path, class: "btn btn-secondary" %>
+  </div>
+<% end %>

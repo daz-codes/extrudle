@@ -188,6 +188,32 @@ end
   order.cancel! if status == "cancelled"
 end
 
+# --- Stock -------------------------------------------------------------------
+# Opening stock and regrind (no PO), half a JADE delivery and part of a flake
+# delivery. A few JADE bags are moved to storage and one bag is reweighed.
+if Lot.none?
+  Lot.transaction do
+    admin = User.find_by(role: "admin")
+    receive = ->(**attrs) { Stock::Receipt.new(**attrs).tap { _1.user = admin }.tap(&:save!).lots }
+
+    receive.(material_id: Material.find_by!(name: "Albion Clear").id, quantity: "8.8", quantity_unit: "t", bags: 8,
+             received_on: today - 30, supplier_lot_ref: "AC-2210", notes: "Opening stock")
+    receive.(material_id: Material.find_by!(name: "EuroCap Co-Ex").id, quantity: "3,250", bags: 3,
+             received_on: today - 30, supplier_lot_ref: "EC-7781", notes: "Opening stock")
+    receive.(material_id: Material.find_by!(name: "Regrind chip").id, quantity: "2,960", bags: 4, received_on: today - 2)
+
+    jade_line = PurchaseOrder.find_by!(supplier: Supplier.find_by!(name: "Pacific Resin Exports")).lines.sole
+    jade = receive.(purchase_order_line: jade_line, quantity: "22", quantity_unit: "t", bags: 20, first_bag_no: "939",
+                    supplier_lot_ref: "CZ302-26-118", delivery_ref: "DN-55120", received_on: today - 3)
+    Stock::Transfer.call(jade.last(6), to: "storage", user: admin, note: "No room by the line")
+    Stock::Adjustment.new(lot: jade.first, counted_kg: "1,092.5", reason: "Reweighed: torn bag").tap { _1.user = admin }.save!
+
+    flake_line = PurchaseOrder.find_by!(supplier: Supplier.find_by!(name: "Circular Flake Co")).lines.sole
+    receive.(purchase_order_line: flake_line, quantity: "9,860", bags: 10, supplier_lot_ref: "CF-0921",
+             delivery_ref: "CF-DN-3312", received_on: today - 1)
+  end
+end
+
 # --- Production plan ---------------------------------------------------------
 # Both lines start at 06:00 today (UK time). Order lines are planned in
 # required-date order, alternating lines; changeovers are added automatically.
@@ -214,5 +240,5 @@ end
 
 unless Rails.env.test?
   puts "Seeded #{User.count} users (password: #{demo_in_production ? "demo_password in credentials" : DEMO_PASSWORD}), #{Line.count} lines, #{Customer.count} customers, " \
-       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{PurchaseOrder.count} POs, #{ScheduleBlock.count} plan blocks"
+       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{PurchaseOrder.count} POs, #{Lot.count} lots, #{ScheduleBlock.count} plan blocks"
 end

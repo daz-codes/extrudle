@@ -1,0 +1,7 @@
+<% content_for :title, "Receive goods on #{@purchase_order.number}" %>
+<h1 class="page-title mb-2">Receive goods</h1>
+<p class="mb-6 text-ink-600">
+  Against <%= link_to @purchase_order.number, @purchase_order, class: "link" %> from <%= @purchase_order.supplier.name %>
+</p>
+<%= render "stock/receipt_form", receipt: @receipt, order: @purchase_order,
+      url: purchase_order_receipts_path(@purchase_order), cancel_path: @purchase_order %>

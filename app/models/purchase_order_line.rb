@@ -4,6 +4,7 @@ class PurchaseOrderLine < ApplicationRecord
 
   belongs_to :purchase_order, inverse_of: :lines
   belongs_to :material
+  has_many :lots, dependent: :restrict_with_error
 
   # In the PO's currency, per tonne. Working assumption, see PLAN.md §11 Q20.
   scaled_attribute :price_per_tonne, column: :price_per_tonne_cents, scale: 100, pad: true
@@ -21,6 +22,19 @@ class PurchaseOrderLine < ApplicationRecord
     return nil if quantity_g.nil? || price_per_tonne_cents.nil?
 
     (quantity_g * price_per_tonne_cents + Weight::GRAMS_PER_TONNE / 2) / Weight::GRAMS_PER_TONNE
+  end
+
+  # Weight delivered against this line: what each lot weighed when it arrived.
+  def received_g
+    lots.loaded? ? lots.sum(&:initial_g) : lots.sum(:initial_g)
+  end
+
+  def outstanding_g
+    [ quantity_g.to_i - received_g, 0 ].max
+  end
+
+  def fully_received?
+    received_g >= quantity_g.to_i
   end
 
   private

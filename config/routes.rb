@@ -31,8 +31,17 @@ Rails.application.routes.draw do
       patch :back_to_draft
       patch :cancel
       patch :reopen
+      patch :close_short
     end
     resources :lines, controller: "purchase_order_lines", only: %i[ create edit update destroy ]
+    resources :receipts, controller: "goods_receipts", only: %i[ new create ]
+  end
+
+  get "stock" => "stock#show", as: :stock
+  resources :lots, path: "stock/lots", only: %i[ index show new create ] do
+    get :labels, on: :collection
+    patch :move, on: :member
+    resource :adjustment, controller: "lot_adjustments", only: %i[ new create ]
   end
 
   get "planner" => "planner#show", as: :planner

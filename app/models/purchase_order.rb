@@ -5,7 +5,7 @@ class PurchaseOrder < ApplicationRecord
   belongs_to :supplier
   has_many :lines, -> { order(:id) }, class_name: "PurchaseOrderLine", inverse_of: :purchase_order, dependent: :destroy
 
-  # part_received and received are set by goods in (Slice 6).
+  # part_received and received are set by goods in (Stock::Receipt).
   enum :status, {
     draft: "draft", sent: "sent", part_received: "part_received", received: "received", cancelled: "cancelled"
   }, default: :draft, validate: true
@@ -85,6 +85,35 @@ class PurchaseOrder < ApplicationRecord
 
     update!(status: "draft", sent_at: nil)
   end
+
+  def receivable? = OUTSTANDING_STATUSES.include?(status)
+
+  def received_g
+    lines.sum(&:received_g)
+  end
+
+  # After goods in: part_received until every line has had at least what was
+  # ordered, then received. Over-deliveries are allowed. Working assumption,
+  # see PLAN.md §11 Q27.
+  def refresh_receipt_status!
+    return unless receivable?
+
+    order_lines = lines.includes(:lots).reload
+    status = if order_lines.all?(&:fully_received?) then "received"
+    elsif order_lines.any? { _1.received_g.positive? } then "part_received"
+    else "sent"
+    end
+    update!(status:) if status != self.status
+  end
+
+  # Accepts a short delivery: nothing more is expected against this PO.
+  def close_short!
+    raise ArgumentError, "only part-received purchase orders can be closed short" unless part_received?
+
+    update!(status: "received", closed_short_at: Time.current)
+  end
+
+  def closed_short? = closed_short_at.present?
 
   def to_s = number
 
