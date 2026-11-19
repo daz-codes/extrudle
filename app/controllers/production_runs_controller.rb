@@ -11,6 +11,13 @@ class ProductionRunsController < ApplicationController
   end
 
   def show
+    respond_to do |format|
+      format.html
+      format.pdf do
+        pdf = ProductionLogPdf.new(@run, printed_by: Current.user)
+        send_data pdf.render, type: "application/pdf", disposition: "inline", filename: pdf.filename
+      end
+    end
   end
 
   def new
@@ -46,7 +53,8 @@ class ProductionRunsController < ApplicationController
     helper_method :return_to_finish?
 
     def set_run
-      @run = ProductionRun.includes(:line, :product_spec, checks: :user, sales_order_line: { sales_order: :customer }).find(params[:id])
+      @run = ProductionRun.includes(:line, :product_spec, :reels, :started_by, :finished_by, checks: :user, material_loads: { lot: :material },
+                                    sales_order_line: { sales_order: :customer }).find(params[:id])
     end
 
     def require_running

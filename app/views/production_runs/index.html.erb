@@ -14,6 +14,7 @@
         <th scope="col" class="px-4 py-3">Spec</th>
         <th scope="col" class="px-4 py-3">Started</th>
         <th scope="col" class="px-4 py-3">Status</th>
+        <th scope="col" class="px-4 py-3"><span class="sr-only">Printable log</span></th>
       </tr>
     </thead>
     <tbody>
@@ -25,9 +26,13 @@
           <td class="px-4 py-3"><%= run.product_spec %></td>
           <td class="px-4 py-3 tabular-nums"><%= l(run.started_at, format: "%-d %b %Y %H:%M") %></td>
           <td class="px-4 py-3"><%= run_status_badge(run) %></td>
+          <td class="px-4 py-3 text-right">
+            <%= link_to "PDF", production_run_path(run, format: :pdf), class: "link", target: "_blank", data: { turbo: false },
+                  aria: { label: "Printable log for despatch #{run.despatch_number}" } %>
+          </td>
         </tr>
       <% end %>
-      <% if @runs.empty? %><%= render "master_data/empty", message: "No production logs yet. Start one from a line above.", colspan: 6 %><% end %>
+      <% if @runs.empty? %><%= render "master_data/empty", message: "No production logs yet. Start one from a line above.", colspan: 7 %><% end %>
     </tbody>
   </table>
 </section>

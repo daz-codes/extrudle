@@ -3,12 +3,8 @@
 # Uses Prawn's built-in Helvetica (Windows-1252), so it needs no font files.
 # Characters outside that set (e.g. "ł") are transliterated rather than raising.
 class PurchaseOrderPdf
-  include ActionView::Helpers::NumberHelper
+  include PdfFormatting
 
-  INK = "18181B"
-  MUTED = "52525B"
-  RULE = "D4D4D8"
-  FILL = "F4F4F5"
   FOOTER_HEIGHT = 20
 
   def initialize(order)
@@ -51,7 +47,7 @@ class PurchaseOrderPdf
         pdf.text order.number, size: 14, align: :right
         pdf.move_down 4
         pdf.text "Date: #{date(order.order_date)}", align: :right
-        pdf.text("Not yet sent: do not supply against this copy.", align: :right, color: "B91C1C", style: :bold) if order.draft?
+        pdf.text("Not yet sent: do not supply against this copy.", align: :right, color: BAD, style: :bold) if order.draft?
       end
       pdf.move_cursor_to [ left_bottom, pdf.cursor ].min
       pdf.move_down 16
@@ -133,25 +129,7 @@ class PurchaseOrderPdf
       pdf.move_down 16
     end
 
-    def date(value) = value.strftime("%-d %b %Y")
-
     def money(cents)
       "#{Money.symbol(order.currency)}#{number_with_delimiter(DecimalInput.from_scaled_integer(cents, 100, pad: true))}"
-    end
-
-    # Exact, never rounded: "12.345 t", "750 kg".
-    def quantity(grams, unit = nil)
-      unit ||= grams >= Weight::GRAMS_PER_TONNE ? "t" : "kg"
-      "#{number_with_delimiter(DecimalInput.from_scaled_integer(grams, EnteredQuantity::UNITS.fetch(unit)))} #{unit}"
-    end
-
-    # Keeps Windows-1252 characters (£, €, µ, é…) and transliterates the rest.
-    def text(string)
-      string.to_s.each_char.map do |char|
-        char.encode(Encoding::Windows_1252)
-        char
-      rescue EncodingError
-        I18n.transliterate(char)
-      end.join
     end
 end
