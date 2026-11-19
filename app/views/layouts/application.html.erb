@@ -12,7 +12,6 @@
         <% end %>
 
         <div class="flex flex-wrap items-center gap-1">
-          <%= nav_link "Home", root_path %>
           <%= nav_link "Orders", sales_orders_path, active: controller_name.start_with?("sales_order") %>
           <%= nav_link "Planner", planner_path, active: controller_name.in?(%w[planner schedule_blocks]) %>
           <%= nav_link "Production", production_runs_path, active: controller_name.in?(%w[production_runs run_checks]) %>
@@ -22,15 +21,13 @@
           <%= nav_link "Master data", master_data_path, active: master_data_page? %>
           <%= nav_link "Floor", floor_root_path, active: false %>
           <% if Current.user&.admin? %>
-            <%= nav_link "Users", admin_users_path, active: controller_path.in?(%w[admin/users admin/devices]) %>
+            <%= nav_link "Users", admin_users_path, active: controller_path.in?(%w[admin/users admin/devices admin/backups]) %>
           <% end %>
         </div>
 
         <div class="ml-auto flex items-center gap-3">
-          <span class="text-sm">
-            <span class="font-semibold"><%= Current.user.name %></span>
-            <span class="badge badge-quiet ml-1"><%= Current.user.role.humanize %></span>
-          </span>
+          <%= link_to "Help", help_path, class: "nav-link", aria: { current: (controller_name == "help" ? "page" : nil) } %>
+          <span class="text-sm font-semibold" title="<%= Current.user.role.humanize %>"><%= Current.user.name %></span>
           <%= button_to "Sign out", session_path, method: :delete, class: "nav-link" %>
         </div>
       </nav>

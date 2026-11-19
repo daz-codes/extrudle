@@ -5,7 +5,8 @@ module MasterDataHelper
     [ "Suppliers", :suppliers ],
     [ "Materials", :materials ],
     [ "Categories", :material_categories ],
-    [ "Lines", :lines ]
+    [ "Lines", :lines ],
+    [ "Import", :imports ]
   ].freeze
 
   def master_data_page?

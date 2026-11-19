@@ -1,0 +1,17 @@
+# Litestream streams the app database to Cloudflare R2 (S3-compatible) all the
+# time, so it can be restored to any point in the last 30 days (PLAN.md §11 Q70).
+# Used by bin/docker-entrypoint only when LITESTREAM_BUCKET is set (the real
+# deploy). Values come from the environment (config/deploy.yml, .kamal/secrets).
+# Only the main database: the queue, cache and cable databases rebuild themselves.
+dbs:
+  - path: /rails/storage/production.sqlite3
+    replicas:
+      - type: s3
+        bucket: ${LITESTREAM_BUCKET}
+        path: extrudle/production.sqlite3
+        endpoint: ${LITESTREAM_ENDPOINT}
+        region: auto
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        retention: 720h
+        snapshot-interval: 24h

@@ -4,12 +4,20 @@ Rails.application.routes.draw do
 
   namespace :admin do
     resources :users, only: %i[ index new create edit update ]
+    resource :backups, only: %i[ show create ]
     resources :devices, path: "computers", only: %i[ index create edit update ] do
       patch :revoke, on: :member
     end
   end
 
   resource :master_data, only: :show, controller: "master_data"
+  resources :imports, path: "master_data/import", param: :kind, only: %i[ index show ] do
+    member do
+      get :template
+      post :preview
+      post :run
+    end
+  end
   resources :customers, except: :destroy
   resources :suppliers, only: %i[ index new create edit update ]
   resources :material_categories, only: %i[ index new create edit update ]
@@ -61,6 +69,7 @@ Rails.application.routes.draw do
   end
 
   resources :production_runs, path: "production", except: :destroy do
+    get :blank, on: :collection
     resources :checks, controller: "run_checks", only: :create
     resources :material_loads, path: "materials", only: %i[ index create destroy ] do
       patch :empty, on: :member
@@ -79,6 +88,7 @@ Rails.application.routes.draw do
   resources :sage_exports, path: "dispatch/sage", only: %i[ index create show ]
 
   get "floor" => "floor#show", as: :floor_root
+  get "help" => "help#show", as: :help
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   get "up" => "rails/health#show", as: :rails_health_check

@@ -1,0 +1,53 @@
+<% content_for :title, "Backups" %>
+<% latest = @checks.first %>
+<p class="mb-2"><%= link_to "← Users", admin_users_path, class: "link text-sm" %></p>
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <h1 class="page-title">Backups</h1>
+  <% if @configured %>
+    <%= button_to "Check now", admin_backups_path, method: :post, class: "btn btn-primary",
+          form: { data: { turbo_confirm: "Restore the latest backup and check it? It takes a few seconds." } } %>
+  <% end %>
+</div>
+
+<section class="card mb-6 p-5" aria-labelledby="status-heading">
+  <h2 id="status-heading" class="section-title mb-3">How the data is kept safe</h2>
+  <% if @configured %>
+    <p class="mb-2">Every change is streamed to Cloudflare R2 within seconds, and the last 30 days can be restored to any moment.</p>
+    <p class="text-ink-600">Each night at 4am the latest backup is restored and checked. If a check fails, tell whoever looks after the server.</p>
+  <% else %>
+    <p class="mb-2"><span class="badge badge-lemon mr-1">Not set up</span>Backups aren't set up on this server.</p>
+    <p class="text-ink-600">That's expected on the demo preview. The real system streams every change to Cloudflare R2.</p>
+  <% end %>
+</section>
+
+<% if latest %>
+  <div class="mb-6 rounded-[11px] border p-4 <%= latest.ok? ? "border-ok-600/30 bg-ok-50" : "border-bad-600/30 bg-bad-50 text-bad-700" %>" role="status">
+    <p class="font-semibold"><%= latest.ok? ? "Last check passed" : "Last check failed" %> <%= time_ago_in_words(latest.created_at) %> ago</p>
+    <p><%= latest.message %></p>
+  </div>
+<% end %>
+
+<section class="card overflow-x-auto" aria-labelledby="checks-heading">
+  <h2 id="checks-heading" class="section-title px-5 pt-5">Restore checks</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">When</th>
+        <th scope="col" class="px-4 py-3">Result</th>
+        <th scope="col" class="px-4 py-3">Details</th>
+        <th scope="col" class="px-4 py-3 text-right">Took</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @checks.each do |check| %>
+        <tr>
+          <td class="px-4 py-3 tabular-nums"><%= l(check.created_at, format: "%a %-d %b %H:%M") %><%= " (#{check.requested_by.name})" if check.requested_by %></td>
+          <td class="px-4 py-3"><% if check.ok? %><span class="badge bg-ok-50 text-ok-700">Passed</span><% else %><span class="badge bg-bad-50 text-bad-700">Failed</span><% end %></td>
+          <td class="px-4 py-3 text-sm"><%= check.message %></td>
+          <td class="px-4 py-3 text-right font-mono text-sm tabular-nums"><%= check.duration_ms ? "#{(check.duration_ms / 1000.0).round(1)} s" : "—" %></td>
+        </tr>
+      <% end %>
+      <% if @checks.empty? %><%= render "master_data/empty", message: "No checks yet.", colspan: 4 %><% end %>
+    </tbody>
+  </table>
+</section>

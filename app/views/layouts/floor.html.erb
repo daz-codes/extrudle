@@ -11,6 +11,7 @@
         <span class="badge badge-lime text-sm">Floor</span>
 
         <div class="ml-auto flex items-center gap-3">
+          <%= link_to "Help", help_path, class: "btn btn-secondary" %>
           <span class="font-semibold"><%= Current.user.name %></span>
           <% if Current.user.office_access? %>
             <%= link_to "Office", root_path, class: "btn btn-secondary" %>

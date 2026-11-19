@@ -1,0 +1,52 @@
+<% content_for :title, "Import #{@kind_class.title.downcase}" %>
+<%= render "master_data/tabs" %>
+<p class="mb-2"><%= link_to "← Import", imports_path, class: "link text-sm" %></p>
+<h1 class="page-title mb-3">Import <%= @kind_class.title.downcase %></h1>
+<p class="mb-6 max-w-3xl text-ink-600"><%= @kind_class.description %></p>
+
+<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+  <section class="card overflow-x-auto" aria-labelledby="columns-heading">
+    <div class="px-5 pt-5">
+      <h2 id="columns-heading" class="section-title">Columns</h2>
+      <p class="mt-2 text-sm text-ink-600">The first row of the file names the columns, in any order. Blank cells leave things as they are.</p>
+    </div>
+    <table class="data-table mt-3 w-full text-left">
+      <thead>
+        <tr>
+          <th scope="col" class="px-4 py-3">Column</th>
+          <th scope="col" class="px-4 py-3">Example</th>
+          <th scope="col" class="px-4 py-3">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @kind_class.columns.each do |column| %>
+          <tr>
+            <td class="px-4 py-3 font-semibold"><%= column.label %><% if column.required %> <span class="badge badge-lemon">Required</span><% end %></td>
+            <td class="px-4 py-3 font-mono text-sm"><%= column.example || "—" %></td>
+            <td class="px-4 py-3 text-sm text-ink-600"><%= column.hint %></td>
+          </tr>
+        <% end %>
+        <% if @kind == "product_specs" %>
+          <tr>
+            <td class="px-4 py-3 font-semibold">D1 rate (kg/h), D2 rate (kg/h)…</td>
+            <td class="px-4 py-3 font-mono text-sm">190</td>
+            <td class="px-4 py-3 text-sm text-ink-600">One column per line, named after the line.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card space-y-4 p-5" aria-labelledby="upload-heading">
+    <h2 id="upload-heading" class="section-title">Upload</h2>
+    <p class="text-sm text-ink-600">Start from the template if you like: it has every column and an example row to replace.</p>
+    <%= link_to "Download template", template_import_path(@kind, format: :csv), class: "btn btn-secondary w-full" %>
+    <%= form_with url: preview_import_path(@kind), multipart: true, class: "space-y-4" do |form| %>
+      <div>
+        <%= form.label :file, "CSV file", class: "field-label" %>
+        <%= form.file_field :file, accept: ".csv,text/csv", required: true, class: "field-input py-2" %>
+      </div>
+      <%= form.submit "Check the file", class: "btn btn-primary w-full" %>
+    <% end %>
+  </section>
+</div>

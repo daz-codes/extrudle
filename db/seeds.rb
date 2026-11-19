@@ -8,6 +8,22 @@
 
 demo_in_production = Rails.env.production? && ENV["DEMO_SEEDS"] == "true"
 
+# The material categories every install needs (also on a real production
+# database, so materials can be imported at go-live).
+STANDARD_CATEGORIES = [
+  [ "Virgin polymer", "Main-Ex virgin resin" ],
+  [ "Capping polymer", "Co-Ex capping layer, shared by both lines" ],
+  [ "Recycled (PCW and regrind)", "Post-consumer flake and in-house regrind" ],
+  [ "Additives and masterbatch", "Antiblock, colour and slip" ],
+  [ "Silicone", "Silicone coatings" ]
+].freeze
+
+def seed_categories
+  STANDARD_CATEGORIES.each_with_index.to_h do |(name, description), index|
+    [ name, MaterialCategory.find_or_create_by!(name: name) { _1.assign_attributes(description:, position: index + 1) } ]
+  end
+end
+
 if Rails.env.production? && !demo_in_production
   email, password = ENV["ADMIN_EMAIL"], ENV["ADMIN_PASSWORD"]
 
@@ -17,6 +33,7 @@ if Rails.env.production? && !demo_in_production
       user.assign_attributes(name: ENV.fetch("ADMIN_NAME", "Admin"), role: "admin", password: password, sign_in_anywhere: true)
     end
     puts "Ensured admin user #{email}"
+    seed_categories
   else
     puts "Skipping seeds in production. Set ADMIN_EMAIL and ADMIN_PASSWORD to create the first admin."
   end
@@ -93,15 +110,7 @@ suppliers = [
 end
 
 # --- Material categories and materials ---------------------------------------
-categories = [
-  [ "Virgin polymer", "Main-Ex virgin resin" ],
-  [ "Capping polymer", "Co-Ex capping layer, shared by both lines" ],
-  [ "Recycled (PCW and regrind)", "Post-consumer flake and in-house regrind" ],
-  [ "Additives and masterbatch", "Antiblock, colour and slip" ],
-  [ "Silicone", "Silicone coatings" ]
-].each_with_index.to_h do |(name, description), index|
-  [ name, MaterialCategory.find_or_create_by!(name: name) { _1.assign_attributes(description:, position: index + 1) } ]
-end
+categories = seed_categories
 
 [
   [ "JADE", "CZ-302", "Virgin polymer", "Pacific Resin Exports", "virgin", "purchased" ],

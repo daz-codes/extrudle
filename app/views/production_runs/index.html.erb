@@ -1,5 +1,8 @@
 <% content_for :title, "Production" %>
-<h1 class="page-title mb-6">Production</h1>
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+  <h1 class="page-title">Production</h1>
+  <%= link_to "Blank paper log", blank_production_runs_path(format: :pdf), class: "btn btn-secondary", target: "_blank", data: { turbo: false } %>
+</div>
 
 <div class="mb-8"><%= render "board", board: @board %></div>
 

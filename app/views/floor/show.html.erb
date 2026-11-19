@@ -4,12 +4,8 @@
 
 <%= render "production_runs/board", board: @board %>
 
-<h2 class="section-title mt-10 mb-4">Coming soon</h2>
-<div class="grid gap-4 sm:grid-cols-2">
-  <% [ "Load material", "Goods in" ].each do |action| %>
-    <button type="button" disabled class="btn btn-secondary min-h-20 w-full text-xl">
-      <%= action %>
-      <span class="sr-only">(coming soon)</span>
-    </button>
-  <% end %>
+<div class="mt-10 grid gap-4 sm:grid-cols-2">
+  <%= link_to "Help", help_path, class: "btn btn-secondary min-h-20 w-full text-xl" %>
+  <%= link_to "Blank paper log", blank_production_runs_path(format: :pdf), class: "btn btn-secondary min-h-20 w-full text-xl", target: "_blank", data: { turbo: false } %>
 </div>
+<p class="mt-3 text-ink-600">If Extrudle goes down, carry on with a blank paper log and type it in when it's back.</p>
