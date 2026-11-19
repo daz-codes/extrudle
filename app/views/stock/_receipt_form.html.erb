@@ -30,6 +30,9 @@
           hint: "From the delivery note. It's split evenly across the bags." %>
     <%= form.radio_row :quantity_unit, EnteredQuantity::UNITS.keys, label: "Unit", labels: EnteredQuantity::UNIT_LABELS %>
   </div>
+  <% if receipt.large_delivery_needs_confirming? %>
+    <%= form.check_row :confirm_large_delivery, label: "Yes, this much was delivered" %>
+  <% end %>
 
   <div class="grid gap-5 sm:grid-cols-2">
     <%= form.number_row :bags, label: "Number of bags", required: true, min: 1, max: Stock::Receipt::MAX_BAGS, hint: "Each bag gets its own lot and label." %>
@@ -42,7 +45,7 @@
   </div>
 
   <div class="grid gap-5 sm:grid-cols-2">
-    <%= form.date_row :received_on, label: "Received on", required: true %>
+    <%= form.date_row :received_on, label: "Received on", required: true, max: Date.current %>
   </div>
   <%= form.radio_row :location, Lot::LOCATIONS.keys, label: "Location", labels: Lot::LOCATIONS %>
   <%= form.text_area_row :notes, rows: 2 %>

@@ -47,6 +47,21 @@ class StockControllerTest < ActionDispatch::IntegrationTest
     assert_select "[role=alert]", /Quantity/
   end
 
+  test "a large delivery asks for confirmation, then goes through" do
+    order = purchase_orders(:albion_sent)
+    params = { purchase_order_line_id: purchase_order_lines(:albion_jade).id, quantity_unit: "t", quantity: "22", bags: "2",
+               received_on: Date.current, location: "on_site" }
+    assert_no_difference -> { Lot.count } do
+      post purchase_order_receipts_path(order), params: { receipt: params }
+    end
+    assert_response :unprocessable_content
+    assert_select "input[type=checkbox][name='receipt[confirm_large_delivery]']"
+
+    assert_difference -> { Lot.count } => 2 do
+      post purchase_order_receipts_path(order), params: { receipt: params.merge(confirm_large_delivery: "1") }
+    end
+  end
+
   test "drafts can't be received against" do
     order = purchase_orders(:pacific_draft)
     get new_purchase_order_receipt_path(order)

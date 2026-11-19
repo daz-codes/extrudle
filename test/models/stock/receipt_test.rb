@@ -63,9 +63,42 @@ class Stock::ReceiptTest < ActiveSupport::TestCase
   end
 
   test "nothing is saved if a lot fails" do
-    materials(:jade).update_columns(active: false)
-    assert_no_difference -> { Lot.count } do
-      assert_not receipt.save
+    r = receipt(bags: 2)
+    calls = 0
+    original = Lot.method(:create!)
+    Lot.define_singleton_method(:create!) do |**attrs|
+      (calls += 1) == 2 ? raise(ActiveRecord::RecordInvalid.new(Lot.new)) : original.call(**attrs)
     end
+    assert_no_difference -> { Lot.count } do
+      assert_raises(ActiveRecord::RecordInvalid) { r.save }
+    end
+  ensure
+    Lot.singleton_class.remove_method(:create!)
+  end
+
+  test "goods still due on a PO can be received after the material is deactivated" do
+    materials(:jade).update_columns(active: false)
+    assert receipt.save, receipt.errors.full_messages.to_sentence
+
+    r = Stock::Receipt.new(material_id: materials(:jade).id, quantity: "100")
+    assert_not r.valid?
+    assert_includes r.errors[:material_id], "is inactive"
+  end
+
+  test "goods can't be received in the future" do
+    r = receipt(received_on: Date.current + 1)
+    assert_not r.valid?
+    assert_includes r.errors[:received_on], "can't be in the future"
+    assert receipt(received_on: Date.current).valid?
+  end
+
+  test "a delivery over double what's still due needs confirming" do
+    r = receipt(quantity: "22", quantity_unit: "t") # 1,100 kg due
+    assert_not r.valid?
+    assert_match "more than double the 1,100 kg still due", r.errors[:quantity].first
+    assert r.large_delivery_needs_confirming?
+
+    assert receipt(quantity: "2,200").valid?, "exactly double is fine"
+    assert receipt(quantity: "22", quantity_unit: "t", confirm_large_delivery: true).save
   end
 end

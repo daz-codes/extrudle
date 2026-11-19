@@ -86,36 +86,36 @@ class PurchaseOrder < ApplicationRecord
     update!(status: "draft", sent_at: nil)
   end
 
-def receivable? = OUTSTANDING_STATUSES.include?(status)
+  def receivable? = OUTSTANDING_STATUSES.include?(status)
 
-def received_g
-  lines.sum(&:received_g)
-end
-
-# After goods in: part_received until every line has had at least what was
-# ordered, then received. Over-deliveries are allowed. Working assumption,
-# see PLAN.md §11 Q27.
-def refresh_receipt_status!
-  return unless receivable?
-
-  order_lines = lines.includes(:lots).reload
-  status = if order_lines.all?(&:fully_received?) then "received"
-  elsif order_lines.any? { _1.received_g.positive? } then "part_received"
-  else "sent"
+  def received_g
+    lines.sum(&:received_g)
   end
-  update!(status:) if status != self.status
-end
 
-# Accepts a short delivery: nothing more is expected against this PO.
-def close_short!
-  raise ArgumentError, "only part-received purchase orders can be closed short" unless part_received?
+  # After goods in: part_received until every line has had at least what was
+  # ordered, then received. Over-deliveries are allowed. Working assumption,
+  # see PLAN.md §11 Q27.
+  def refresh_receipt_status!
+    return unless receivable?
 
-  update!(status: "received", closed_short_at: Time.current)
-end
+    order_lines = lines.includes(:lots).reload
+    status = if order_lines.all?(&:fully_received?) then "received"
+    elsif order_lines.any? { _1.received_g.positive? } then "part_received"
+    else "sent"
+    end
+    update!(status:) if status != self.status
+  end
 
-def closed_short? = closed_short_at.present?
+  # Accepts a short delivery: nothing more is expected against this PO.
+  def close_short!
+    raise ArgumentError, "only part-received purchase orders can be closed short" unless part_received?
 
-def to_s = number
+    update!(status: "received", closed_short_at: Time.current)
+  end
+
+  def closed_short? = closed_short_at.present?
+
+  def to_s = number
 
   private
     # On create, and when a PO without lines moves to another supplier. A currency

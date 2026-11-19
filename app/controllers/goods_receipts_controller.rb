@@ -37,7 +37,7 @@ class GoodsReceiptsController < ApplicationController
 
     # quantity_unit is listed first so quantity is parsed in the chosen unit.
     def receipt_params
-      params.expect(receipt: %i[ received_on bags first_bag_no supplier_lot_ref delivery_ref location quantity_unit quantity notes ]).to_h.symbolize_keys
+      params.expect(receipt: %i[ received_on bags first_bag_no supplier_lot_ref delivery_ref location quantity_unit quantity notes confirm_large_delivery ]).to_h.symbolize_keys
     end
 
     def lot_range(lots)

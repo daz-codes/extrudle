@@ -24,6 +24,8 @@ class Stock::Receipt
   attribute :notes, :string
   attribute :quantity_g, :integer
   attribute :quantity_unit, :string, default: "kg"
+  # Set when the user confirms a delivery much bigger than what's still due.
+  attribute :confirm_large_delivery, :boolean, default: false
 
   # After the attributes, so its quantity_unit= wraps the generated one.
   include EnteredQuantity
@@ -31,12 +33,13 @@ class Stock::Receipt
   attr_reader :purchase_order_line, :lots
   attr_accessor :user
 
-  validates :received_on, presence: true
+  validates :received_on, presence: true, comparison: { less_than_or_equal_to: -> { Date.current }, message: "can't be in the future" }
   validates :bags, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: MAX_BAGS }
   validates :location, inclusion: { in: Lot::LOCATIONS.keys }
   validate :material_can_be_received
   validate :po_can_be_received, if: :purchase_order_line
   validate :every_bag_weighs_something
+  validate :large_delivery_is_confirmed, if: :purchase_order_line
 
   def initialize(purchase_order_line: nil, **attributes)
     @purchase_order_line = purchase_order_line
@@ -49,6 +52,10 @@ class Stock::Receipt
     @material ||= Material.find_by(id: material_id)
   end
 
+  # A delivery more than this many times what's still due needs confirming:
+  # over-deliveries are fine (Q27), but 22 t typed for 22 kg is a typo.
+  LARGE_DELIVERY_FACTOR = 2
+
   def purchase_order = purchase_order_line&.purchase_order
   def purchase_order_line_id = purchase_order_line&.id
 
@@ -58,6 +65,10 @@ class Stock::Receipt
 
     Array.new(bags.to_i).each_with_object([]) { |_, numbers| numbers << (numbers.last&.succ || first_bag_no.strip) }
   end
+
+  # Shown on the form once a large delivery has been flagged (and kept ticked
+  # if the form comes back for another reason).
+  def large_delivery_needs_confirming? = confirm_large_delivery || (errors.any? && purchase_order_line.present? && large_delivery?)
 
   def save!
     save || raise(ActiveRecord::RecordInvalid.new(self))
@@ -90,10 +101,12 @@ class Stock::Receipt
       end
     end
 
+    # A PO line already fixes the material, so goods still due on a PO can be
+    # received after the material is deactivated. Only new stock needs it active.
     def material_can_be_received
       if material.nil?
         errors.add(:material_id, :blank)
-      elsif !material.active?
+      elsif !material.active? && purchase_order_line.nil?
         errors.add(:material_id, "is inactive")
       end
     end
@@ -108,5 +121,17 @@ class Stock::Receipt
       return if errors.include?(:quantity) || errors.include?(:bags) || quantity_g.nil?
 
       errors.add(:quantity, "is too small to split into #{bags} bags") if quantity_g < bags.to_i
+    end
+
+    def large_delivery?
+      quantity_g.present? && quantity_g > purchase_order_line.outstanding_g * LARGE_DELIVERY_FACTOR
+    end
+
+    def large_delivery_is_confirmed
+      return if errors.include?(:quantity) || confirm_large_delivery || !large_delivery?
+
+      due = purchase_order_line.outstanding_g
+      errors.add(:quantity, due.zero? ? "is more than was ordered: this line has all been received. Tick the box below if it's right" :
+        "is more than double the #{Weight.format_kg(due)} still due. Check the unit, then tick the box below if it's right")
     end
 end
