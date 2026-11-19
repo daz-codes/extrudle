@@ -18,14 +18,22 @@
 # changeover just before it, unless the planner already put a changeover there.
 # Automatic changeovers are rebuilt each time; the planner's own are kept.
 #
+# The editor works on the live plan, or on a draft plan (Slice 7e):
+#
+#   Schedule::Editor.new(line, plan: PlanDraft.current.plan)
+#
+# Only live edits change order statuses; a draft changes nothing real until
+# it's published (Schedule::Publish).
+#
 # Failures raise Schedule::Error with a message for the planner.
 class Schedule::Editor
   AUTOMATIC_MESSAGE = "This changeover is added automatically between jobs for different specs, and moves with them"
 
-  attr_reader :line
+  attr_reader :line, :plan
 
-  def initialize(line)
+  def initialize(line, plan: Schedule::Plan.live)
     @line = line
+    @plan = plan
   end
 
   # Puts an order line on this line's queue. planned_g defaults to whatever is still unplanned.
@@ -35,8 +43,7 @@ class Schedule::Editor
 
     raise Schedule::Error, "Planned weight must be more than 0" if planned_g && !planned_g.positive?
 
-    order_line.schedule_blocks.reset
-    planned_g ||= order_line.unplanned_g
+    planned_g ||= plan.unplanned_g(order_line)
     raise Schedule::Error, "#{order.number} #{order_line.product_spec} is already fully planned" unless planned_g.positive?
 
     job = ScheduleBlock.new(line: line, kind: "job", sales_order_line: order_line, planned_g: planned_g,
@@ -50,6 +57,7 @@ class Schedule::Editor
   # starts_at: on an unlocked block sets when the line's queue starts.
   def add(block, position: nil, starts_at: nil)
     block.line = line
+    block.plan_draft = plan.draft
     raise Schedule::Error, "A locked block needs a start time" if block.locked? && block.starts_at.blank?
 
     block.starts_at = Schedule.snap_up(block.starts_at) if block.locked? # same as lock: snap to the next slot
@@ -153,10 +161,13 @@ class Schedule::Editor
     edit { }
   end
 
-  # Takes every job for an order off all lines (e.g. when it's cancelled).
+  # Takes every job for an order off all lines (e.g. when it's cancelled), on
+  # the live plan and on the draft if there is one (§11 Q55).
   def self.unschedule(order)
-    Line.where(id: ScheduleBlock.jobs.where(sales_order_line_id: order.lines.select(:id)).select(:line_id))
-      .each { new(_1).remove_jobs_for(order) }
+    [ Schedule::Plan.live, Schedule::Plan.current ].uniq.each do |plan|
+      Line.where(id: plan.blocks.jobs.where(sales_order_line_id: order.lines.select(:id)).select(:line_id))
+        .each { new(_1, plan:).remove_jobs_for(order) }
+    end
   end
 
   private
@@ -171,9 +182,9 @@ class Schedule::Editor
         rebuild_changeovers(blocks)
         @removed.select(&:persisted?).each(&:destroy!)
         @anchor ||= Schedule.snap_up(Time.current) if blocks.any? { !_1.locked? }
-        line.update!(queue_starts_at: @anchor) if line.queue_starts_at != @anchor
+        plan.set_queue_start(line, @anchor)
         Schedule::Reflow.new(line, blocks: blocks, starts_at: @anchor).call
-        refresh_orders(blocks)
+        refresh_orders(blocks) if plan.live?
       end
     rescue StandardError => e
       line.reload # the transaction rolled back; don't leave an unsaved queue start in memory
@@ -184,11 +195,11 @@ class Schedule::Editor
 
     # The stored start, falling back to the earliest unlocked block for lines planned before it was stored.
     def queue_start(blocks)
-      line.queue_starts_at || blocks.reject(&:locked?).filter_map(&:starts_at).min
+      plan.queue_start(line) || blocks.reject(&:locked?).filter_map(&:starts_at).min
     end
 
     def load_blocks
-      line.schedule_blocks.includes(sales_order_line: [ :sales_order, { product_spec: :line_rates } ]).to_a
+      plan.blocks_for(line).includes(:source_block, sales_order_line: [ :sales_order, { product_spec: :line_rates } ]).to_a
     end
 
     def apply_planned_g(block, planned_g)
@@ -254,9 +265,10 @@ class Schedule::Editor
     end
 
     # A job with a production log has started: it can still be resized, re-timed
-    # or re-noted, but not moved in the queue or taken off the plan.
+    # or re-noted, but not moved in the queue or taken off the plan. A draft
+    # block counts as started when its live job has (even after the draft began).
     def ensure_not_started!(block)
-      return unless block.job? && block.persisted? && ProductionRun.exists?(schedule_block_id: block.id)
+      return unless block.persisted? && block.started?
 
       raise Schedule::Error, "This job has started (it has a production log), so it can't be moved or removed"
     end
@@ -296,7 +308,7 @@ class Schedule::Editor
           manual_changeover = true
         elsif block.job?
           if !manual_changeover && needs_changeover?(previous_job, block)
-            changeover = spare.shift || ScheduleBlock.new(line: line, kind: "changeover", automatic: true,
+            changeover = spare.shift || ScheduleBlock.new(line: line, plan_draft: plan.draft, kind: "changeover", automatic: true,
                                                           duration_minutes: Schedule.round_up_to_slot(line.default_changeover_minutes))
             changeover.queue_key = block.queue_key - BigDecimal("0.25")
             blocks << changeover

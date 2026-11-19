@@ -3,18 +3,20 @@
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
   <h1 class="page-title">Planner</h1>
   <div class="flex flex-wrap items-center gap-2">
-    <%= link_to "← Previous week", planner_path_for(@line, @week_start - 7), class: "btn btn-secondary", aria: { label: "Previous week" } %>
-    <%= link_to "This week", planner_path_for(@line, Schedule::Timeline.week_start_for(Date.current)), class: "btn btn-secondary" %>
-    <%= link_to "Next week →", planner_path_for(@line, @week_start + 7), class: "btn btn-secondary", aria: { label: "Next week" } %>
-    <%= link_to "Print plan", planner_print_path(line: @line.name), class: "btn btn-primary", target: "_blank", rel: "noopener" %>
+    <%= link_to "← Previous week", planner_path_for(@line, @week_start - 7, plan: params[:plan]), class: "btn btn-secondary", aria: { label: "Previous week" } %>
+    <%= link_to "This week", planner_path_for(@line, Schedule::Timeline.week_start_for(Date.current), plan: params[:plan]), class: "btn btn-secondary" %>
+    <%= link_to "Next week →", planner_path_for(@line, @week_start + 7, plan: params[:plan]), class: "btn btn-secondary", aria: { label: "Next week" } %>
+    <%= link_to @plan.draft? ? "Print draft" : "Print plan", planner_print_path(line: @line.name, plan: params[:plan]), class: "btn btn-primary", target: "_blank", rel: "noopener" %>
   </div>
 </div>
+
+<%= render "planner/plan_status" %>
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
   <nav aria-label="Lines">
     <ul class="tabs">
       <% @lines.each do |line| %>
-        <li><%= link_to "Line #{line.name}", planner_path_for(line, @week_start), class: "tab", aria: { current: (line == @line ? "page" : nil) } %></li>
+        <li><%= link_to "Line #{line.name}", planner_path_for(line, @week_start, plan: params[:plan]), class: "tab", aria: { current: (line == @line ? "page" : nil) } %></li>
       <% end %>
     </ul>
   </nav>

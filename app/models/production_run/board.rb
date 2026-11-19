@@ -13,7 +13,7 @@ class ProductionRun::Board
 
   # The earliest planned job on the line that hasn't been started, for an order still to make.
   def self.next_job_for(line)
-    ScheduleBlock.jobs.where(line:).where.missing(:production_run)
+    ScheduleBlock.live.jobs.where(line:).where.missing(:production_run)
       .joins(sales_order_line: :sales_order).merge(SalesOrder.active)
       .includes(sales_order_line: [ :product_spec, { sales_order: :customer } ]).order(:starts_at).first
   end

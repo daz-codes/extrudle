@@ -4,7 +4,9 @@ class SalesOrderLine < ApplicationRecord
 
   belongs_to :sales_order, inverse_of: :lines
   belongs_to :product_spec
-  has_many :schedule_blocks, dependent: :restrict_with_error
+  # Jobs on the live plan. A draft's jobs are counted by Schedule::Plan.
+  has_many :schedule_blocks, -> { live }
+  has_many :all_schedule_blocks, class_name: "ScheduleBlock", dependent: :restrict_with_error
   has_many :production_runs, dependent: :restrict_with_error
 
   # The price is agreed in the customer's currency when the line is added, and kept with it.
@@ -44,7 +46,7 @@ class SalesOrderLine < ApplicationRecord
 
     # A planned job's duration and changeovers depend on its spec.
     def spec_fixed_while_planned
-      return unless will_save_change_to_product_spec_id? && schedule_blocks.exists?
+      return unless will_save_change_to_product_spec_id? && all_schedule_blocks.exists?
 
       errors.add(:product_spec, "can't change while this line is on the planner. Take it off the plan first.")
     end

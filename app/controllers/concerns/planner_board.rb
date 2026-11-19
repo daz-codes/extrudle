@@ -8,22 +8,28 @@ module PlannerBoard
   end
 
   private
-    def load_board(line, week_start)
+    # plan: the plan shown (Schedule::Plan). While a draft exists the live plan
+    # is shown read-only (§11 Q52).
+    def load_board(line, week_start, plan = Schedule::Plan.current)
       @line = line
       @week_start = week_start
-      @blocks = line.schedule_blocks.ordered
-        .includes(sales_order_line: [ :schedule_blocks, { sales_order: :customer }, { product_spec: :line_rates } ]).to_a
+      @plan = Schedule::Plan.new(plan.draft).preload_planned!
+      @draft = PlanDraft.current
+      @read_only = @plan.live? && @draft.present?
+      @queue_start = @plan.queue_start(line)
+      @blocks = @plan.blocks_for(line).ordered
+        .includes(:source_block, sales_order_line: [ { sales_order: :customer }, { product_spec: :line_rates } ]).to_a
       @queue_empty = @blocks.none? { !_1.locked? }
-      @warnings = Schedule::Warnings.for_line(line, @blocks)
+      @warnings = Schedule::Warnings.for_line(line, @blocks, plan: @plan)
       @timeline = Schedule::Timeline.new(@blocks, week_start: week_start)
       @unplanned = unplanned_order_lines
     end
 
-    # Order lines still to plan, most pressing first.
+    # Order lines still to plan on the plan shown, most pressing first.
     def unplanned_order_lines
       SalesOrderLine.joins(:sales_order).merge(SalesOrder.active)
-        .includes(:schedule_blocks, { sales_order: :customer }, { product_spec: :line_rates })
-        .select { _1.unplanned_g.positive? }
+        .includes({ sales_order: :customer }, { product_spec: :line_rates })
+        .select { @plan.unplanned_g(_1).positive? }
         .sort_by { [ _1.sales_order.required_on, _1.sales_order.urgent? ? 0 : 1, _1.sales_order.number, _1.id ] }
     end
 
@@ -33,12 +39,12 @@ module PlannerBoard
       Date.current
     end
 
-    def planner_path_for(line, week_start)
-      planner_path(line: line.name, week: week_start.iso8601)
+    def planner_path_for(line, week_start, plan: nil)
+      planner_path(line: line.name, week: week_start.iso8601, plan:)
     end
 
     def render_board(status: :ok)
-      load_board(@line, Schedule::Timeline.week_start_for(week_param))
+      load_board(@line, Schedule::Timeline.week_start_for(week_param), @plan || Schedule::Plan.current)
       render turbo_stream: [
         turbo_stream.replace("planner_board", partial: "planner/board"),
         turbo_stream.update("flash", partial: "shared/flash")

@@ -5,14 +5,16 @@
 class Schedule::Warnings
   Warning = Data.define(:code, :message)
 
-  def self.for_line(line, blocks = nil)
-    blocks ||= line.schedule_blocks.ordered.includes(sales_order_line: [ :sales_order, :schedule_blocks, { product_spec: :line_rates } ]).to_a
-    new(line, blocks).to_h
+  # plan: the live plan or a draft; "over planned" counts that plan's jobs.
+  def self.for_line(line, blocks = nil, plan: Schedule::Plan.live)
+    blocks ||= plan.blocks_for(line).ordered.includes(sales_order_line: [ :sales_order, { product_spec: :line_rates } ]).to_a
+    new(line, blocks, plan:).to_h
   end
 
-  def initialize(line, blocks)
+  def initialize(line, blocks, plan: Schedule::Plan.live)
     @line = line
     @blocks = blocks.sort_by { [ _1.starts_at, _1.position ] }
+    @plan = plan
   end
 
   def to_h
@@ -48,7 +50,7 @@ class Schedule::Warnings
 
     def over_planned(block)
       order_line = block.sales_order_line
-      planned = order_line.planned_g
+      planned = @plan.planned_g(order_line)
       return unless planned > order_line.quantity_g
 
       Warning.new(:over_planned, "#{Weight.format_kg(planned)} planned for #{order_line.sales_order.number} #{order_line.product_spec}, " \

@@ -12,8 +12,10 @@ class LineRate < ApplicationRecord
 
   private
     def reflow_planned_jobs
-      planned = line.schedule_blocks.jobs.joins(:sales_order_line).where(sales_order_lines: { product_spec_id: product_spec_id })
-      Schedule::Editor.new(line).reflow if planned.exists?
+      [ Schedule::Plan.live, Schedule::Plan.current ].uniq.each do |plan|
+        planned = plan.blocks_for(line).jobs.joins(:sales_order_line).where(sales_order_lines: { product_spec_id: product_spec_id })
+        Schedule::Editor.new(line, plan:).reflow if planned.exists?
+      end
     rescue Schedule::Error => e
       errors.add(:base, "This rate would clash with the plan on line #{line.name}: #{e.message}")
       raise ActiveRecord::RecordInvalid, self

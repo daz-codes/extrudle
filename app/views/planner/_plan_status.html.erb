@@ -1,0 +1,34 @@
+<%# Which plan is shown, and the draft actions (PLAN.md Slice 7e). %>
+<% if @draft.nil? %>
+  <section class="card mb-6 flex flex-wrap items-center justify-between gap-4 p-5" aria-label="Plan">
+    <div>
+      <p class="font-semibold text-ink-900">Live plan</p>
+      <p class="text-sm text-ink-600">Changes here show on the floor straight away. To prepare a new plan without the floor seeing it, start a draft.</p>
+    </div>
+    <%= button_to "Start a new plan", plan_draft_path(line: @line.name), method: :post, class: "btn btn-secondary" %>
+  </section>
+<% elsif @read_only %>
+  <section class="card mb-6 flex flex-wrap items-center justify-between gap-4 p-5" aria-label="Plan">
+    <div>
+      <p class="font-semibold text-ink-900">Live plan <span class="badge badge-quiet ml-1">Read only</span></p>
+      <p class="text-sm text-ink-600">This is what the floor is running. It can't change while a new plan is being drafted.</p>
+    </div>
+    <%= link_to "Back to the draft", planner_path_for(@line, @week_start), class: "btn btn-primary" %>
+  </section>
+<% else %>
+  <section class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-[14px] border border-lemon-400 bg-lemon-100 p-5" aria-label="Plan">
+    <div>
+      <p class="font-semibold text-ink-900">Draft plan</p>
+      <p class="text-sm text-ink-800">
+        Started <%= l(@draft.created_at, format: "%a %-d %b %H:%M") %> (<%= time_ago_in_words(@draft.created_at) %> ago)<%= " by #{@draft.started_by.name}" if @draft.started_by %>.
+        The floor keeps running the live plan until this is published.
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <%= link_to "View live plan", planner_path_for(@line, @week_start, plan: "live"), class: "btn btn-secondary" %>
+      <%= button_to "Discard", plan_draft_path(line: @line.name), method: :delete, class: "btn btn-secondary",
+            form: { data: { turbo_confirm: "Discard the draft plan? The live plan stays as it is." } } %>
+      <%= link_to "Review and publish", plan_draft_path(line: @line.name), class: "btn btn-accent" %>
+    </div>
+  </section>
+<% end %>

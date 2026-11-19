@@ -1,8 +1,8 @@
 <section class="card overflow-x-auto" aria-labelledby="queue-heading">
   <div class="flex flex-wrap items-baseline justify-between gap-3 px-5 pt-5">
     <h2 id="queue-heading" class="section-title">Queue for line <%= @line.name %></h2>
-    <% if @line.queue_starts_at %>
-      <p class="font-mono text-sm text-ink-600">Starts <%= plan_time(@line.queue_starts_at) %></p>
+    <% if @queue_start %>
+      <p class="font-mono text-sm text-ink-600">Starts <%= plan_time(@queue_start) %></p>
     <% end %>
   </div>
 
@@ -17,7 +17,7 @@
       </tr>
     </thead>
     <tbody>
-      <% movable = @blocks.reject { _1.locked? || _1.automatic? } %>
+      <% movable = @read_only ? [] : @blocks.reject { _1.locked? || _1.automatic? } %>
       <% @blocks.each do |block| %>
         <% warnings = @warnings[block] || [] %>
         <tr id="<%= dom_id(block) %>" class="align-top <%= "bg-lemon-50" if block.job? && block.sales_order.urgent? %>">
@@ -55,7 +55,7 @@
                 <%= button_to "▼", move_schedule_block_path(block, direction: "down", week: @week_start.iso8601), method: :patch,
                       class: "btn btn-secondary px-3", disabled: movable.last == block, aria: { label: "Move #{block_title(block)} later" } %>
               <% end %>
-              <% unless block.automatic? %>
+              <% unless block.automatic? || @read_only %>
                 <%= link_to "Edit", edit_schedule_block_path(block, week: @week_start.iso8601), class: "btn btn-secondary px-3",
                       data: { turbo_frame: "_top" }, aria: { label: "Edit #{block_title(block)}" } %>
                 <%= button_to "✕", schedule_block_path(block, week: @week_start.iso8601), method: :delete, class: "btn btn-secondary px-3",

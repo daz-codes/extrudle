@@ -3,6 +3,10 @@ class ScheduleBlock < ApplicationRecord
 
   belongs_to :line
   belongs_to :sales_order_line, optional: true
+  # Blocks in a draft plan (Schedule::Plan); live blocks have none.
+  belongs_to :plan_draft, optional: true, inverse_of: :blocks
+  # For a draft block, the live block it was copied from (publishing updates it).
+  belongs_to :source_block, class_name: "ScheduleBlock", optional: true
   has_one :production_run, dependent: :restrict_with_exception
 
   enum :kind, {
@@ -33,6 +37,8 @@ class ScheduleBlock < ApplicationRecord
 
   scope :ordered, -> { order(:starts_at, :position) }
   scope :jobs, -> { where(kind: "job") }
+  # What the floor runs. Drafts are read through Schedule::Plan.
+  scope :live, -> { where(plan_draft_id: nil) }
 
   delegate :product_spec, to: :sales_order_line, allow_nil: true
   delegate :sales_order, to: :sales_order_line, allow_nil: true
@@ -59,6 +65,15 @@ class ScheduleBlock < ApplicationRecord
     self.ends_at = start + duration_minutes.minutes
   end
 
+  def live? = plan_draft_id.nil?
+
+  # The production log of this job, or of the live job a draft block was copied from.
+  def started_run
+    live? ? production_run : source_block&.production_run
+  end
+
+  def started? = job? && started_run.present?
+
   def to_s
     job? ? "#{sales_order.number} #{product_spec}" : kind.humanize
   end
@@ -80,7 +95,7 @@ class ScheduleBlock < ApplicationRecord
     def locked_blocks_do_not_overlap
       return if starts_at.blank? || ends_at.blank?
 
-      clash = line.schedule_blocks.where(locked: true).where.not(id: id)
+      clash = ScheduleBlock.where(line_id:, plan_draft_id:, locked: true).where.not(id: id)
         .where("starts_at < ? AND ends_at > ?", ends_at, starts_at).first
       errors.add(:starts_at, "overlaps the locked #{clash.kind.humanize.downcase} at #{I18n.l(clash.starts_at, format: '%a %-d %b %H:%M')}") if clash
     end

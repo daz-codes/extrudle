@@ -6,11 +6,12 @@
 <p class="mb-2"><%= link_to "← Back to line #{@line.name}", planner_path_for(@line, week), class: "link text-sm" %></p>
 <div class="mb-6 flex flex-wrap items-center gap-3">
   <h1 class="page-title"><%= block_title(block) %></h1>
+  <% unless block.live? %><span class="badge badge-lemon">Draft plan</span><% end %>
   <% if block.locked? %><span class="badge badge-quiet gap-1"><%= lock_icon %>Locked</span><% end %>
   <% if block.job? %>
-    <% if (run = block.production_run) %>
+    <% if (run = block.started_run) %>
       <%= link_to "Despatch #{run.despatch_number} (#{run.status})", run, class: "btn btn-secondary ml-auto" %>
-    <% elsif SalesOrder::ACTIVE_STATUSES.include?(block.sales_order.status) %>
+    <% elsif block.live? && SalesOrder::ACTIVE_STATUSES.include?(block.sales_order.status) %>
       <%= link_to "Start production log", new_production_run_path(block: block.id), class: "btn btn-secondary ml-auto" %>
     <% end %>
   <% end %>
@@ -84,7 +85,7 @@
     <% end %>
     <% if order_locked %>
       <p class="rounded-[11px] border border-lemon-400 bg-lemon-100 p-4 text-sm">Order <%= block.sales_order.number %> is <%= block.sales_order.status.humanize.downcase %>, so this job can't change.</p>
-    <% elsif block.job? && block.production_run %>
+    <% elsif block.started? %>
       <p class="text-sm text-ink-600">This job has started, so it stays on the plan. Its weight, hours and lock can still change.</p>
     <% elsif !block.automatic? %>
       <%= button_to "Remove from plan", schedule_block_path(block, week: week.iso8601), method: :delete, class: "btn btn-danger w-full",

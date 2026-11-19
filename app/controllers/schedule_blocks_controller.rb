@@ -4,10 +4,13 @@ class ScheduleBlocksController < ApplicationController
   include PlannerBoard
   require_role :admin, :office
   before_action :set_block, only: %i[ edit update destroy move ]
+  before_action :keep_live_plan_while_drafting, only: %i[ edit update destroy move ]
 
+  # Adds to the plan being edited: the draft if there is one.
   def create
     @line = Line.active.find(params[:line_id])
-    editor = Schedule::Editor.new(@line)
+    @plan = Schedule::Plan.current
+    editor = Schedule::Editor.new(@line, plan: @plan)
 
     block = if params[:sales_order_line_id].present?
       order_line = SalesOrderLine.find(params[:sales_order_line_id])
@@ -23,29 +26,29 @@ class ScheduleBlocksController < ApplicationController
   end
 
   def edit
-    @warnings = Schedule::Warnings.for_line(@line)[@block] || []
+    @warnings = Schedule::Warnings.for_line(@line, plan: @plan.preload_planned!)[@block] || []
   end
 
   # Everything on the edit form is applied in one Schedule::Editor edit (one reflow).
   def update
-    Schedule::Editor.new(@line).update(@block, **block_changes)
+    Schedule::Editor.new(@line, plan: @plan).update(@block, **block_changes)
     redirect_to planner_path_for(@line, Schedule::Timeline.week_start_for(@block.reload.starts_at.to_date)), notice: "#{@block} was updated."
   rescue Schedule::Error, ArgumentError, ActiveRecord::RecordInvalid => e
     @block.reload
-    @warnings = Schedule::Warnings.for_line(@line)[@block] || []
+    @warnings = Schedule::Warnings.for_line(@line, plan: @plan.preload_planned!)[@block] || []
     flash.now[:alert] = e.message
     render :edit, status: :unprocessable_content
   end
 
   def destroy
-    Schedule::Editor.new(@line).remove(@block)
+    Schedule::Editor.new(@line, plan: @plan).remove(@block)
     done "Removed #{@block} from line #{@line.name}."
   rescue Schedule::Error => e
     failed e.message
   end
 
   def move
-    Schedule::Editor.new(@line).move(@block, params[:direction] == "up" ? :up : :down)
+    Schedule::Editor.new(@line, plan: @plan).move(@block, params[:direction] == "up" ? :up : :down)
     done nil
   rescue Schedule::Error => e
     failed e.message
@@ -55,6 +58,16 @@ class ScheduleBlocksController < ApplicationController
     def set_block
       @block = ScheduleBlock.find(params[:id])
       @line = @block.line
+      @plan = Schedule::Plan.for(@block)
+    end
+
+    # While a new plan is drafted, the live plan can't be changed from the
+    # planner. Working assumption, see PLAN.md §11 Q52.
+    def keep_live_plan_while_drafting
+      return unless @plan.live? && PlanDraft.current
+
+      @plan = Schedule::Plan.current
+      failed "A new plan is being drafted, so the live plan can't change. Make the change in the draft, or discard it first."
     end
 
     # Only what the form sent. Unchanged values are no-ops in the editor.

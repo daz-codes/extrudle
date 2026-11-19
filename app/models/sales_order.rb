@@ -92,7 +92,7 @@ class SalesOrder < ApplicationRecord
     return unless editable?
 
     order_lines = lines.reload
-    planned = ScheduleBlock.jobs.where(sales_order_line_id: order_lines.map(&:id)).group(:sales_order_line_id).sum(:planned_g)
+    planned = ScheduleBlock.live.jobs.where(sales_order_line_id: order_lines.map(&:id)).group(:sales_order_line_id).sum(:planned_g)
     fully_planned = order_lines.any? && order_lines.all? { planned.fetch(_1.id, 0) >= _1.quantity_g }
     update!(status: fully_planned ? "scheduled" : "open") if scheduled? != fully_planned
   end
