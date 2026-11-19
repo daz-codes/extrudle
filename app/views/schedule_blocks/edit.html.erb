@@ -85,8 +85,6 @@
     <% if order_locked %>
       <p class="rounded-[11px] border border-lemon-400 bg-lemon-100 p-4 text-sm">Order <%= block.sales_order.number %> is <%= block.sales_order.status.humanize.downcase %>, so this job can't change.</p>
     <% elsif block.job? && block.production_run %>
-      <p class="text-sm text-ink-600">This job has started, so it stays on the plan.</p>
-    <% elsif block.job? && block.production_run %>
       <p class="text-sm text-ink-600">This job has started, so it stays on the plan. Its weight, hours and lock can still change.</p>
     <% elsif !block.automatic? %>
       <%= button_to "Remove from plan", schedule_block_path(block, week: week.iso8601), method: :delete, class: "btn btn-danger w-full",

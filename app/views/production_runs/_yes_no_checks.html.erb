@@ -1,0 +1,31 @@
+<%# locals: (run:, stage:, title:, complete:) %>
+<section id="<%= stage %>" class="card mb-6 p-5" aria-labelledby="<%= stage %>-heading">
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h2 id="<%= stage %>-heading" class="section-title"><%= title %></h2>
+    <% if complete %><span class="badge bg-ok-50 font-semibold text-ok-700">All done</span><% end %>
+  </div>
+  <ul class="divide-y divide-ink-100">
+    <% ProductionRun::Checklist.items(stage).each do |item, label| %>
+      <% answer = run.answer(stage, item) %>
+      <li class="flex flex-wrap items-center justify-between gap-3 py-3" id="check_<%= stage %>_<%= item %>">
+        <div>
+          <p class="font-semibold"><%= label %></p>
+          <% if answer %>
+            <p class="text-sm text-ink-600"><%= pass_fail_badge(answer.passed?) %> <%= checked_by(answer) %><%= " · #{answer.note}" if answer.note %></p>
+          <% else %>
+            <p class="text-sm text-ink-500">Not checked yet</p>
+          <% end %>
+        </div>
+        <% if run.editable? %>
+          <div class="flex gap-2">
+            <% [ [ "Yes", true ], [ "No", false ] ].each do |text, value| %>
+              <%= button_to text, production_run_checks_path(run), params: { stage:, item:, passed: value },
+                    class: "choice min-w-20 justify-center #{"border-ink-900 bg-lime-100 font-semibold" if answer && answer.passed? == value}",
+                    aria: { label: "#{label}: #{text.downcase}" } %>
+            <% end %>
+          </div>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</section>

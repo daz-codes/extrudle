@@ -1,0 +1,3 @@
+<% content_for :title, "Reels · despatch #{@run.despatch_number}" %>
+<%= render "production_runs/header", run: @run, current: :reels %>
+<%= render "reels/panel", run: @run, reel: @reel %>

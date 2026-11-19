@@ -28,7 +28,12 @@ class RunChecksController < ApplicationController
       @run = ProductionRun.find(params[:production_run_id])
     end
 
+    # End-of-run checks live on the finish tab, the rest on the log tab.
     def run_path_at(stage)
-      production_run_path(@run, anchor: stage)
+      if stage.in?(%w[ end_of_run line_clearance ])
+        production_run_finish_path(@run, anchor: stage)
+      else
+        production_run_path(@run, anchor: stage)
+      end
     end
 end

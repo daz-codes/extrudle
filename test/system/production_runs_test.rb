@@ -22,10 +22,10 @@ class ProductionRunsTest < ApplicationSystemTestCase
     fill_in "Thickness actual", with: ".252"
     click_on "Record thickness"
     assert_text "Thickness 252 µm: in tolerance."
-    within("#measure_thickness") { assert_text "252 µm (+2)" }
+    within("#measure_startup_thickness") { assert_text "252 µm (+2)" }
 
     fill_in "Width actual", with: "705"
     click_on "Record width"
-    within("#measure_width") { assert_text "Fail" }
+    within("#measure_startup_width") { assert_text "Fail" }
   end
 end

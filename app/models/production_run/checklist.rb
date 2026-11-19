@@ -8,6 +8,12 @@ module ProductionRun::Checklist
     "prestart" => {
       "previous_documents_removed" => "Previous documents and labels removed",
       "previous_product_cleared" => "Previous product cleared from the line"
+    },
+    # Working assumption, see PLAN.md §11 Q40.
+    "line_clearance" => {
+      "materials_cleared" => "Materials cleared from the line",
+      "documents_removed" => "Log, labels and documents removed",
+      "line_cleared" => "Line cleared for the next micron"
     }
   }.freeze
 
@@ -16,7 +22,7 @@ module ProductionRun::Checklist
     "thickness" => { label: "Thickness", unit: "µm" }
   }.freeze
 
-  # Stages where width and thickness are measured: startup now, end of run in Slice 7b.
+  # Stages where width and thickness are measured.
   MEASURED_STAGES = %w[ startup end_of_run ].freeze
 
   STAGES = %w[ prestart startup pallet end_of_run line_clearance ].freeze

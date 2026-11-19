@@ -1,0 +1,17 @@
+<% content_for :title, "Edit reel #{@reel.reel_no}" %>
+<p class="mb-2"><%= link_to "← Back to reels", production_run_reels_path(@run), class: "link text-sm" %></p>
+<h1 class="page-title mb-6">Edit reel <span class="font-mono"><%= @reel.reel_no %></span></h1>
+<%= form_with model: @reel, url: production_run_reel_path(@run, @reel), scope: :reel, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.text_row :weight_kg, label: "Weight", suffix: "kg", required: true, inputmode: "decimal", autocomplete: "off" %>
+    <%= form.number_row :length_m, label: "Length", suffix: "m", min: 1 %>
+    <%= form.number_row :pallet_no, label: "Pallet", min: 1 %>
+    <%= form.text_row :initials, maxlength: 4 %>
+  </div>
+  <%= form.text_area_row :note, rows: 2, hint: "Why it was changed, e.g. reweighed." %>
+  <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
+    <%= form.submit "Save reel", class: "btn btn-primary" %>
+    <%= link_to "Cancel", production_run_reels_path(@run), class: "btn btn-secondary" %>
+  </div>
+<% end %>

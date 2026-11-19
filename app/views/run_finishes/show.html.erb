@@ -1,0 +1,39 @@
+<% run = @run %>
+<% content_for :title, "End of run · despatch #{run.despatch_number}" %>
+<%= render "production_runs/header", run:, current: :finish %>
+
+<% if run.finished? %>
+  <section class="card mb-6 border-ok-600/30 bg-ok-50 p-5">
+    <h2 class="section-title mb-2">Finished</h2>
+    <p class="text-ink-900">
+      <%= l(run.ended_at, format: "%a %-d %b %Y %H:%M") %><%= " by #{run.finished_by.name}" if run.finished_by %> ·
+      <%= pluralize(run.reels.size, "reel") %>, <%= order_quantity(run.total_g) %> (<%= run.percent_of_order %>% of the order)
+    </p>
+  </section>
+<% end %>
+
+<%= render "production_runs/measurements", run:, stage: "end_of_run", title: "Width and thickness at the end", intro: "Measured on the last reel." %>
+<%= render "production_runs/yes_no_checks", run:, stage: "line_clearance", title: "Line clearance", complete: run.line_clearance_complete? %>
+
+<% if run.running? %>
+  <% problems = run.finish_problems %>
+  <section class="card p-5" aria-labelledby="finish-heading">
+    <h2 id="finish-heading" class="section-title mb-3">Finish the log</h2>
+    <% if problems.any? %>
+      <p class="mb-2 text-ink-700">Before finishing:</p>
+      <ul class="mb-4 list-disc space-y-1 pl-6 text-ink-900">
+        <% problems.each do |problem| %><li><%= problem %></li><% end %>
+      </ul>
+      <% if run.out_of_tolerance_at_end? %>
+        <p class="mb-4"><%= link_to "Add a comment or corrective action", edit_production_run_path(run, return_to: "finish"), class: "link" %></p>
+      <% end %>
+    <% else %>
+      <p class="mb-4 text-ink-700">
+        <%= pluralize(run.reels.size, "reel") %>, <%= order_quantity(run.total_g) %> made (<%= run.percent_of_order %>% of the order).
+        Finishing closes the log: reels and checks can't be changed after.
+      </p>
+    <% end %>
+    <%= button_to "Finish log", production_run_finish_path(run), method: :post, class: "btn btn-accent", disabled: problems.any?,
+          form: { data: { turbo_confirm: "Finish despatch #{run.despatch_number}? It can't be changed after." } } %>
+  </section>
+<% end %>

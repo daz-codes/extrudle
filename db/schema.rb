@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_105000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_111500) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -148,7 +148,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_105000) do
     t.text "comments"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "finished_by_id"
     t.index ["despatch_number"], name: "index_production_runs_on_despatch_number", unique: true
+    t.index ["finished_by_id"], name: "index_production_runs_on_finished_by_id"
     t.index ["line_id", "status"], name: "index_production_runs_on_line_id_and_status"
     t.index ["line_id"], name: "index_production_runs_on_line_id"
     t.index ["line_id"], name: "index_production_runs_one_running_per_line", unique: true, where: "status = 'running'"
@@ -190,6 +192,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_105000) do
     t.index ["number"], name: "index_purchase_orders_on_number", unique: true
     t.index ["status", "expected_on"], name: "index_purchase_orders_on_status_and_expected_on"
     t.index ["supplier_id"], name: "index_purchase_orders_on_supplier_id"
+  end
+
+  create_table "reels", force: :cascade do |t|
+    t.integer "production_run_id", null: false
+    t.integer "reel_no", null: false
+    t.datetime "produced_at", null: false
+    t.integer "weight_g", null: false
+    t.integer "length_m"
+    t.integer "pallet_no"
+    t.string "initials"
+    t.integer "user_id"
+    t.text "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["production_run_id", "reel_no"], name: "index_reels_on_production_run_id_and_reel_no", unique: true
+    t.index ["production_run_id"], name: "index_reels_on_production_run_id"
+    t.index ["user_id"], name: "index_reels_on_user_id"
+    t.check_constraint "length_m IS NULL OR length_m > 0", name: "reels_length_positive"
+    t.check_constraint "pallet_no IS NULL OR pallet_no > 0", name: "reels_pallet_positive"
+    t.check_constraint "reel_no > 0", name: "reels_reel_no_positive"
+    t.check_constraint "weight_g > 0", name: "reels_weight_positive"
   end
 
   create_table "run_checks", force: :cascade do |t|
@@ -329,10 +352,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_105000) do
   add_foreign_key "production_runs", "product_specs"
   add_foreign_key "production_runs", "sales_order_lines"
   add_foreign_key "production_runs", "schedule_blocks"
+  add_foreign_key "production_runs", "users", column: "finished_by_id"
   add_foreign_key "production_runs", "users", column: "started_by_id"
   add_foreign_key "purchase_order_lines", "materials"
   add_foreign_key "purchase_order_lines", "purchase_orders"
   add_foreign_key "purchase_orders", "suppliers"
+  add_foreign_key "reels", "production_runs"
+  add_foreign_key "reels", "users"
   add_foreign_key "run_checks", "production_runs"
   add_foreign_key "run_checks", "users"
   add_foreign_key "sales_order_lines", "product_specs"

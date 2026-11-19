@@ -69,7 +69,7 @@ class ProductionRunsControllerTest < ActionDispatch::IntegrationTest
 
     get production_run_path(run)
     assert_select "#check_prestart_previous_documents_removed", /Pass/
-    assert_select "#measure_thickness .bg-bad-50", /265 µm \(\+15\)/
+    assert_select "#measure_startup_thickness .bg-bad-50", /265 µm \(\+15\)/
   end
 
   test "edit the log's details while it runs, not after" do
@@ -83,5 +83,15 @@ class ProductionRunsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to production_run_path(run)
     post production_run_checks_path(run), params: { stage: "prestart", item: "previous_product_cleared", passed: "true" }
     assert_match "is finished", flash[:alert]
+  end
+
+  test "a comment added from the end-of-run tab goes back there" do
+    run = start_run
+    get edit_production_run_path(run, return_to: "finish")
+    assert_select "input[type=hidden][name=return_to][value=finish]"
+    assert_select "a[href='#{production_run_finish_path(run)}']", "Cancel"
+
+    patch production_run_path(run), params: { return_to: "finish", production_run: { comments: "Thick edge, die adjusted" } }
+    assert_redirected_to production_run_finish_path(run)
   end
 end

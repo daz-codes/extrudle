@@ -34,13 +34,17 @@ class ProductionRunsController < ApplicationController
 
   def update
     if @run.update(run_params)
-      redirect_to @run, notice: "Despatch #{@run.despatch_number} was updated."
+      redirect_to return_to_finish? ? production_run_finish_path(@run) : @run, notice: "Despatch #{@run.despatch_number} was updated."
     else
       render :edit, status: :unprocessable_content
     end
   end
 
   private
+    # The edit page was opened from the End of run tab (to add a comment), so go back there.
+    def return_to_finish? = params[:return_to] == "finish"
+    helper_method :return_to_finish?
+
     def set_run
       @run = ProductionRun.includes(:line, :product_spec, checks: :user, sales_order_line: { sales_order: :customer }).find(params[:id])
     end

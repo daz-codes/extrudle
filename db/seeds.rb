@@ -252,6 +252,14 @@ if ProductionRun.none? && (job = ProductionRun::Board.next_job_for(lines.fetch("
   spec = run.product_spec
   run.record_measurement(stage: "startup", item: "width", actual: (spec.width_mm + 1).to_s, user: admin)
   run.record_measurement(stage: "startup", item: "thickness", actual: format(".%03d", spec.thickness_micron + 4), user: admin)
+
+  # Seven reels so far, two to a pallet, spread between the start and now.
+  weights = [ "1,042.5", "1,061", "1,055.5", "1,048", "1,066.5", "1,039", "1,052" ]
+  step = (Time.current - run.started_at) / (weights.size + 1)
+  weights.each_with_index do |weight_kg, index|
+    run.reels.create!(weight_kg:, length_m: 5_620 + index * 7, pallet_no: index / 2 + 1, initials: index < 4 ? "DH" : "KS",
+                      produced_at: run.started_at + step * (index + 1), user: admin)
+  end
 end
 
 unless Rails.env.test?

@@ -1,0 +1,27 @@
+<%# locals: (run:, current:) %>
+<p class="mb-2"><%= link_to "← #{Current.user.floor? ? "Floor" : "Production"}", production_home_path, class: "link text-sm" %></p>
+<div class="mb-4 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <p class="eyebrow">Production log 5.4.1.2 · Line <%= run.line.name %></p>
+    <div class="mt-1 flex flex-wrap items-center gap-3">
+      <h1 class="page-title">Despatch <span class="font-mono"><%= run.despatch_number %></span></h1>
+      <%= run_status_badge(run) %>
+    </div>
+    <p class="mt-2 text-ink-600">
+      <%= run.customer.name %> · <%= run.product_spec %> · <%= run.product_spec.paper_gauge %> × <%= mm(run.product_spec.width_mm) %>
+    </p>
+  </div>
+  <% if run.editable? && current == :log %>
+    <%= link_to "Edit details", edit_production_run_path(run), class: "btn btn-secondary" %>
+  <% end %>
+</div>
+
+<nav aria-label="Production log" class="mb-6 -mx-4 overflow-x-auto px-4">
+  <ul class="tabs">
+    <% { log: [ "Log", production_run_path(run) ],
+         reels: [ "Reels (#{run.reels.size})", production_run_reels_path(run) ],
+         finish: [ run.finished? ? "End of run" : "End of run and finish", production_run_finish_path(run) ] }.each do |key, (label, path)| %>
+      <li><%= link_to label, path, class: "tab", aria: { current: (key == current ? "page" : nil) } %></li>
+    <% end %>
+  </ul>
+</nav>
