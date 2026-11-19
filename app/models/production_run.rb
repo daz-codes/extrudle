@@ -10,6 +10,8 @@ class ProductionRun < ApplicationRecord
   belongs_to :finished_by, class_name: "User", optional: true
   has_many :reels, -> { order(:reel_no) }, inverse_of: :production_run, dependent: :restrict_with_error
   has_many :checks, -> { order(:checked_at, :id) }, class_name: "RunCheck", inverse_of: :production_run, dependent: :destroy
+  has_many :material_loads, -> { order(:from_reel_no, :loaded_at, :id) }, inverse_of: :production_run, dependent: :restrict_with_error
+  has_many :consumptions, -> { issue_to_production }, class_name: "StockMovement", inverse_of: :production_run, dependent: :restrict_with_error
 
   # Raised by finish! with the reasons the log can't be finished yet.
   class NotFinishable < StandardError; end
@@ -116,6 +118,7 @@ class ProductionRun < ApplicationRecord
   def finish_problems
     problems = []
     problems << "Enter at least one reel" if reels.empty?
+    problems << "Record the material bags loaded" if material_loads.empty?
     Checklist::MEASUREMENTS.each do |item, info|
       problems << "Record the end-of-run #{info[:label].downcase}" if measurements(item, stage: "end_of_run").empty?
     end
@@ -138,8 +141,33 @@ class ProductionRun < ApplicationRecord
     problems = finish_problems
     raise NotFinishable, problems.to_sentence if problems.any?
 
-    update!(status: "finished", ended_at:, finished_by: user)
+    transaction do
+      update!(status: "finished", ended_at:, finished_by: user)
+      material_use.post!(user:)
+      material_loads.map(&:lot).uniq.each { Stock::Reconciliation.call(_1, user:) }
+    end
   end
+
+  # Materials ---------------------------------------------------------------
+
+  # The bag on each feed now: { feed => MaterialLoad }, the latest load per feed.
+  def current_loads
+    material_loads.group_by(&:feed).transform_values(&:last)
+  end
+
+  # The reels a load fed, as a range for the log ("1–5"). The end is open
+  # while the bag is still on a running log. Nil if the next bag went on first.
+  def reel_range(load)
+    loads = material_loads.select { _1.feed == load.feed }
+    following = loads[loads.index(load) + 1]
+    last = following ? following.from_reel_no - 1 : (reels.filter_map(&:reel_no).max if finished?)
+    return (load.from_reel_no..) if last.nil?
+
+    load.from_reel_no..last if last >= load.from_reel_no
+  end
+
+  # What the run used from each bag (estimated while running, posted on finish).
+  def material_use = MaterialUse.new(self)
 
   def to_s = "Despatch #{despatch_number}"
 

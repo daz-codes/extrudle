@@ -14,6 +14,7 @@ class Lot < ApplicationRecord
   belongs_to :material
   belongs_to :purchase_order_line, optional: true
   has_many :movements, -> { order(:moved_at, :id) }, class_name: "StockMovement", inverse_of: :lot, dependent: :restrict_with_error
+  has_many :material_loads, -> { order(:loaded_at, :id) }, dependent: :restrict_with_error
 
   enum :location, LOCATIONS.keys.index_by(&:itself), validate: true
 
@@ -52,6 +53,14 @@ class Lot < ApplicationRecord
   end
 
   def empty? = quantity_g <= 0
+
+  # Marked empty on the line (see Stock::Reconciliation). Its book weight is
+  # zeroed once every log that used it has finished.
+  def emptied? = emptied_at.present?
+  def reconciled? = reconciled_at.present?
+
+  # What production runs have used, in grams (positive).
+  def used_g = -movements.select(&:issue_to_production?).sum(&:quantity_g)
 
   def location_label = self.class.location_label(location)
 

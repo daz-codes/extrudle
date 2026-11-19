@@ -1,0 +1,61 @@
+<%# locals: (run:) %>
+<%# A finished run shows what was posted, so a later recipe change doesn't rewrite it. %>
+<% use = run.material_use %>
+<% posted = run.finished? ? run.consumptions.includes(lot: :material).to_a : nil %>
+<section class="card overflow-x-auto" aria-labelledby="use-heading">
+  <div class="px-5 pt-5">
+    <h2 id="use-heading" class="section-title"><%= run.finished? ? "Material used" : "Material used so far (estimate)" %></h2>
+    <p class="mt-2 text-sm text-ink-600">
+      <%= order_quantity(run.total_g) %> of reels, split by the spec's <%= run.product_spec.recipe.custom? ? "recipe" : "standard recipe" %>
+      and across each feed's bags by the reels they fed.
+      <%= "Taken off stock when the log is finished." if run.running? %>
+    </p>
+    <% if run.running? && use.lines.any? && (missing = use.missing_feeds).any? %>
+      <p class="mt-2 text-sm"><span class="badge badge-lemon mr-1">Check</span>No bag recorded on <%= missing.map { MaterialLoad.feed_label(_1) }.to_sentence %>, so its share goes to the other feeds.</p>
+    <% end %>
+  </div>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Feed</th>
+        <th scope="col" class="px-4 py-3">Lot</th>
+        <th scope="col" class="px-4 py-3">Material</th>
+        <th scope="col" class="px-4 py-3 text-right">Reels</th>
+        <th scope="col" class="px-4 py-3 text-right">Used</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if posted %>
+        <% feeds = run.material_loads.to_h { [ _1.lot_id, _1.feed_label ] } %>
+        <% posted.each do |movement| %>
+          <tr>
+            <td class="px-4 py-3"><%= feeds[movement.lot_id] %></td>
+            <td class="px-4 py-3 font-mono"><%= movement.lot.code %></td>
+            <td class="px-4 py-3"><%= movement.lot.material.name %></td>
+            <td class="px-4 py-3 text-right tabular-nums">—</td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= kg(-movement.quantity_g) %></td>
+          </tr>
+        <% end %>
+      <% else %>
+      <% use.lines.each do |share| %>
+        <tr>
+          <td class="px-4 py-3"><%= share.feed_label %></td>
+          <td class="px-4 py-3 font-mono"><%= share.lot.code %></td>
+          <td class="px-4 py-3"><%= share.lot.material.name %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= reel_range_text(run.reel_range(share.load)) %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= kg(share.quantity_g) %></td>
+        </tr>
+      <% end %>
+      <% end %>
+      <% used_g = posted ? -posted.sum(&:quantity_g) : use.total_g %>
+      <% if used_g.zero? %>
+        <%= render "master_data/empty", message: "Nothing to work out yet: it needs reels and bags.", colspan: 5 %>
+      <% else %>
+        <tr class="font-semibold">
+          <td class="px-4 py-3" colspan="4">Total</td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= kg(used_g) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

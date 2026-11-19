@@ -107,7 +107,7 @@ Goal: replace the Word production plan and give a live stock figure.
 
 - [x] **Slice 0 – Setup**: `rails new --database=sqlite3 --css=tailwind`, auth generator, Tailwind theme tokens and layout with nav (see CLAUDE.md §Design), `Weight`/`Money` display helpers, roles (admin/office/floor), Kamal config with a persistent volume for `storage/`, CI running tests. Move `PLAN.md` and `CLAUDE.md` into the app root.
 - [x] **Slice 1 – Master data**: Customers, Suppliers, MaterialCategories, Materials, Lines, ProductSpecs (with dropdowns for silicone/core/etc.), LineRates. CRUD screens + seeds. Spec "duplicate as new" button.
-  - Deferred: `SpecIngredient` recipes (waiting on stream % from §11 Q6, needed by Slice 7c) and locking used specs into new revisions (Slice 2, once orders reference specs).
+  - Deferred: `SpecIngredient` recipes (built in Slice 7c, per feed, with a guessed standard recipe, §11 Q6) and locking used specs into new revisions (Slice 2, once orders reference specs).
 - [x] **Slice 2 – Sales orders**: orders with lines (spec dropdown pre-fills spec details read-only, quantity in kg/tonnes toggle), status, list filtered by required date.
   - Also: spec revision locking (edits to a spec on an order create the next revision). Statuses after `open` are only reachable by cancel/reopen until Slices 3–8 set them. Working assumptions Q11–Q14 are in §11.
 - [x] **Slice 3 – Planner model**: `ScheduleBlock`, duration calc, `Schedule::Reflow` service, locked blocks, warnings. Heavy unit tests here.
@@ -122,7 +122,8 @@ Goal: replace the Word production plan and give a live stock figure.
   - Also: the log works for floor users in the floor layout, and the floor page shows each line's running log or next job. The home page cards link to their sections. Working assumptions Q33–Q39 are in §11.
 - [x] **Slice 7b – Reel entry**: a fast touch-friendly grid replacing page 2 of the log, with reel no, time (auto), weight, length, pallet and initials. Show a running total and a "% of order" bar. End-of-run checks and line clearance follow.
   - Also: the log is split into Log / Reels / End of run tabs; reels are added with Turbo and the weight box refocuses; pallet and initials carry over; finishing needs reels, both end readings, full line clearance and a comment if an end reading is out of tolerance. Working assumptions Q40–Q44 are in §11.
-- [ ] **Slice 7c – Material loads and allocation**: record bags per feed against reel ranges, using a lot-code field that a scanner can fill later. Allocation and reconciliation as in §4. Stock deducts automatically.
+- [x] **Slice 7c – Material loads and allocation**: record bags per feed against reel ranges, using a lot-code field that a scanner can fill later. Allocation and reconciliation as in §4. Stock deducts automatically.
+  - Also: a Materials tab on the log (bags on each feed, "Bag empty", load by lot code with Enter), a recipe card on each spec (standard recipe until Stu gives real shares), bags carried over to the line's next log, finishing posts `issue_to_production` movements against the run, and "Bags on the lines and variance" under Stock. Working assumptions Q46–Q51 are in §11.
 - [ ] **Slice 7d – Printable log**: a PDF that looks like the current 5.4.1.2 form, for audits and ISO records.
 - [ ] **Slice 8 – Dispatch**: pallets from reels, delivery note PDF, mark order dispatched; **Sage CSV export** of dispatched-but-not-invoiced notes.
 - [ ] **Slice 9 – Polish & go-live**: import real specs/customers/suppliers from spreadsheets (CSV importer), Litestream backups to R2 plus a tested restore, user training notes. Printable blank 5.4.1.2 logs as a paper fallback if the system is down.
@@ -175,7 +176,8 @@ We're building ahead of some answers. Each question has a **best guess** that th
   - Guess: yes, Co‑Ex is the capping layer, fed from one shared hopper. Seeded as the "Capping polymer" category.
   - Update: §4 allocation design (Slice 7c) if each line has its own hopper.
 - [ ] **Q6. What % of each stream (Co‑Ex / Main‑Ex / PCW / Regrind) goes into a typical spec? Do recipes vary by spec?**
-  - Guess: none yet. `SpecIngredient` recipes are deferred until we know, and Slice 7c needs them.
+  - Guess: every spec uses a standard recipe of Co-Ex 15%, Main-Ex 50%, PCW 25%, Regrind 10% until it's given its own on the spec page (Slice 7c). The demo spec BF-700-250 has its own (12/48/30/10).
+  - Update: `ProductSpec::Recipe::STANDARD_BP`, and enter the real recipe on each spec. If a stream's share varies run to run, record it on the log instead.
 - [ ] **Q7. How is regrind made and labelled today? Is it weighed into bags?**
   - Guess: edge trim is reground into weighed bags with our own lot codes. Seeded as the in-house material "Regrind chip".
   - Update: Slice 6/7c lot handling for regrind.
@@ -234,3 +236,11 @@ We're building ahead of some answers. Each question has a **best guess** that th
 - [ ] **Q43. How are mistakes on the reel sheet corrected? Can a finished log be reopened?** Guess: any reel can be edited (with a note) while the log is open; only the last reel can be removed, so numbers stay in sequence; finished logs can't be reopened. Update: `ReelsController#destroy`, and an admin "reopen" if needed.
 - [ ] **Q44. What do the length and initials columns mean?** Guess: length in whole metres from the winder counter, optional; initials are whoever checked the reel against the spec, carried over from the last reel. Update: make length required, or initials a signed-in user.
 - [ ] **Q45. What should a log's progress be measured against?** Guess: the whole order line ("of 20 t ordered"), so a line split into two jobs shows each run at about 50% when its job is done. Update: `ProductionRun#percent_of_order` could use the job's planned weight (`schedule_block.planned_g`) instead, or show both.
+
+### Slice 7c (material loads and allocation) assumptions
+- [ ] **Q46. Should material used be the reel weight, or more to allow for edge trim and scrap?** Guess: the weight of reels made, split by the recipe. Trim and scrap show up as each bag's variance when it's marked empty. Update: `ProductionRun::MaterialUse#feed_totals` (add a scrap % per line or spec).
+- [ ] **Q47. When one log ends and the next starts on the same line, do the bags on the feeds carry on?** Guess: yes. Bags still on the feeds (not marked empty) are added to the next log on that line from reel 1, marked "From last log". Update: `ProductionRun::Start#carry_over_bags`.
+- [ ] **Q48. When a new bag goes on a feed, is the last one always empty?** Guess: usually. The box "The bag it replaces is empty" is ticked by default; untick it for a part-used bag coming off, which stays in stock with its book weight. Update: the default of `ProductionRun::LoadMaterial#previous_empty`.
+- [ ] **Q49. Can the same Co-Ex bag feed both lines at once?** (Follows on from Q5.) Guess: yes, Co-Ex only: the same bag can be recorded on both lines' logs, and each log is allocated its share. Any other bag is on one feed of one line at a time. Update: `MaterialLoad::SHARED_FEEDS`.
+- [ ] **Q50. What variance on a bag is worth looking into, and who checks?** Guess: the office looks at "Bags on the lines and variance" under Stock; more than 5% either way is flagged. Update: `Stock::Variance::FLAG_BP`.
+- [ ] **Q51. Are additives (antiblock, silicone, masterbatch) taken off stock too?** Guess: not yet. Their batch numbers are written on the log header (Slice 7a) and they aren't fed through the four feeds, so their stock is corrected by stock counts. Update: add additive feeds and shares to the recipe.

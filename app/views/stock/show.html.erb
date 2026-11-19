@@ -5,6 +5,7 @@
   <h1 class="page-title">Stock on hand</h1>
   <div class="flex flex-wrap gap-3">
     <%= link_to "All lots", lots_path, class: "btn btn-secondary" %>
+    <%= link_to "Bags on the lines", stock_variance_path, class: "btn btn-secondary" %>
     <%= link_to "Add stock without a PO", new_lot_path, class: "btn btn-secondary" %>
     <%= link_to "Receive against a PO", purchase_orders_path(status: "active"), class: "btn btn-primary" %>
   </div>

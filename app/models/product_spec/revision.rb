@@ -2,13 +2,13 @@
 #
 # * Unused spec, or only `active` changed: update it in place.
 # * Used spec (on an order): leave it untouched and save the changes as the
-#   next revision of the same code. Line rates are copied, and the old revision
+#   next revision of the same code. Line rates and the recipe are copied, and the old revision
 #   is deactivated so new orders pick the new one. Existing orders keep theirs.
 #   Only the latest revision can be revised, so changes are never built on a
 #   superseded revision (which would drop the later one's changes).
 #
-# Line rates are planning data (machine throughput), not part of the product,
-# so they stay editable on used specs: existing orders should be planned at
+# Line rates (machine throughput) and the recipe (ProductSpec::Recipe) are
+# production data, not part of the product, so they stay editable on used specs: existing orders should be planned at
 # today's rates.
 #
 #   revision = ProductSpec::Revision.new(spec, params)
@@ -61,6 +61,7 @@ class ProductSpec::Revision
       ProductSpec.transaction do
         revision.save!
         revision.copy_line_rates_from(original)
+        revision.copy_recipe_from(original)
         # Deactivate the stored row only: the in-memory original keeps the user's
         # edits so the form can be shown again if anything fails.
         original.update_columns(active: false, updated_at: Time.current)

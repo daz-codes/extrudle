@@ -6,6 +6,7 @@
     <div class="flex flex-wrap items-center gap-3">
       <h1 class="page-title font-mono">Lot <%= lot.code %></h1>
       <%= location_badge(lot.location) %>
+      <% if lot.reconciled? %><span class="badge badge-quiet">Empty, reconciled</span><% elsif lot.emptied? %><span class="badge badge-lemon">Marked empty</span><% end %>
     </div>
     <p class="mt-2 text-ink-600">
       <%= link_to lot.material, lots_path(material: lot.material_id), class: "link" %>
@@ -15,6 +16,12 @@
   <div class="flex flex-wrap gap-3">
     <%= link_to "Print label", labels_lots_path(ids: [ lot.id ]), class: "btn btn-secondary", target: "_blank" %>
     <%= link_to "Adjust weight", new_lot_adjustment_path(lot), class: "btn btn-secondary" %>
+    <% if !lot.emptied? %>
+      <%= button_to "Mark empty", lot_empty_path(lot), method: :post, class: "btn btn-secondary",
+            form: { data: { turbo_confirm: "Mark #{lot.code} empty? Its weight is zeroed once every log that used it has finished." } } %>
+    <% elsif !lot.reconciled? %>
+      <%= button_to "Not empty after all", lot_empty_path(lot), method: :delete, class: "btn btn-secondary" %>
+    <% end %>
   </div>
 </div>
 
@@ -51,6 +58,43 @@
     <% end %>
   </div>
 </section>
+
+<% if lot.emptied? && !lot.reconciled? %>
+  <% waiting = Stock::Reconciliation.waiting_on(lot).to_a %>
+  <p class="mb-6 rounded-[11px] border border-lemon-400 bg-lemon-100 p-4">
+    Marked empty <%= l(lot.emptied_at, format: "%a %-d %b %H:%M") %>.
+    Its weight is zeroed and the difference posted as its variance once <%= waiting.map { "despatch #{_1.despatch_number}" }.to_sentence %> <%= waiting.size == 1 ? "is" : "are" %> finished.
+  </p>
+<% end %>
+
+<% if @loads.any? %>
+  <section class="card mb-6 overflow-x-auto" aria-labelledby="loads-heading">
+    <h2 id="loads-heading" class="section-title px-5 pt-5">On the lines</h2>
+    <table class="data-table mt-3 w-full text-left">
+      <thead>
+        <tr>
+          <th scope="col" class="px-4 py-3">Despatch</th>
+          <th scope="col" class="px-4 py-3">Line</th>
+          <th scope="col" class="px-4 py-3">Feed</th>
+          <th scope="col" class="px-4 py-3 text-right">Reels</th>
+          <th scope="col" class="px-4 py-3">Loaded</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @loads.each do |load| %>
+          <% run = load.production_run %>
+          <tr>
+            <td class="px-4 py-3 font-mono"><%= link_to run.despatch_number, production_run_material_loads_path(run), class: "link" %></td>
+            <td class="px-4 py-3"><%= run.line.name %></td>
+            <td class="px-4 py-3"><%= load.feed_label %></td>
+            <td class="px-4 py-3 text-right tabular-nums"><%= reel_range_text(run.reel_range(load)) %></td>
+            <td class="px-4 py-3 tabular-nums"><%= l(load.loaded_at, format: "%-d %b %Y %H:%M") %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+<% end %>
 
 <% if lot.notes.present? %>
   <section class="card mb-6 p-5">

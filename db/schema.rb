@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_111500) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_120000) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -63,6 +63,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_111500) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "emptied_at"
+    t.datetime "reconciled_at"
     t.index ["code"], name: "index_lots_on_code", unique: true
     t.index ["material_id", "location"], name: "index_lots_on_material_id_and_location"
     t.index ["material_id"], name: "index_lots_on_material_id"
@@ -77,6 +79,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_111500) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_material_categories_on_name", unique: true
+  end
+
+  create_table "material_loads", force: :cascade do |t|
+    t.integer "production_run_id", null: false
+    t.integer "lot_id", null: false
+    t.string "feed", null: false
+    t.integer "from_reel_no", null: false
+    t.datetime "loaded_at", null: false
+    t.boolean "carried_over", default: false, null: false
+    t.string "initials"
+    t.integer "user_id"
+    t.text "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["lot_id"], name: "index_material_loads_on_lot_id"
+    t.index ["production_run_id", "feed", "from_reel_no"], name: "idx_on_production_run_id_feed_from_reel_no_aaf126b47c"
+    t.index ["production_run_id"], name: "index_material_loads_on_production_run_id"
+    t.index ["user_id"], name: "index_material_loads_on_user_id"
+    t.check_constraint "feed IN ('virgin_coex', 'virgin_mainex', 'pcw', 'regrind')", name: "material_loads_feed"
+    t.check_constraint "from_reel_no > 0", name: "material_loads_from_reel_positive"
   end
 
   create_table "materials", force: :cascade do |t|
@@ -298,6 +320,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_111500) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "spec_ingredients", force: :cascade do |t|
+    t.integer "product_spec_id", null: false
+    t.string "feed", null: false
+    t.integer "share_bp", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_spec_id", "feed"], name: "index_spec_ingredients_on_product_spec_id_and_feed", unique: true
+    t.index ["product_spec_id"], name: "index_spec_ingredients_on_product_spec_id"
+    t.check_constraint "feed IN ('virgin_coex', 'virgin_mainex', 'pcw', 'regrind')", name: "spec_ingredients_feed"
+    t.check_constraint "share_bp BETWEEN 0 AND 10000", name: "spec_ingredients_share_range"
+  end
+
   create_table "stock_movements", force: :cascade do |t|
     t.integer "lot_id", null: false
     t.string "kind", null: false
@@ -309,8 +343,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_111500) do
     t.datetime "moved_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "production_run_id"
     t.index ["lot_id", "moved_at"], name: "index_stock_movements_on_lot_id_and_moved_at"
     t.index ["lot_id"], name: "index_stock_movements_on_lot_id"
+    t.index ["production_run_id"], name: "index_stock_movements_on_production_run_id"
     t.index ["user_id"], name: "index_stock_movements_on_user_id"
     t.check_constraint "(kind = 'transfer') = (quantity_g = 0)", name: "stock_movements_weight_matches_kind"
   end
@@ -345,6 +381,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_111500) do
   add_foreign_key "line_rates", "product_specs"
   add_foreign_key "lots", "materials"
   add_foreign_key "lots", "purchase_order_lines"
+  add_foreign_key "material_loads", "lots"
+  add_foreign_key "material_loads", "production_runs"
+  add_foreign_key "material_loads", "users"
   add_foreign_key "materials", "material_categories"
   add_foreign_key "materials", "suppliers"
   add_foreign_key "product_specs", "customers"
@@ -367,6 +406,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_111500) do
   add_foreign_key "schedule_blocks", "lines"
   add_foreign_key "schedule_blocks", "sales_order_lines"
   add_foreign_key "sessions", "users"
+  add_foreign_key "spec_ingredients", "product_specs"
   add_foreign_key "stock_movements", "lots"
+  add_foreign_key "stock_movements", "production_runs"
   add_foreign_key "stock_movements", "users"
 end

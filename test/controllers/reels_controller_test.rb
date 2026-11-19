@@ -58,6 +58,7 @@ class ReelsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Not finished yet: enter at least one reel", flash[:alert]
 
     @run.reels.create!(weight_kg: "1,050")
+    post production_run_material_loads_path(@run), params: { material_load: { lot_code: lots(:jade_opening).code } }
     %w[ width thickness ].zip(%w[ 700 250 ]).each do |item, actual|
       post production_run_checks_path(@run), params: { stage: "end_of_run", item:, actual: }
       assert_redirected_to production_run_finish_path(@run, anchor: "end_of_run")
@@ -73,6 +74,7 @@ class ReelsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to production_run_finish_path(@run)
     assert_equal "Despatch 1 is finished: 1 reel, 1,050 kg.", flash[:notice]
     assert @run.reload.finished?
+    assert_equal(-1_050_000, @run.consumptions.sole.quantity_g)
 
     post production_run_reels_path(@run), params: { reel: { weight_kg: "900" } }
     assert_match "is finished", flash[:alert]

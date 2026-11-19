@@ -2,6 +2,7 @@ require "application_system_test_case"
 
 class ReelsTest < ApplicationSystemTestCase
   include ScheduleTestHelper
+  include MaterialTestHelper
 
   test "a technician enters reels quickly and finishes the log" do
     start = ProductionRun::Start.new(schedule_block: planned_job, despatch_number: 731)
@@ -26,6 +27,16 @@ class ReelsTest < ApplicationSystemTestCase
     assert_text "2.1035 t"
     assert_text "21%"
 
+    # A scanner types the lot code and presses Enter.
+    jade = bag(materials(:jade), kg: 5_000)
+    click_on "Materials (0)"
+    assert_selector "h2", text: "Load a bag"
+    assert_equal "material_load_lot_code", page.evaluate_script("document.activeElement.id")
+    find_field("Lot code").send_keys(jade.code, :enter)
+    assert_text "#{jade.code} (JADE) is on Virgin Main-Ex from reel 3."
+    within("#feed_virgin_mainex") { assert_text "Reels 3 onwards" }
+    assert_text "Material used so far (estimate)"
+
     click_on "End of run and finish"
     fill_in "Width actual", with: "701"
     click_on "Record width"
@@ -40,5 +51,7 @@ class ReelsTest < ApplicationSystemTestCase
     accept_confirm { click_on "Finish log" }
     assert_text "Despatch 731 is finished: 2 reels, 2,103.5 kg."
     assert_no_button "Finish log"
+    within("section[aria-labelledby=use-heading]") { assert_text "2,103.5 kg" }
+    assert_equal 5_000_000 - 2_103_500, jade.reload.quantity_g
   end
 end

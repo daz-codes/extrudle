@@ -12,6 +12,7 @@ class ProductSpec < ApplicationRecord
   belongs_to :customer, optional: true
   has_many :line_rates, dependent: :destroy
   has_many :lines, through: :line_rates
+  has_many :ingredients, -> { order(:id) }, class_name: "SpecIngredient", inverse_of: :product_spec, dependent: :destroy
   has_many :sales_order_lines, dependent: :restrict_with_error
 
   enum :material_type, { clear: "clear", laminated: "laminated" }, default: :clear, validate: true
@@ -57,11 +58,14 @@ class ProductSpec < ApplicationRecord
     self.class.new(attributes.slice(*COPYABLE_ATTRIBUTES))
   end
 
-  # Saves the spec and copies source's line rates in one transaction: all or nothing.
+  # Saves the spec and copies source's line rates and recipe in one transaction: all or nothing.
   def save_with_line_rates_from(source)
     transaction do
       save!
-      copy_line_rates_from(source) if source
+      if source
+        copy_line_rates_from(source)
+        copy_recipe_from(source)
+      end
     end
     true
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
@@ -93,6 +97,12 @@ class ProductSpec < ApplicationRecord
       line_rates.create!(line_id: rate.line_id, kg_per_hour: rate.kg_per_hour)
     end
   end
+
+  def copy_recipe_from(source)
+    source.ingredients.each { ingredients.create!(feed: _1.feed, share_bp: _1.share_bp) }
+  end
+
+  def recipe = ProductSpec::Recipe.new(self)
 
   # Active lines, plus any inactive line this spec still has a rate on (so it can be seen and removed).
   def lines_for_rates
