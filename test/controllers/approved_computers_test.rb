@@ -111,4 +111,15 @@ class ApprovedComputersTest < ActionDispatch::IntegrationTest
     sign_in users(:office)
     assert_redirected_to root_url
   end
+
+  test "a revoked computer asking for a download gets the not approved page, not an error" do
+    device = approve_this_computer
+    sign_in users(:office)
+    device.revoke!(by: users(:admin))
+
+    get purchase_order_path(purchase_orders(:pacific_draft), format: :pdf)
+    assert_response :forbidden
+    assert_equal "text/html", response.media_type
+    assert_select "h1", "This computer isn't approved"
+  end
 end

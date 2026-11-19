@@ -37,9 +37,11 @@ stu_email = (Rails.application.credentials.demo_admin_email.presence if demo_in_
   { name: "Jess Kershaw", email_address: "office@extrudle.test", role: "office" },
   { name: "Eric Kershaw", email_address: "floor@extrudle.test",  role: "floor" }
 ].each do |attrs|
-  User.find_or_create_by!(email_address: attrs[:email_address]) do |user|
-    user.assign_attributes(attrs.merge(password: DEMO_PASSWORD))
+  user = User.find_or_create_by!(email_address: attrs[:email_address]) do |new_user|
+    new_user.assign_attributes(attrs.merge(password: DEMO_PASSWORD))
   end
+  # Users created before Slice 8a (the preview's Stu) get "sign in anywhere" too.
+  user.update!(sign_in_anywhere: true) if attrs[:sign_in_anywhere] && !user.sign_in_anywhere?
 end
 
 # --- Lines -------------------------------------------------------------------
