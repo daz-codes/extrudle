@@ -2,7 +2,10 @@
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
   <h1 class="page-title">Users</h1>
-  <%= link_to "Add user", new_admin_user_path, class: "btn btn-primary" %>
+  <div class="flex flex-wrap gap-3">
+    <%= link_to "Computers", admin_devices_path, class: "btn btn-secondary" %>
+    <%= link_to "Add user", new_admin_user_path, class: "btn btn-primary" %>
+  </div>
 </div>
 
 <div class="card overflow-x-auto">
@@ -21,7 +24,7 @@
         <tr id="<%= dom_id(user) %>" class="<%= "text-ink-500" unless user.active? %>">
           <td class="px-4 py-3 font-medium"><%= user.name %></td>
           <td class="px-4 py-3"><%= user.email_address %></td>
-          <td class="px-4 py-3"><span class="badge badge-quiet"><%= user.role.humanize %></span></td>
+          <td class="px-4 py-3"><span class="badge badge-quiet"><%= user.role.humanize %></span><% if user.sign_in_anywhere? %> <span class="badge badge-lemon">Any computer</span><% end %></td>
           <td class="px-4 py-3"><%= user.active? ? "Active" : "Deactivated" %></td>
           <td class="px-4 py-3 text-right">
             <%= link_to "Edit", edit_admin_user_path(user), class: "btn btn-secondary", aria: { label: "Edit #{user.name}" } %>

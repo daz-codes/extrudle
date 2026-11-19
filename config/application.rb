@@ -8,6 +8,11 @@ Bundler.require(*Rails.groups)
 
 module Extrudle
   class Application < Rails::Application
+    # Only approved computers can use Extrudle (Slice 8a). On by default in
+    # production; the demo preview turns it off. Off in development and test.
+    config.x.require_approved_computers =
+      ENV.fetch("REQUIRE_APPROVED_COMPUTERS") { Rails.env.production? ? "true" : "false" } == "true"
+
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 

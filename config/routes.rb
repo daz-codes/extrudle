@@ -4,6 +4,9 @@ Rails.application.routes.draw do
 
   namespace :admin do
     resources :users, only: %i[ index new create edit update ]
+    resources :devices, path: "computers", only: %i[ index create edit update ] do
+      patch :revoke, on: :member
+    end
   end
 
   resource :master_data, only: :show, controller: "master_data"

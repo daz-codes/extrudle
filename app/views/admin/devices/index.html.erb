@@ -1,0 +1,64 @@
+<% content_for :title, "Computers" %>
+<p class="mb-2"><%= link_to "← Users", admin_users_path, class: "link text-sm" %></p>
+<h1 class="page-title mb-3">Computers</h1>
+<p class="mb-6 max-w-3xl text-ink-600">
+  <% if Device.required? %>
+    Only these computers can use Extrudle. To add one, sign in on it with an account that can sign in from any computer, then approve it here.
+  <% else %>
+    Approval is switched off here, so any computer can use Extrudle. Computers approved now are remembered for when it's switched on.
+  <% end %>
+</p>
+
+<section class="card mb-6 p-5" aria-labelledby="this-heading">
+  <h2 id="this-heading" class="section-title mb-3">This computer</h2>
+  <% if current_device %>
+    <p>Approved as <strong><%= current_device.name %></strong><%= " by #{current_device.approved_by.name}" if current_device.approved_by %>.</p>
+  <% else %>
+    <p class="mb-4 text-ink-700">This computer isn't approved. Give it a name people will recognise, such as "D1 floor screen" or "Office PC".</p>
+    <%= form_with model: [ :admin, @device ], url: admin_devices_path, class: "flex flex-wrap items-end gap-3" do |form| %>
+      <%= form.error_summary %>
+      <%= form.text_row :name, label: "Name", required: true, maxlength: 60, wrapper: "min-w-64 flex-1" %>
+      <%= form.submit "Approve this computer", class: "btn btn-accent" %>
+    <% end %>
+  <% end %>
+</section>
+
+<section class="card overflow-x-auto" aria-labelledby="computers-heading">
+  <h2 id="computers-heading" class="section-title px-5 pt-5">Approved computers</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Name</th>
+        <th scope="col" class="px-4 py-3">Approved</th>
+        <th scope="col" class="px-4 py-3">Last used</th>
+        <th scope="col" class="px-4 py-3">Browser</th>
+        <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @devices.each do |device| %>
+        <tr id="<%= dom_id(device) %>" class="<%= "text-ink-500" unless device.approved? %>">
+          <td class="px-4 py-3 font-semibold">
+            <%= device.name %>
+            <% if device == current_device %><span class="badge badge-lime ml-1">This computer</span><% end %>
+            <% unless device.approved? %><span class="badge badge-quiet ml-1">Revoked <%= l(device.revoked_at, format: "%-d %b %Y") %></span><% end %>
+          </td>
+          <td class="px-4 py-3 text-sm tabular-nums"><%= l(device.created_at, format: "%-d %b %Y") %><%= " by #{device.approved_by.name}" if device.approved_by %></td>
+          <td class="px-4 py-3 text-sm tabular-nums"><%= device.last_used_at ? "#{time_ago_in_words(device.last_used_at)} ago" : "—" %><%= " · #{device.last_ip}" if device.last_ip %></td>
+          <td class="max-w-64 truncate px-4 py-3 text-sm" title="<%= device.user_agent %>"><%= device.user_agent.presence || "—" %></td>
+          <td class="px-4 py-3">
+            <% if device.approved? %>
+              <div class="flex justify-end gap-2">
+                <%= link_to "Rename", edit_admin_device_path(device), class: "btn btn-secondary", aria: { label: "Rename #{device.name}" } %>
+                <%= button_to "Revoke", revoke_admin_device_path(device), method: :patch, class: "btn btn-danger",
+                      form: { data: { turbo_confirm: "Revoke #{device.name}? It's signed out straight away and can't use Extrudle until it's approved again." } },
+                      aria: { label: "Revoke #{device.name}" } %>
+              </div>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+      <% if @devices.empty? %><%= render "master_data/empty", message: "No computers approved yet.", colspan: 5 %><% end %>
+    </tbody>
+  </table>
+</section>

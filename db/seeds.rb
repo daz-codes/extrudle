@@ -13,7 +13,8 @@ if Rails.env.production? && !demo_in_production
 
   if email.present? && password.present?
     User.find_or_create_by!(email_address: email) do |user|
-      user.assign_attributes(name: ENV.fetch("ADMIN_NAME", "Admin"), role: "admin", password: password)
+      # The first admin can sign in from any computer, to approve the others (Slice 8a).
+      user.assign_attributes(name: ENV.fetch("ADMIN_NAME", "Admin"), role: "admin", password: password, sign_in_anywhere: true)
     end
     puts "Ensured admin user #{email}"
   else
@@ -32,7 +33,7 @@ end
 stu_email = (Rails.application.credentials.demo_admin_email.presence if demo_in_production) || "admin@extrudle.test"
 
 [
-  { name: "Stu Kershaw",  email_address: stu_email,              role: "admin" },
+  { name: "Stu Kershaw",  email_address: stu_email,              role: "admin", sign_in_anywhere: true },
   { name: "Jess Kershaw", email_address: "office@extrudle.test", role: "office" },
   { name: "Eric Kershaw", email_address: "floor@extrudle.test",  role: "floor" }
 ].each do |attrs|

@@ -10,6 +10,7 @@ class User < ApplicationRecord
   validates :name, presence: true
   validates :email_address, presence: true, uniqueness: true
   validates :password, length: { minimum: 8 }, allow_nil: true
+  validates :sign_in_anywhere, absence: { message: "is only for admins" }, unless: :admin?
 
   scope :active, -> { where(active: true) }
   scope :by_name, -> { order(:name) }

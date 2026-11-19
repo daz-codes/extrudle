@@ -2,6 +2,12 @@
 
 <h1 class="page-title mb-6">Sign in</h1>
 
+<% unless computer_approved? %>
+  <p class="mb-5 rounded-[11px] border border-lemon-400 bg-lemon-100 p-4 text-sm text-ink-900">
+    This computer isn't approved for Extrudle. Ask an admin to approve it. Only an admin who can sign in from any computer can sign in here.
+  </p>
+<% end %>
+
 <%= form_with url: session_url, class: "space-y-5" do |form| %>
   <div>
     <%= form.label :email_address, "Email address", class: "field-label" %>

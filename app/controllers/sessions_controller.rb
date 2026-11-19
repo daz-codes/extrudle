@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   allow_unauthenticated_access only: %i[ new create ]
+  allow_unapproved_computers only: %i[ new create destroy ]
   rate_limit to: 10, within: 3.minutes, only: :create, with: -> { redirect_to new_session_path, alert: "Try again later." }
   layout "auth"
 
@@ -9,7 +10,9 @@ class SessionsController < ApplicationController
   def create
     user = User.authenticate_by(params.permit(:email_address, :password))
 
-    if user&.active?
+    if user&.active? && !computer_approved? && !user.sign_in_anywhere?
+      redirect_to new_session_path, alert: "This computer isn't approved for Extrudle. Ask an admin to approve it."
+    elsif user&.active?
       start_new_session_for user
       redirect_to after_authentication_url
     else
