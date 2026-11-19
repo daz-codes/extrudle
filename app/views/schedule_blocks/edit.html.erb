@@ -1,12 +1,19 @@
 <% block = @block %>
 <% content_for :title, "Edit #{block_title(block)}" %>
 <% week = Schedule::Timeline.week_start_for(block.starts_at.to_date) %>
-<% order_locked = block.job? && !block.sales_order.editable? %>
+<% order_locked = block.job? && !block.sales_order.status.in?(SalesOrder::ACTIVE_STATUSES) %>
 
 <p class="mb-2"><%= link_to "← Back to line #{@line.name}", planner_path_for(@line, week), class: "link text-sm" %></p>
 <div class="mb-6 flex flex-wrap items-center gap-3">
   <h1 class="page-title"><%= block_title(block) %></h1>
   <% if block.locked? %><span class="badge badge-quiet gap-1"><%= lock_icon %>Locked</span><% end %>
+  <% if block.job? %>
+    <% if (run = block.production_run) %>
+      <%= link_to "Despatch #{run.despatch_number} (#{run.status})", run, class: "btn btn-secondary ml-auto" %>
+    <% elsif SalesOrder::ACTIVE_STATUSES.include?(block.sales_order.status) %>
+      <%= link_to "Start production log", new_production_run_path(block: block.id), class: "btn btn-secondary ml-auto" %>
+    <% end %>
+  <% end %>
 </div>
 
 <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -77,6 +84,10 @@
     <% end %>
     <% if order_locked %>
       <p class="rounded-[11px] border border-lemon-400 bg-lemon-100 p-4 text-sm">Order <%= block.sales_order.number %> is <%= block.sales_order.status.humanize.downcase %>, so this job can't change.</p>
+    <% elsif block.job? && block.production_run %>
+      <p class="text-sm text-ink-600">This job has started, so it stays on the plan.</p>
+    <% elsif block.job? && block.production_run %>
+      <p class="text-sm text-ink-600">This job has started, so it stays on the plan. Its weight, hours and lock can still change.</p>
     <% elsif !block.automatic? %>
       <%= button_to "Remove from plan", schedule_block_path(block, week: week.iso8601), method: :delete, class: "btn btn-danger w-full",
             form: { data: { turbo_confirm: "Remove #{block_title(block)} from line #{@line.name}?" } } %>

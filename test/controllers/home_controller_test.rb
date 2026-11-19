@@ -14,6 +14,14 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_select "nav a", text: "Users", count: 0
   end
 
+  test "the home cards link to their sections" do
+    sign_in_as users(:office)
+    get root_path
+    [ planner_path, sales_orders_path, production_runs_path, stock_path, purchase_orders_path, master_data_path ].each do |path|
+      assert_select "main a.card[href=?]", path
+    end
+  end
+
   test "pages load no fonts or styles from outside hosts" do
     get new_session_path
     assert_select "link[href^='http']", count: 0

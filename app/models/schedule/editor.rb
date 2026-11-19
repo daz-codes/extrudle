@@ -73,6 +73,7 @@ class Schedule::Editor
 
       other = queue[other_index]
       ensure_order_editable!(other.sales_order) if other.job?
+      ensure_not_started!(other)
       block.queue_key, other.queue_key = other.queue_key, block.queue_key
     end
   end
@@ -128,6 +129,7 @@ class Schedule::Editor
     edit do |blocks|
       block = find(blocks, block)
       ensure_order_editable!(block.sales_order) if block.job?
+      ensure_not_started!(block)
       raise Schedule::Error, AUTOMATIC_MESSAGE if block.automatic?
 
       discard(blocks, block)
@@ -233,6 +235,7 @@ class Schedule::Editor
       raise Schedule::Error, AUTOMATIC_MESSAGE if block.automatic?
 
       ensure_order_editable!(block.sales_order) if block.job?
+      ensure_not_started!(block)
       block
     end
 
@@ -241,10 +244,21 @@ class Schedule::Editor
       @removed << block
     end
 
+    # Orders still to make (open, scheduled or in production) can be planned.
+    # Starting one job puts the order in production, and its other jobs and
+    # unplanned lines must stay plannable.
     def ensure_order_editable!(order)
-      return if order.editable?
+      return if SalesOrder::ACTIVE_STATUSES.include?(order.status)
 
       raise Schedule::Error, "Order #{order.number} is #{order.status.humanize.downcase}, so its plan can't change"
+    end
+
+    # A job with a production log has started: it can still be resized, re-timed
+    # or re-noted, but not moved in the queue or taken off the plan.
+    def ensure_not_started!(block)
+      return unless block.job? && block.persisted? && ProductionRun.exists?(schedule_block_id: block.id)
+
+      raise Schedule::Error, "This job has started (it has a production log), so it can't be moved or removed"
     end
 
     def validate_position!(position)

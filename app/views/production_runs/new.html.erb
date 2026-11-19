@@ -1,0 +1,44 @@
+<% start = @start %>
+<% block = start.schedule_block %>
+<% content_for :title, "Start production log" %>
+
+<p class="mb-2"><%= link_to "← Back", production_home_path, class: "link text-sm" %></p>
+<h1 class="page-title mb-2">Start production log</h1>
+<p class="mb-6 text-ink-600">
+  Line <%= block.line.name %> · <%= block.sales_order.customer.name %> · <%= block.product_spec %> ·
+  <%= kg(block.planned_g) %> planned from <%= l(block.starts_at, format: "%a %-d %b %H:%M") %>
+</p>
+
+<%= form_with model: start, scope: :production_run_start, url: production_runs_path, method: :post, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <%= hidden_field_tag "production_run_start[schedule_block_id]", block.id, id: nil %>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.number_row :despatch_number, required: true, min: 1, hint: "The next number. Change it to carry on from the paper logs." %>
+    <div>
+      <%= form.label :started_at, "Started at", class: "field-label" %>
+      <%= form.datetime_local_field :started_at, value: start.started_at&.strftime("%Y-%m-%dT%H:%M"), class: "field-input", required: true %>
+      <p class="field-hint">UK time.</p>
+    </div>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.text_row :technician_days, label: "Technician (days)" %>
+    <%= form.text_row :technician_nights, label: "Technician (nights)" %>
+  </div>
+
+  <fieldset class="space-y-3">
+    <legend class="field-label">Additive batch numbers</legend>
+    <div class="grid gap-5 sm:grid-cols-3">
+      <%= form.text_row :antiblock_batch_no, label: "Antiblock", hint: (block.product_spec.antiblock ? nil : "Not on this spec") %>
+      <%= form.text_row :silicone_batch_no, label: "Silicone", hint: (block.product_spec.silicone_none? ? "Not on this spec" : nil) %>
+      <%= form.text_row :pe_film_batch_no, label: "PE film", hint: (block.product_spec.pe ? nil : "Not on this spec") %>
+    </div>
+    <p class="field-hint">These can be filled in later too.</p>
+  </fieldset>
+
+  <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
+    <%= form.submit "Start log", class: "btn btn-accent" %>
+    <%= link_to "Cancel", production_home_path, class: "btn btn-secondary" %>
+  </div>
+<% end %>

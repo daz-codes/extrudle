@@ -291,10 +291,10 @@ class Schedule::EditorTest < ActiveSupport::TestCase
     assert_equal at(MONDAY_6AM), @d1.reload.queue_starts_at
   end
 
-  test "jobs for an order in production can't be replanned, moved, resized or removed" do
+  test "jobs for a dispatched order can't be replanned, moved, resized or removed" do
     job = @editor.add_job(@order_line, planned_g: 190_000)
     other = @editor.add(block("no_orders", 60))
-    @order_line.sales_order.update_column(:status, "in_production")
+    @order_line.sales_order.update_column(:status, "dispatched")
 
     assert_raises(Schedule::Error) { @editor.replan(job, 380_000) }
     assert_raises(Schedule::Error) { @editor.remove(job) }
@@ -344,9 +344,9 @@ class Schedule::EditorTest < ActiveSupport::TestCase
     counter&.send(:remove_method, :call)
   end
 
-  test "lock, unlock and notes are refused for orders in production" do
+  test "lock, unlock and notes are refused for dispatched orders" do
     job = @editor.add_job(@order_line, planned_g: 190_000)
-    @order_line.sales_order.update_column(:status, "in_production")
+    @order_line.sales_order.update_column(:status, "dispatched")
     assert_raises(Schedule::Error) { @editor.lock(job, starts_at: at("2026-11-17 08:00")) }
     assert_raises(Schedule::Error) { @editor.update(job, notes: "x") }
   end

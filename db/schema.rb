@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_103000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_105000) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -129,6 +129,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_103000) do
     t.check_constraint "width_mm > 0", name: "product_specs_width_positive"
   end
 
+  create_table "production_runs", force: :cascade do |t|
+    t.integer "despatch_number", null: false
+    t.integer "line_id", null: false
+    t.integer "schedule_block_id"
+    t.integer "sales_order_line_id", null: false
+    t.integer "product_spec_id", null: false
+    t.string "status", default: "running", null: false
+    t.datetime "started_at", null: false
+    t.datetime "ended_at"
+    t.integer "started_by_id"
+    t.string "antiblock_batch_no"
+    t.string "silicone_batch_no"
+    t.string "pe_film_batch_no"
+    t.string "technician_days"
+    t.string "technician_nights"
+    t.text "special_instructions"
+    t.text "comments"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["despatch_number"], name: "index_production_runs_on_despatch_number", unique: true
+    t.index ["line_id", "status"], name: "index_production_runs_on_line_id_and_status"
+    t.index ["line_id"], name: "index_production_runs_on_line_id"
+    t.index ["line_id"], name: "index_production_runs_one_running_per_line", unique: true, where: "status = 'running'"
+    t.index ["product_spec_id"], name: "index_production_runs_on_product_spec_id"
+    t.index ["sales_order_line_id"], name: "index_production_runs_on_sales_order_line_id"
+    t.index ["schedule_block_id"], name: "index_production_runs_on_schedule_block_id", unique: true
+    t.index ["started_by_id"], name: "index_production_runs_on_started_by_id"
+    t.check_constraint "despatch_number > 0", name: "production_runs_despatch_number_positive"
+    t.check_constraint "ended_at IS NULL OR ended_at >= started_at", name: "production_runs_end_after_start"
+  end
+
   create_table "purchase_order_lines", force: :cascade do |t|
     t.integer "purchase_order_id", null: false
     t.integer "material_id", null: false
@@ -159,6 +190,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_103000) do
     t.index ["number"], name: "index_purchase_orders_on_number", unique: true
     t.index ["status", "expected_on"], name: "index_purchase_orders_on_status_and_expected_on"
     t.index ["supplier_id"], name: "index_purchase_orders_on_supplier_id"
+  end
+
+  create_table "run_checks", force: :cascade do |t|
+    t.integer "production_run_id", null: false
+    t.string "stage", null: false
+    t.string "item", null: false
+    t.boolean "passed", null: false
+    t.integer "target"
+    t.integer "min_value"
+    t.integer "max_value"
+    t.integer "actual"
+    t.string "unit"
+    t.integer "user_id"
+    t.datetime "checked_at", null: false
+    t.text "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["production_run_id", "stage", "item"], name: "index_run_checks_on_production_run_id_and_stage_and_item"
+    t.index ["production_run_id"], name: "index_run_checks_on_production_run_id"
+    t.index ["user_id"], name: "index_run_checks_on_user_id"
   end
 
   create_table "sales_order_lines", force: :cascade do |t|
@@ -274,9 +325,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_103000) do
   add_foreign_key "materials", "material_categories"
   add_foreign_key "materials", "suppliers"
   add_foreign_key "product_specs", "customers"
+  add_foreign_key "production_runs", "lines"
+  add_foreign_key "production_runs", "product_specs"
+  add_foreign_key "production_runs", "sales_order_lines"
+  add_foreign_key "production_runs", "schedule_blocks"
+  add_foreign_key "production_runs", "users", column: "started_by_id"
   add_foreign_key "purchase_order_lines", "materials"
   add_foreign_key "purchase_order_lines", "purchase_orders"
   add_foreign_key "purchase_orders", "suppliers"
+  add_foreign_key "run_checks", "production_runs"
+  add_foreign_key "run_checks", "users"
   add_foreign_key "sales_order_lines", "product_specs"
   add_foreign_key "sales_order_lines", "sales_orders"
   add_foreign_key "sales_orders", "customers"

@@ -21,7 +21,7 @@ module PlannerBoard
 
     # Order lines still to plan, most pressing first.
     def unplanned_order_lines
-      SalesOrderLine.joins(:sales_order).merge(SalesOrder.where(status: SalesOrder::EDITABLE_STATUSES))
+      SalesOrderLine.joins(:sales_order).merge(SalesOrder.active)
         .includes(:schedule_blocks, { sales_order: :customer }, { product_spec: :line_rates })
         .select { _1.unplanned_g.positive? }
         .sort_by { [ _1.sales_order.required_on, _1.sales_order.urgent? ? 0 : 1, _1.sales_order.number, _1.id ] }

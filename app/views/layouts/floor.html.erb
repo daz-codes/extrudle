@@ -7,7 +7,7 @@
   <body class="min-h-screen text-xl">
     <header class="app-header">
       <div class="flex flex-wrap items-center gap-4 px-4 py-3">
-        <%= render "shared/wordmark" %>
+        <%= link_to floor_root_path, class: "inline-flex min-h-12 items-center", aria: { label: "Floor home" } do %><%= render "shared/wordmark" %><% end %>
         <span class="badge badge-lime text-sm">Floor</span>
 
         <div class="ml-auto flex items-center gap-3">

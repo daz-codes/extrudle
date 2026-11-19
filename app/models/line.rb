@@ -3,6 +3,7 @@ class Line < ApplicationRecord
 
   has_many :line_rates, dependent: :restrict_with_error
   has_many :schedule_blocks, dependent: :restrict_with_error
+  has_many :production_runs, dependent: :restrict_with_error
 
   normalizes :name, with: ->(n) { n.strip.upcase }
 

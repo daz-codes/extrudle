@@ -3,6 +3,7 @@ class ScheduleBlock < ApplicationRecord
 
   belongs_to :line
   belongs_to :sales_order_line, optional: true
+  has_one :production_run, dependent: :restrict_with_exception
 
   enum :kind, {
     job: "job",

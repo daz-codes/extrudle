@@ -50,6 +50,10 @@ Rails.application.routes.draw do
     patch :move, on: :member
   end
 
+  resources :production_runs, path: "production", except: :destroy do
+    resources :checks, controller: "run_checks", only: :create
+  end
+
   get "floor" => "floor#show", as: :floor_root
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
