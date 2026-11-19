@@ -14,7 +14,7 @@ class ReelsController < ApplicationController
   def create
     @reel = Reel.new(production_run_id: @run.id, user: Current.user, **reel_params)
 
-    if @reel.save
+    if save_with_next_number(@reel)
       @run.reels.reset
       flash.now[:notice] = "Reel #{@reel.reel_no} added: #{Weight.format_kg(@reel.weight_g)}."
       @reel = @run.build_next_reel
@@ -62,6 +62,17 @@ class ReelsController < ApplicationController
 
     def reel_params
       params.expect(reel: %i[ weight_kg length_m pallet_no initials note ])
+    end
+
+    # Two terminals can add a reel at the same moment and both pick the same
+    # number. The unique index catches it; take the next number and try again.
+    def save_with_next_number(reel, attempts: 3)
+      reel.save
+    rescue ActiveRecord::RecordNotUnique
+      raise if (attempts -= 1).zero?
+
+      reel.reel_no = ProductionRun.find(@run.id).next_reel_no
+      retry
     end
 
     def respond_with_panel(status: :ok)

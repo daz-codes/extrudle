@@ -84,4 +84,14 @@ class ProductionRunsControllerTest < ActionDispatch::IntegrationTest
     post production_run_checks_path(run), params: { stage: "prestart", item: "previous_product_cleared", passed: "true" }
     assert_match "is finished", flash[:alert]
   end
+
+  test "a comment added from the end-of-run tab goes back there" do
+    run = start_run
+    get edit_production_run_path(run, return_to: "finish")
+    assert_select "input[type=hidden][name=return_to][value=finish]"
+    assert_select "a[href='#{production_run_finish_path(run)}']", "Cancel"
+
+    patch production_run_path(run), params: { return_to: "finish", production_run: { comments: "Thick edge, die adjusted" } }
+    assert_redirected_to production_run_finish_path(run)
+  end
 end

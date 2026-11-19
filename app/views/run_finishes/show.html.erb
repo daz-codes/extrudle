@@ -25,7 +25,7 @@
         <% problems.each do |problem| %><li><%= problem %></li><% end %>
       </ul>
       <% if run.out_of_tolerance_at_end? %>
-        <p class="mb-4"><%= link_to "Add a comment or corrective action", edit_production_run_path(run), class: "link" %></p>
+        <p class="mb-4"><%= link_to "Add a comment or corrective action", edit_production_run_path(run, return_to: "finish"), class: "link" %></p>
       <% end %>
     <% else %>
       <p class="mb-4 text-ink-700">

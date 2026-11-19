@@ -22,7 +22,7 @@ class ProductionRunFinishTest < ActiveSupport::TestCase
     assert_includes problems, "Enter at least one reel"
     assert_includes problems, "Record the end-of-run width"
     assert_includes problems, "Line clearance: line cleared for the next micron"
-    assert_raises(ArgumentError) { @run.finish!(user: users(:floor)) }
+    assert_raises(ProductionRun::NotFinishable) { @run.finish!(user: users(:floor)) }
   end
 
   test "start-up readings don't count as end-of-run readings" do
@@ -38,7 +38,7 @@ class ProductionRunFinishTest < ActiveSupport::TestCase
       assert @run.finished?
       assert_equal [ Time.current, users(:floor) ], [ @run.ended_at, @run.finished_by ]
     end
-    assert_raises(ArgumentError) { @run.finish! }
+    assert_raises(ProductionRun::NotFinishable) { @run.finish! }
   end
 
   test "a clearance answered No stops it finishing" do

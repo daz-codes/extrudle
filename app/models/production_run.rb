@@ -11,6 +11,9 @@ class ProductionRun < ApplicationRecord
   has_many :reels, -> { order(:reel_no) }, inverse_of: :production_run, dependent: :restrict_with_error
   has_many :checks, -> { order(:checked_at, :id) }, class_name: "RunCheck", inverse_of: :production_run, dependent: :destroy
 
+  # Raised by finish! with the reasons the log can't be finished yet.
+  class NotFinishable < StandardError; end
+
   # finished is set by finish! on the end-of-run screen.
   enum :status, { running: "running", finished: "finished" }, default: :running, validate: true
 
@@ -78,6 +81,7 @@ class ProductionRun < ApplicationRecord
   def order_quantity_g = sales_order_line.quantity_g
 
   # Whole percent of the order line made so far, rounded down (integer maths).
+  # Working assumption, see PLAN.md §11 Q45.
   def percent_of_order
     order_quantity_g.positive? ? total_g * 100 / order_quantity_g : 0
   end
@@ -129,10 +133,10 @@ class ProductionRun < ApplicationRecord
   end
 
   def finish!(user: nil, ended_at: Time.current)
-    raise ArgumentError, "Despatch #{despatch_number} is already finished" unless running?
+    raise NotFinishable, "Despatch #{despatch_number} is already finished" unless running?
 
     problems = finish_problems
-    raise ArgumentError, problems.to_sentence if problems.any?
+    raise NotFinishable, problems.to_sentence if problems.any?
 
     update!(status: "finished", ended_at:, finished_by: user)
   end

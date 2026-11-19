@@ -77,4 +77,34 @@ class ReelsControllerTest < ActionDispatch::IntegrationTest
     post production_run_reels_path(@run), params: { reel: { weight_kg: "900" } }
     assert_match "is finished", flash[:alert]
   end
+
+  # The other terminal's reel was saved after this one was numbered: the
+  # reel passes validation, then goes in with the stale number, so only the
+  # unique index can catch it.
+  module SimulateRace
+    mattr_accessor :stale_reel_no
+
+    def valid?(...)
+      super.tap { |valid| self.reel_no = SimulateRace.stale_reel_no if valid && SimulateRace.stale_reel_no && new_record? }
+    ensure
+      SimulateRace.stale_reel_no = nil if valid_stale_used?
+    end
+
+    private
+      def valid_stale_used? = new_record? && reel_no == SimulateRace.stale_reel_no
+  end
+  Reel.prepend(SimulateRace)
+
+  test "two reels added at the same moment both get a number" do
+    @run.reels.create!(weight_kg: "1,000")
+    @run.reels.create!(weight_kg: "1,050") # the other terminal's reel 2
+    SimulateRace.stale_reel_no = 2
+
+    post production_run_reels_path(@run), params: { reel: { weight_kg: "1,100" } }, as: :turbo_stream
+    assert_response :success
+    assert_equal [ [ 1, 1_000_000 ], [ 2, 1_050_000 ], [ 3, 1_100_000 ] ], @run.reels.reload.map { [ _1.reel_no, _1.weight_g ] }
+    assert_match "Reel 3 added", response.body
+  ensure
+    SimulateRace.stale_reel_no = nil
+  end
 end

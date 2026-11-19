@@ -9,7 +9,7 @@ class RunFinishesController < ApplicationController
   def create
     @run.finish!(user: Current.user)
     redirect_to production_run_finish_path(@run), notice: "Despatch #{@run.despatch_number} is finished: #{helpers.pluralize(@run.reels.size, "reel")}, #{Weight.format_kg(@run.total_g)}.", status: :see_other
-  rescue ArgumentError => e
+  rescue ProductionRun::NotFinishable => e
     redirect_to production_run_finish_path(@run), alert: "Not finished yet: #{e.message.downcase_first}.", status: :see_other
   end
 
