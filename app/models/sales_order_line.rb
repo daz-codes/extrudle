@@ -5,6 +5,7 @@ class SalesOrderLine < ApplicationRecord
   belongs_to :sales_order, inverse_of: :lines
   belongs_to :product_spec
   has_many :schedule_blocks, dependent: :restrict_with_error
+  has_many :production_runs, dependent: :restrict_with_error
 
   # The price is agreed in the customer's currency when the line is added, and kept with it.
   scaled_attribute :price_per_tonne, column: :price_per_tonne_cents, scale: 100, pad: true

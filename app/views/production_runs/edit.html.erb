@@ -1,0 +1,23 @@
+<% run = @run %>
+<% content_for :title, "Edit despatch #{run.despatch_number}" %>
+<p class="mb-2"><%= link_to "← Back to despatch #{run.despatch_number}", run, class: "link text-sm" %></p>
+<h1 class="page-title mb-6">Edit despatch <span class="font-mono"><%= run.despatch_number %></span></h1>
+
+<%= form_with model: run, class: "card max-w-3xl space-y-5 p-6" do |form| %>
+  <%= form.error_summary %>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.text_row :technician_days, label: "Technician (days)" %>
+    <%= form.text_row :technician_nights, label: "Technician (nights)" %>
+  </div>
+  <div class="grid gap-5 sm:grid-cols-3">
+    <%= form.text_row :antiblock_batch_no, label: "Antiblock batch" %>
+    <%= form.text_row :silicone_batch_no, label: "Silicone batch" %>
+    <%= form.text_row :pe_film_batch_no, label: "PE film batch" %>
+  </div>
+  <%= form.text_area_row :special_instructions, rows: 3 %>
+  <%= form.text_area_row :comments, label: "Comments and corrective actions", rows: 4 %>
+  <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
+    <%= form.submit "Save", class: "btn btn-primary" %>
+    <%= link_to "Cancel", run, class: "btn btn-secondary" %>
+  </div>
+<% end %>

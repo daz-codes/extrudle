@@ -1,0 +1,33 @@
+<% content_for :title, "Production" %>
+<h1 class="page-title mb-6">Production</h1>
+
+<div class="mb-8"><%= render "board", board: @board %></div>
+
+<section class="card overflow-x-auto" aria-labelledby="logs-heading">
+  <h2 id="logs-heading" class="section-title px-5 pt-5">Production logs</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Despatch</th>
+        <th scope="col" class="px-4 py-3">Line</th>
+        <th scope="col" class="px-4 py-3">Customer</th>
+        <th scope="col" class="px-4 py-3">Spec</th>
+        <th scope="col" class="px-4 py-3">Started</th>
+        <th scope="col" class="px-4 py-3">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @runs.each do |run| %>
+        <tr id="<%= dom_id(run) %>">
+          <td class="px-4 py-3"><%= link_to run.despatch_number, run, class: "link font-mono font-semibold" %></td>
+          <td class="px-4 py-3"><%= run.line.name %></td>
+          <td class="px-4 py-3"><%= run.customer.name %><div class="text-sm text-ink-500"><%= run.sales_order.number %></div></td>
+          <td class="px-4 py-3"><%= run.product_spec %></td>
+          <td class="px-4 py-3 tabular-nums"><%= l(run.started_at, format: "%-d %b %Y %H:%M") %></td>
+          <td class="px-4 py-3"><%= run_status_badge(run) %></td>
+        </tr>
+      <% end %>
+      <% if @runs.empty? %><%= render "master_data/empty", message: "No production logs yet. Start one from a line above.", colspan: 6 %><% end %>
+    </tbody>
+  </table>
+</section>

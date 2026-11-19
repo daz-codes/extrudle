@@ -1,0 +1,26 @@
+<%# locals: (board:) %>
+<div class="grid gap-4 md:grid-cols-2">
+  <% board.entries.each do |entry| %>
+    <section class="card p-5" id="<%= dom_id(entry.line, :production) %>" aria-labelledby="<%= dom_id(entry.line, :production_heading) %>">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <h2 id="<%= dom_id(entry.line, :production_heading) %>" class="section-title">Line <%= entry.line.name %></h2>
+        <% if entry.run %><span class="badge badge-lime">Running</span><% else %><span class="badge badge-quiet">No log open</span><% end %>
+      </div>
+      <% if (run = entry.run) %>
+        <p class="font-mono text-2xl font-semibold tabular-nums">Despatch <%= run.despatch_number %></p>
+        <p class="mt-1 text-ink-700"><%= run.customer.name %> · <%= run.product_spec %> · <%= run.product_spec.paper_gauge %> × <%= mm(run.product_spec.width_mm) %></p>
+        <p class="text-sm text-ink-600">Started <%= l(run.started_at, format: "%a %-d %b %H:%M") %></p>
+        <%= link_to "Open log", run, class: "btn btn-accent mt-4 w-full sm:w-auto" %>
+      <% elsif (job = entry.next_job) %>
+        <p class="eyebrow">Next on the plan</p>
+        <p class="mt-1 text-lg font-semibold"><%= job.sales_order.customer.name %> · <%= job.product_spec %></p>
+        <p class="text-ink-600">
+          <%= job.sales_order.number %> · <%= kg(job.planned_g) %> · planned <%= l(job.starts_at, format: "%a %-d %b %H:%M") %>
+        </p>
+        <%= link_to "Start log", new_production_run_path(block: job.id), class: "btn btn-primary mt-4 w-full sm:w-auto" %>
+      <% else %>
+        <p class="text-ink-600">Nothing planned to start.</p>
+      <% end %>
+    </section>
+  <% end %>
+</div>

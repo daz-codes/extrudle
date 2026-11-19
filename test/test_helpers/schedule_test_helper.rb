@@ -18,4 +18,9 @@ module ScheduleTestHelper
   def timeline(line)
     line.schedule_blocks.reload.ordered.map { |b| [ b.kind, b.starts_at.strftime("%a %H:%M"), b.ends_at.strftime("%a %H:%M") ] }
   end
+
+  # A job on the plan for an order line (Brightform on D1 by default), starting earlier today.
+  def planned_job(order_line = sales_order_lines(:bf_open_700), line: lines(:d1), starts_at: Time.current.beginning_of_day + 6.hours)
+    Schedule::Editor.new(line).add_job(order_line, starts_at:)
+  end
 end

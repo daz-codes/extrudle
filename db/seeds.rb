@@ -238,7 +238,23 @@ if ScheduleBlock.none?
   editors[d2].add(ScheduleBlock.new(kind: "no_orders", duration_minutes: 480, notes: "Nothing to run yet"))
 end
 
+# --- Production log ----------------------------------------------------------
+# D1's first job is running as despatch 731 (carrying on from the paper logs),
+# with the prestart checks done and a couple of width and thickness readings.
+if ProductionRun.none? && (job = ProductionRun::Board.next_job_for(lines.fetch("D1")))
+  admin = User.find_by(role: "admin")
+  start = ProductionRun::Start.new(schedule_block: job, despatch_number: 731, started_at: job.starts_at.past? ? job.starts_at : Time.current.change(sec: 0),
+                                   technician_days: "Dave Hirst", technician_nights: "Kev Shaw", antiblock_batch_no: "AB-5-2611")
+  start.user = admin
+  start.save || raise(start.errors.full_messages.to_sentence)
+  run = start.run
+  ProductionRun::Checklist.items("prestart").each_key { run.record_check(stage: "prestart", item: _1, passed: true, user: admin) }
+  spec = run.product_spec
+  run.record_measurement(stage: "startup", item: "width", actual: (spec.width_mm + 1).to_s, user: admin)
+  run.record_measurement(stage: "startup", item: "thickness", actual: format(".%03d", spec.thickness_micron + 4), user: admin)
+end
+
 unless Rails.env.test?
   puts "Seeded #{User.count} users (password: #{demo_in_production ? "demo_password in credentials" : DEMO_PASSWORD}), #{Line.count} lines, #{Customer.count} customers, " \
-       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{PurchaseOrder.count} POs, #{Lot.count} lots, #{ScheduleBlock.count} plan blocks"
+       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{PurchaseOrder.count} POs, #{Lot.count} lots, #{ScheduleBlock.count} plan blocks, #{ProductionRun.count} production logs"
 end

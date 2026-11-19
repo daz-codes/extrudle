@@ -7,6 +7,13 @@
 <div class="mb-6 flex flex-wrap items-center gap-3">
   <h1 class="page-title"><%= block_title(block) %></h1>
   <% if block.locked? %><span class="badge badge-quiet gap-1"><%= lock_icon %>Locked</span><% end %>
+  <% if block.job? %>
+    <% if (run = block.production_run) %>
+      <%= link_to "Despatch #{run.despatch_number} (#{run.status})", run, class: "btn btn-secondary ml-auto" %>
+    <% elsif SalesOrder::ACTIVE_STATUSES.include?(block.sales_order.status) %>
+      <%= link_to "Start production log", new_production_run_path(block: block.id), class: "btn btn-secondary ml-auto" %>
+    <% end %>
+  <% end %>
 </div>
 
 <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
