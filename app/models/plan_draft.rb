@@ -39,7 +39,11 @@ class PlanDraft < ApplicationRecord
     draft_lines.find_or_initialize_by(line:).update!(queue_starts_at: time)
   end
 
+  # Raises ActiveRecord::RecordNotFound if someone else published or discarded it first.
   def discard!
-    transaction { destroy! }
+    transaction do
+      lock!
+      destroy!
+    end
   end
 end

@@ -20,6 +20,8 @@ class PlanDraftsController < ApplicationController
   def destroy
     @draft.discard!
     redirect_to planner_path(line: params[:line]), notice: "The draft plan was discarded. The live plan is unchanged.", status: :see_other
+  rescue ActiveRecord::RecordNotFound
+    already_gone
   end
 
   def publish
@@ -27,9 +29,16 @@ class PlanDraftsController < ApplicationController
     redirect_to planner_path(line: params[:line]), notice: "The new plan is live.", status: :see_other
   rescue Schedule::Error => e
     redirect_to plan_draft_path, alert: "The plan wasn't published: #{e.message}", status: :see_other
+  rescue ActiveRecord::RecordNotFound
+    already_gone
   end
 
   private
+    # Two people pressed Publish or Discard at once; the first one won.
+    def already_gone
+      redirect_to planner_path(line: params[:line]), alert: "This draft was already published or discarded by someone else.", status: :see_other
+    end
+
     def set_draft
       @draft = PlanDraft.current
       redirect_to planner_path, alert: "There's no draft plan." unless @draft

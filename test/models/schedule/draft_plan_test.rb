@@ -108,11 +108,34 @@ class Schedule::DraftPlanTest < ActiveSupport::TestCase
 
     publish = Schedule::Publish.new(draft)
     assert_match "Despatch 731", publish.notes.join
-    assert_match "stays on the plan, first in the queue", publish.notes.join
+    assert_match "stays on the plan, ahead of the jobs not started yet", publish.notes.join
     publish.call
 
     assert_equal @first, @d1.schedule_blocks.ordered.detect(&:job?)
     assert_equal @first, run.reload.schedule_block
+  end
+
+  test "a job the draft moved back that started meanwhile goes ahead of the jobs not started" do
+    draft = PlanDraft.start!
+    draft_editor(draft).move(draft_copy(draft, @first), :down)
+    run = start_log(@first, despatch_number: 731)
+
+    publish = Schedule::Publish.new(draft)
+    assert_match "goes ahead of the jobs not started yet", publish.notes.join
+    publish.call
+
+    jobs = @d1.schedule_blocks.ordered.select(&:job?)
+    assert_equal [ @first, @second ], jobs
+    assert_equal at(MONDAY_6AM), @first.reload.starts_at
+    assert_equal @first, run.reload.schedule_block
+  end
+
+  test "a draft published or discarded by someone else can't be published or discarded again" do
+    draft = PlanDraft.start!
+    stale = PlanDraft.find(draft.id)
+    draft.discard!
+    assert_raises(ActiveRecord::RecordNotFound) { stale.discard! }
+    assert_raises(ActiveRecord::RecordNotFound) { Schedule::Publish.new(stale).call }
   end
 
   test "cancelling an order while drafting takes its jobs off both plans" do

@@ -76,6 +76,23 @@ class PlanDraftsControllerTest < ActionDispatch::IntegrationTest
     assert ScheduleBlock.exists?(@job.id)
   end
 
+  test "publishing or discarding a draft someone else got to first" do
+    draft = PlanDraft.start!
+    gone = PlanDraft.find(draft.id)
+    draft.discard!
+    original = PlanDraft.method(:current)
+    PlanDraft.define_singleton_method(:current) { gone } # loaded just before the other person's click
+
+    post publish_plan_draft_path
+    assert_redirected_to planner_path
+    assert_match "already published or discarded", flash[:alert]
+
+    delete plan_draft_path
+    assert_match "already published or discarded", flash[:alert]
+  ensure
+    PlanDraft.define_singleton_method(:current, original) if original
+  end
+
   test "the draft prints, marked as a draft" do
     PlanDraft.start!
     get planner_print_path

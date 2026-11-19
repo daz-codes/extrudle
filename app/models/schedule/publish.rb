@@ -2,9 +2,10 @@
 #
 # Draft blocks copied from a live block update that block in place, so a started
 # job keeps its production log. New draft blocks are added, and live blocks the
-# draft dropped are removed, except a started job, which stays first in its
-# line's queue. Then each line takes the draft's queue start and is reflowed,
-# and order statuses are refreshed.
+# draft dropped are removed, except a started job, which stays on the plan.
+# Started jobs go ahead of every job not started yet: they're running or done,
+# even if the draft had moved one before it started. Then each line takes the
+# draft's queue start and is reflowed, and order statuses are refreshed.
 #
 # Before publishing, #notes says what happened in reality since the draft
 # began and what publishing does about it. Working assumption, see PLAN.md §11 Q55.
@@ -85,7 +86,7 @@ class Schedule::Publish
 
         orders << block.sales_order if block.job?
         if block.started?
-          block.update_columns(position: 0) # stays on the plan, first in the queue
+          next # stays on the plan; put ahead of jobs not started below
         else
           block.destroy!
         end
@@ -100,8 +101,17 @@ class Schedule::Publish
         orders << block.sales_order if block.job?
       end
 
+      started_jobs_first(line)
       editor = Schedule::Editor.new(line)
       (start = draft.queue_start(line)) ? editor.start_at(start) : editor.reflow
+    end
+
+    # Reorders the line's queue (unlocked blocks) so started jobs come before
+    # everything not started yet, keeping the order within each group.
+    def started_jobs_first(line)
+      queue = line.schedule_blocks.reload.includes(:production_run).reject(&:locked?).sort_by { [ _1.position || 0, _1.id ] }
+      started, rest = queue.partition(&:started?)
+      (started + rest).each.with_index(1) { |block, index| block.update_columns(position: index) if block.position != index }
     end
 
     def differs?(copy, live_block)
@@ -113,7 +123,7 @@ class Schedule::Publish
         .includes(:line, sales_order_line: :sales_order).order(:started_at).map do |run|
         on_draft = run.schedule_block_id && draft.blocks.exists?(source_block_id: run.schedule_block_id)
         "Despatch #{run.despatch_number} (#{run.sales_order.number} #{run.product_spec}) started on line #{run.line.name} after the draft began. " +
-          (on_draft ? "It keeps its place in the new plan." : "The draft took it off, but it has started, so it stays on the plan, first in the queue.")
+          (on_draft ? "It has started, so it goes ahead of the jobs not started yet in the new plan." : "The draft took it off, but it has started, so it stays on the plan, ahead of the jobs not started yet.")
       end
     end
 
