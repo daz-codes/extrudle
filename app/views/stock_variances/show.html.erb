@@ -1,0 +1,115 @@
+<% content_for :title, "Bag variance" %>
+<% report = @report %>
+
+<p class="mb-2"><%= link_to "← Stock", stock_path, class: "link text-sm" %></p>
+<div class="mb-6">
+  <h1 class="page-title">Bags on the lines and variance</h1>
+  <p class="mt-3 max-w-3xl text-ink-600">
+    Production logs use bags by recipe share and reel weight. When a bag is marked empty and every log that used it has finished,
+    whatever its book weight still shows is posted as its variance.
+  </p>
+</div>
+
+<section class="card mb-6 overflow-x-auto" aria-labelledby="on-lines-heading">
+  <h2 id="on-lines-heading" class="section-title px-5 pt-5">On the lines now</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Line</th>
+        <th scope="col" class="px-4 py-3">Feed</th>
+        <th scope="col" class="px-4 py-3">Lot</th>
+        <th scope="col" class="px-4 py-3">Material</th>
+        <th scope="col" class="px-4 py-3">Despatch</th>
+        <th scope="col" class="px-4 py-3 text-right">Book weight</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% report.on_lines.each do |run, load| %>
+        <tr>
+          <td class="px-4 py-3 font-semibold"><%= run.line.name %></td>
+          <td class="px-4 py-3"><%= load.feed_label %></td>
+          <td class="px-4 py-3 font-mono"><%= link_to load.lot.code, load.lot, class: "link" %></td>
+          <td class="px-4 py-3"><%= load.lot.material.name %></td>
+          <td class="px-4 py-3 font-mono"><%= link_to run.despatch_number, production_run_material_loads_path(run), class: "link" %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= Weight.format_kg(load.lot.quantity_g) %></td>
+        </tr>
+      <% end %>
+      <% if report.on_lines.empty? %><%= render "master_data/empty", message: "No bags on a running log.", colspan: 6 %><% end %>
+    </tbody>
+  </table>
+</section>
+
+<section class="card mb-6 overflow-x-auto" aria-labelledby="waiting-heading">
+  <h2 id="waiting-heading" class="section-title px-5 pt-5">Empty, waiting for a log to finish</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Lot</th>
+        <th scope="col" class="px-4 py-3">Material</th>
+        <th scope="col" class="px-4 py-3">Marked empty</th>
+        <th scope="col" class="px-4 py-3">Waiting for</th>
+        <th scope="col" class="px-4 py-3 text-right">Book weight</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% report.waiting.each do |lot| %>
+        <tr>
+          <td class="px-4 py-3 font-mono"><%= link_to lot.code, lot, class: "link" %></td>
+          <td class="px-4 py-3"><%= lot.material.name %></td>
+          <td class="px-4 py-3 tabular-nums"><%= l(lot.emptied_at, format: "%a %-d %b %H:%M") %></td>
+          <td class="px-4 py-3 font-mono"><%= Stock::Reconciliation.waiting_on(lot).pluck(:despatch_number).join(", ").presence || "—" %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= Weight.format_kg(lot.movements.sum(&:quantity_g)) %></td>
+        </tr>
+      <% end %>
+      <% if report.waiting.empty? %><%= render "master_data/empty", message: "None.", colspan: 5 %><% end %>
+    </tbody>
+  </table>
+</section>
+
+<section class="card overflow-x-auto" aria-labelledby="variance-heading">
+  <div class="px-5 pt-5">
+    <h2 id="variance-heading" class="section-title">Reconciled in the last 90 days</h2>
+    <p class="mt-2 text-sm text-ink-600">
+      Variance is the weight left on the books when the bag ran out: negative means the lines used more than the recipe says.
+      More than <%= recipe_percent(Stock::Variance::FLAG_BP) %> either way is flagged.
+    </p>
+  </div>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Lot</th>
+        <th scope="col" class="px-4 py-3">Material</th>
+        <th scope="col" class="px-4 py-3">Reconciled</th>
+        <th scope="col" class="px-4 py-3 text-right">In</th>
+        <th scope="col" class="px-4 py-3 text-right">Used by logs</th>
+        <th scope="col" class="px-4 py-3 text-right">Variance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% report.reconciled.each do |row| %>
+        <tr>
+          <td class="px-4 py-3 font-mono"><%= link_to row.lot.code, row.lot, class: "link" %></td>
+          <td class="px-4 py-3"><%= row.lot.material.name %></td>
+          <td class="px-4 py-3 tabular-nums"><%= l(row.lot.reconciled_at, format: "%-d %b %Y") %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= Weight.format_kg(row.in_g) %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= Weight.format_kg(row.used_g) %></td>
+          <td class="px-4 py-3 text-right tabular-nums">
+            <%= signed_weight(row.variance_g) %>
+            <span class="text-ink-600">(<%= row.variance_bp.negative? ? "−" : "" %><%= recipe_percent(row.variance_bp.abs) %>)</span>
+            <% if row.flagged? %><span class="badge badge-lemon ml-1">Check</span><% end %>
+          </td>
+        </tr>
+      <% end %>
+      <% if report.reconciled.empty? %>
+        <%= render "master_data/empty", message: "No bags reconciled yet.", colspan: 6 %>
+      <% else %>
+        <tr class="font-semibold">
+          <td class="px-4 py-3" colspan="3">Total</td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= Weight.format_kg(report.total_in_g) %></td>
+          <td class="px-4 py-3"></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= signed_weight(report.total_variance_g) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

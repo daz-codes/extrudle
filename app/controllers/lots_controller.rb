@@ -13,7 +13,8 @@ class LotsController < ApplicationController
   end
 
   def show
-    @movements = @lot.movements.includes(:user).reverse
+    @movements = @lot.movements.includes(:user, :production_run).reverse
+    @loads = @lot.material_loads.includes(production_run: %i[ line reels material_loads ])
   end
 
   # Stock without a purchase order: opening stock at go-live and in-house

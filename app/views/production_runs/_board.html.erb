@@ -15,6 +15,7 @@
         </p>
         <div class="mt-4 flex flex-wrap gap-3">
           <%= link_to "Enter reels", production_run_reels_path(run), class: "btn btn-accent" %>
+          <%= link_to "Load material", production_run_material_loads_path(run), class: "btn btn-secondary" %>
           <%= link_to "Open log", run, class: "btn btn-secondary" %>
         </div>
       <% elsif (job = entry.next_job) %>

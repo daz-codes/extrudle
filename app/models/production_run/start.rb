@@ -1,7 +1,7 @@
 # Starts a production log from a planned job. Takes the next despatch number
 # (or the one typed in), keeps the job's order line and spec revision, copies
 # the spec's packaging notes and the order notes into the special instructions,
-# and puts the order "in production".
+# and puts the order "in production". Bags still on the line's feeds carry over.
 #
 # Working assumption, see PLAN.md §11 Q38: starting a run doesn't change the
 # plan. The planner re-times the line if the job starts early or late.
@@ -52,6 +52,7 @@ class ProductionRun::Start
         raise ActiveRecord::Rollback
       end
       sales_order.in_production! if sales_order.editable?
+      carry_over_bags
     end
     errors.empty?
   rescue ActiveRecord::RecordNotUnique => e
@@ -67,6 +68,23 @@ class ProductionRun::Start
   end
 
   private
+    # Bags still on the feeds when the line's last log finished carry on
+    # feeding this one from reel 1. Working assumption, see PLAN.md §11 Q47.
+    # Not if the bag has since been marked empty, moved off site, or gone on
+    # a feed of the other line's running log.
+    def carry_over_bags
+      previous = ProductionRun.finished.where(line:).where.not(id: @run.id).order(ended_at: :desc, id: :desc).first
+      return unless previous
+
+      previous.current_loads.each_value do |load|
+        next if load.lot.emptied? || !load.lot.on_site?
+        next if MaterialLoad.feeding_elsewhere(load.lot, run: @run, feed: load.feed)
+
+        @run.material_loads.create!(lot: load.lot, feed: load.feed, from_reel_no: 1, carried_over: true,
+                                    loaded_at: started_at, initials: load.initials, user:)
+      end
+    end
+
     def block_is_a_job_without_a_log
       if !schedule_block&.job?
         errors.add(:base, "Only planned jobs can be started")

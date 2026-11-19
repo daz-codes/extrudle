@@ -19,6 +19,7 @@
 <nav aria-label="Production log" class="mb-6 -mx-4 overflow-x-auto px-4">
   <ul class="tabs">
     <% { log: [ "Log", production_run_path(run) ],
+         materials: [ "Materials (#{run.material_loads.size})", production_run_material_loads_path(run) ],
          reels: [ "Reels (#{run.reels.size})", production_run_reels_path(run) ],
          finish: [ run.finished? ? "End of run" : "End of run and finish", production_run_finish_path(run) ] }.each do |key, (label, path)| %>
       <li><%= link_to label, path, class: "tab", aria: { current: (key == current ? "page" : nil) } %></li>

@@ -123,4 +123,33 @@
       <% end %>
     </div>
   </section>
+  <% recipe = spec.recipe %>
+  <section class="card p-5" aria-labelledby="recipe-heading">
+    <div class="flex flex-wrap items-baseline justify-between gap-3">
+      <h2 id="recipe-heading" class="section-title">Recipe</h2>
+      <% if recipe.custom? %><span class="badge badge-quiet">Own recipe</span><% else %><span class="badge badge-lemon">Standard recipe</span><% end %>
+    </div>
+    <p class="mb-4 mt-2 text-sm text-ink-600">The share of each feed in the film. Used to work out how much of each bag a production log used.</p>
+    <%= form_with url: product_spec_recipe_path(spec), method: :patch, scope: :recipe, class: "space-y-4" do |form| %>
+      <div class="grid grid-cols-2 gap-4">
+        <% MaterialLoad::FEEDS.each do |feed, label| %>
+          <div>
+            <%= form.label feed, label, class: "field-label" %>
+            <div class="field-group">
+              <%= form.text_field feed, value: recipe.percent(feed), inputmode: "decimal", class: "field-input tabular-nums" %>
+              <span class="field-suffix">%</span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <p class="field-hint">The four shares add up to 100%.</p>
+      <div class="flex flex-wrap gap-3">
+        <%= form.submit "Save recipe", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+    <% if recipe.custom? %>
+      <%= button_to "Use the standard recipe", product_spec_recipe_path(spec), method: :delete, class: "btn btn-secondary mt-3",
+            form: { data: { turbo_confirm: "Go back to the standard recipe for #{spec}?" } } %>
+    <% end %>
+  </section>
 </div>

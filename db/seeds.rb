@@ -214,6 +214,12 @@ if Lot.none?
   end
 end
 
+# --- Recipes -----------------------------------------------------------------
+# One spec with its own recipe; the rest use the standard one (PLAN.md §11 Q6).
+if SpecIngredient.none? && (spec = ProductSpec.find_by(code: "BF-700-250"))
+  spec.recipe.update("virgin_coex" => "12", "virgin_mainex" => "48", "pcw" => "30", "regrind" => "10") || raise("recipe")
+end
+
 # --- Production plan ---------------------------------------------------------
 # Both lines start at 06:00 today (UK time). Order lines are planned in
 # required-date order, alternating lines; changeovers are added automatically.
@@ -259,6 +265,21 @@ if ProductionRun.none? && (job = ProductionRun::Board.next_job_for(lines.fetch("
   weights.each_with_index do |weight_kg, index|
     run.reels.create!(weight_kg:, length_m: 5_620 + index * 7, pallet_no: index / 2 + 1, initials: index < 4 ? "DH" : "KS",
                       produced_at: run.started_at + step * (index + 1), user: admin)
+  end
+
+  # The bags on its feeds: JADE bag 939 ran out at reel 5 and bag 940 went on.
+  first_lot = ->(material, **where) { Lot.joins(:material).where(materials: { name: material }, location: "on_site", **where).order(:code).first! }
+  [
+    [ first_lot.("EuroCap Co-Ex"), "virgin_coex", 1, "DH" ],
+    [ first_lot.("JADE", bag_no: "939"), "virgin_mainex", 1, "DH" ],
+    [ first_lot.("Clear PCW flake"), "pcw", 1, "DH" ],
+    [ first_lot.("Regrind chip"), "regrind", 3, "DH" ],
+    [ first_lot.("JADE", bag_no: "940"), "virgin_mainex", 5, "KS" ]
+  ].each do |lot, feed, from_reel_no, initials|
+    loading = ProductionRun::LoadMaterial.new(run: run.reload, lot_code: lot.code, feed:, from_reel_no:, initials:)
+    loading.user = admin
+    loading.save || raise(loading.errors.full_messages.to_sentence)
+    loading.load.update_columns(loaded_at: run.reels.find_by(reel_no: from_reel_no)&.produced_at&.-(10.minutes) || run.started_at)
   end
 end
 

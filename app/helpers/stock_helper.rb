@@ -26,6 +26,9 @@ module StockHelper
     case movement.kind
     when "transfer" then "Moved from #{Lot.location_label(movement.from_location).downcase} to #{Lot.location_label(movement.to_location).downcase}"
     when "receipt" then "Received into #{Lot.location_label(movement.to_location).downcase}"
+    when "issue_to_production"
+      run = movement.production_run
+      safe_join([ "Used by ", link_to("despatch #{run.despatch_number}", production_run_material_loads_path(run), class: "link") ])
     else MOVEMENT_LABELS.fetch(movement.kind)
     end
   end

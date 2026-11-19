@@ -2,6 +2,7 @@ require "test_helper"
 
 class ProductionRunFinishTest < ActiveSupport::TestCase
   include ScheduleTestHelper
+  include MaterialTestHelper
 
   setup do
     start = ProductionRun::Start.new(schedule_block: planned_job)
@@ -10,6 +11,7 @@ class ProductionRunFinishTest < ActiveSupport::TestCase
   end
 
   def complete_end_of_run(width: "700", thickness: "250")
+    load_bag(@run, lots(:jade_opening))
     @run.reels.create!(weight_kg: "1,050")
     @run.record_measurement(stage: "end_of_run", item: "width", actual: width)
     @run.record_measurement(stage: "end_of_run", item: "thickness", actual: thickness)

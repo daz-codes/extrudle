@@ -15,6 +15,6 @@ class RunFinishesController < ApplicationController
 
   private
     def set_run
-      @run = ProductionRun.includes(:line, :product_spec, :reels, checks: :user, sales_order_line: { sales_order: :customer }).find(params[:production_run_id])
+      @run = ProductionRun.includes(:line, :product_spec, :reels, checks: :user, material_loads: { lot: :material }, sales_order_line: { sales_order: :customer }).find(params[:production_run_id])
     end
 end

@@ -15,6 +15,7 @@ Rails.application.routes.draw do
   resources :product_specs, except: :destroy do
     resources :line_rates, only: %i[ create update destroy ]
     get :summary, on: :member
+    resource :recipe, controller: "spec_recipes", only: %i[ update destroy ]
   end
 
   resources :sales_orders, path: "orders", except: :destroy do
@@ -38,10 +39,12 @@ Rails.application.routes.draw do
   end
 
   get "stock" => "stock#show", as: :stock
+  get "stock/variance" => "stock_variances#show", as: :stock_variance
   resources :lots, path: "stock/lots", only: %i[ index show new create ] do
     get :labels, on: :collection
     patch :move, on: :member
     resource :adjustment, controller: "lot_adjustments", only: %i[ new create ]
+    resource :empty, controller: "lot_empties", only: %i[ create destroy ]
   end
 
   get "planner" => "planner#show", as: :planner
@@ -52,6 +55,9 @@ Rails.application.routes.draw do
 
   resources :production_runs, path: "production", except: :destroy do
     resources :checks, controller: "run_checks", only: :create
+    resources :material_loads, path: "materials", only: %i[ index create destroy ] do
+      patch :empty, on: :member
+    end
     resources :reels, only: %i[ index create edit update destroy ]
     resource :finish, controller: "run_finishes", only: %i[ show create ]
   end

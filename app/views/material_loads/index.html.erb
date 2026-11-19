@@ -1,0 +1,101 @@
+<% run = @run %>
+<% content_for :title, "Materials · despatch #{run.despatch_number}" %>
+<%= render "production_runs/header", run:, current: :materials %>
+
+<% recipe = ProductSpec::Recipe.shares_for(run.product_spec) %>
+<% current = run.current_loads %>
+<section class="card mb-6 p-5" aria-labelledby="feeds-heading">
+  <h2 id="feeds-heading" class="section-title mb-4">On the feeds</h2>
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <% MaterialLoad::FEEDS.each do |feed, label| %>
+      <% load = current[feed] %>
+      <div id="feed_<%= feed %>" class="rounded-[11px] border border-ink-200 p-4">
+        <div class="flex items-baseline justify-between gap-2">
+          <h3 class="font-semibold text-ink-900"><%= label %></h3>
+          <span class="font-mono text-sm text-ink-600 tabular-nums"><%= recipe_percent(recipe.fetch(feed)) %> of recipe</span>
+        </div>
+        <% if load %>
+          <p class="mt-2 font-mono text-lg font-semibold"><%= load.lot.code %></p>
+          <p class="text-ink-700"><%= load.lot.material.name %><%= " · #{bag_reference(load.lot)}" if bag_reference(load.lot) %></p>
+          <p class="text-sm text-ink-600 tabular-nums">Reels <%= reel_range_text(run.reel_range(load)) %></p>
+          <% if load.lot.emptied? %>
+            <p class="mt-2"><span class="badge badge-quiet">Marked empty</span></p>
+          <% elsif run.running? %>
+            <%= button_to "Bag empty", empty_production_run_material_load_path(run, load), method: :patch, class: "btn btn-secondary mt-3 w-full",
+                  form: { data: { turbo_confirm: "Mark #{load.lot.code} empty?" } }, aria: { label: "#{load.lot.code} on #{label} is empty" } %>
+          <% end %>
+        <% elsif recipe.fetch(feed).positive? %>
+          <p class="mt-2"><span class="badge badge-lemon">No bag recorded</span></p>
+        <% else %>
+          <p class="mt-2 text-ink-600">Not used.</p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</section>
+
+<% if run.running? %>
+  <section class="card mb-6 p-5" aria-labelledby="load-heading">
+    <h2 id="load-heading" class="section-title mb-1">Load a bag</h2>
+    <p class="mb-4 text-ink-600">Scan or type the code on the bag's label.</p>
+    <%= form_with model: @loading, scope: :material_load, url: production_run_material_loads_path(run), class: "space-y-4" do |form| %>
+      <%= form.error_summary %>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] lg:items-end">
+        <%= form.text_row :lot_code, label: "Lot code", autocomplete: "off", list: "loadable_lots", placeholder: "L-#{Date.current.year}-000123",
+              class: "field-input font-mono text-xl uppercase", data: { controller: "autofocus" } %>
+        <%= form.number_row :from_reel_no, label: "From reel", min: 1, inputmode: "numeric", class: "field-input font-mono text-xl" %>
+        <%= form.text_row :initials, autocomplete: "off", maxlength: 4, class: "field-input font-mono text-xl uppercase" %>
+      </div>
+      <datalist id="loadable_lots">
+        <% loadable_lots.each do |lot| %><option value="<%= lot.code %>"><%= lot.material.name %><%= " · #{bag_reference(lot)}" if bag_reference(lot) %></option><% end %>
+      </datalist>
+      <%= form.radio_row :feed, [ "", *MaterialLoad::FEEDS.keys ], label: "Feed", labels: { "" => "Usual feed for the bag", **MaterialLoad::FEEDS } %>
+      <%= form.check_row :previous_empty, label: "The bag it replaces is empty", hint: "Untick if a part-used bag is coming off. It goes back in stock." %>
+      <%= form.submit "Load bag", class: "btn btn-accent min-h-14 px-8 text-lg" %>
+    <% end %>
+  </section>
+<% end %>
+
+<section class="card mb-6 overflow-x-auto" aria-labelledby="loads-heading">
+  <h2 id="loads-heading" class="section-title px-5 pt-5">Bags loaded</h2>
+  <table class="data-table mt-3 w-full text-left">
+    <thead>
+      <tr>
+        <th scope="col" class="px-4 py-3">Feed</th>
+        <th scope="col" class="px-4 py-3">Lot</th>
+        <th scope="col" class="px-4 py-3">Material</th>
+        <th scope="col" class="px-4 py-3">Batch and bag</th>
+        <th scope="col" class="px-4 py-3 text-right">Reels</th>
+        <th scope="col" class="px-4 py-3">Loaded</th>
+        <th scope="col" class="px-4 py-3">Initials</th>
+        <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% run.material_loads.sort_by { [ MaterialLoad::FEEDS.keys.index(_1.feed), _1.from_reel_no, _1.id ] }.each do |load| %>
+        <tr id="<%= dom_id(load) %>">
+          <td class="px-4 py-3"><%= load.feed_label %></td>
+          <td class="px-4 py-3 font-mono">
+            <%= Current.user.floor? ? load.lot.code : link_to(load.lot.code, load.lot, class: "link") %>
+            <% if load.carried_over? %><span class="badge badge-quiet ml-1">From last log</span><% end %>
+          </td>
+          <td class="px-4 py-3"><%= load.lot.material.name %></td>
+          <td class="px-4 py-3"><%= bag_reference(load.lot) || "—" %></td>
+          <td class="px-4 py-3 text-right tabular-nums"><%= reel_range_text(run.reel_range(load)) %></td>
+          <td class="px-4 py-3 tabular-nums"><%= l(load.loaded_at, format: "%a %H:%M") %></td>
+          <td class="px-4 py-3"><%= load.initials || "—" %></td>
+          <td class="px-4 py-3 text-right">
+            <% if run.running? && current[load.feed] == load %>
+              <%= button_to "Remove", production_run_material_load_path(run, load), method: :delete, class: "btn btn-secondary",
+                    form: { data: { turbo_confirm: "Take #{load.lot.code} off #{load.feed_label}? Use this for a mistake only." } },
+                    aria: { label: "Remove #{load.lot.code} from #{load.feed_label}" } %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+      <% if run.material_loads.empty? %><%= render "master_data/empty", message: "No bags recorded yet.", colspan: 8 %><% end %>
+    </tbody>
+  </table>
+</section>
+
+<%= render "material_loads/use", run: %>
