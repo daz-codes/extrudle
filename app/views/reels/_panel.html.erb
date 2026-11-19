@@ -82,6 +82,12 @@
               <% end %>
             </td>
           </tr>
+          <% if r.note.present? %>
+            <tr id="<%= dom_id(r, :note) %>">
+              <td></td>
+              <td colspan="7" class="px-4 pb-3 pt-0 text-sm text-ink-600">Note: <%= r.note %></td>
+            </tr>
+          <% end %>
         <% end %>
         <% if reels.empty? %><%= render "master_data/empty", message: "No reels yet.", colspan: 8 %><% end %>
       </tbody>

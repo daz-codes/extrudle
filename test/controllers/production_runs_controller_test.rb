@@ -94,4 +94,20 @@ class ProductionRunsControllerTest < ActionDispatch::IntegrationTest
     patch production_run_path(run), params: { return_to: "finish", production_run: { comments: "Thick edge, die adjusted" } }
     assert_redirected_to production_run_finish_path(run)
   end
+
+  test "the log downloads as a PDF for the floor and the office" do
+    run = start_run
+    [ users(:floor), users(:office) ].each do |user|
+      sign_in_as user
+      get production_run_path(run)
+      assert_select "a[href='#{production_run_path(run, format: :pdf)}']", "Print log"
+      assert_select "a[href='#{production_run_path(run, format: :pdf)}'][target=_blank]", count: user.floor? ? 0 : 1
+
+      get production_run_path(run, format: :pdf)
+      assert_response :success
+      assert_equal "application/pdf", response.media_type
+      assert_match "despatch-#{run.despatch_number}-in-progress.pdf", response.headers["Content-Disposition"]
+      assert response.body.start_with?("%PDF")
+    end
+  end
 end

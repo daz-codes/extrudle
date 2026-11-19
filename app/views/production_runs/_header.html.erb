@@ -11,9 +11,12 @@
       <%= run.customer.name %> · <%= run.product_spec %> · <%= run.product_spec.paper_gauge %> × <%= mm(run.product_spec.width_mm) %>
     </p>
   </div>
-  <% if run.editable? && current == :log %>
-    <%= link_to "Edit details", edit_production_run_path(run), class: "btn btn-secondary" %>
-  <% end %>
+  <div class="flex flex-wrap gap-3">
+    <%= link_to "Print log", production_run_path(run, format: :pdf), class: "btn btn-secondary", target: ("_blank" unless Current.user.floor?), data: { turbo: false } %>
+    <% if run.editable? && current == :log %>
+      <%= link_to "Edit details", edit_production_run_path(run), class: "btn btn-secondary" %>
+    <% end %>
+  </div>
 </div>
 
 <nav aria-label="Production log" class="mb-6 -mx-4 overflow-x-auto px-4">

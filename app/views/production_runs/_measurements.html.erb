@@ -29,7 +29,7 @@
             <% readings.reverse_each do |check| %>
               <li class="flex flex-wrap items-center gap-2 rounded-md px-3 py-2 <%= check.passed? ? "bg-ok-50" : "bg-bad-50" %>">
                 <%= pass_fail_badge(check.passed?) %> <%= reading(check) %>
-                <span class="text-sm text-ink-600"><%= checked_by(check) %></span>
+                <span class="text-sm text-ink-600"><%= checked_by(check) %><%= " · #{check.note}" if check.note.present? %></span>
               </li>
             <% end %>
           </ul>
