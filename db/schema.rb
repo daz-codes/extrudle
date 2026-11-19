@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_100100) do
   create_table "customers", force: :cascade do |t|
     t.string "name", null: false
     t.string "contact_name"
@@ -109,6 +109,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_100000) do
     t.check_constraint "width_mm > 0", name: "product_specs_width_positive"
   end
 
+  create_table "purchase_order_lines", force: :cascade do |t|
+    t.integer "purchase_order_id", null: false
+    t.integer "material_id", null: false
+    t.integer "quantity_g", null: false
+    t.string "quantity_unit", default: "kg", null: false
+    t.integer "price_per_tonne_cents", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["material_id"], name: "index_purchase_order_lines_on_material_id"
+    t.index ["purchase_order_id"], name: "index_purchase_order_lines_on_purchase_order_id"
+    t.check_constraint "price_per_tonne_cents >= 0", name: "purchase_order_lines_price_non_negative"
+    t.check_constraint "quantity_g > 0", name: "purchase_order_lines_quantity_positive"
+  end
+
+  create_table "purchase_orders", force: :cascade do |t|
+    t.string "number", null: false
+    t.integer "supplier_id", null: false
+    t.string "currency", default: "GBP", null: false
+    t.string "incoterm"
+    t.string "status", default: "draft", null: false
+    t.date "expected_on", null: false
+    t.string "supplier_ref"
+    t.text "notes"
+    t.datetime "sent_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["number"], name: "index_purchase_orders_on_number", unique: true
+    t.index ["status", "expected_on"], name: "index_purchase_orders_on_status_and_expected_on"
+    t.index ["supplier_id"], name: "index_purchase_orders_on_supplier_id"
+  end
+
   create_table "sales_order_lines", force: :cascade do |t|
     t.integer "sales_order_id", null: false
     t.integer "product_spec_id", null: false
@@ -203,6 +234,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_100000) do
   add_foreign_key "materials", "material_categories"
   add_foreign_key "materials", "suppliers"
   add_foreign_key "product_specs", "customers"
+  add_foreign_key "purchase_order_lines", "materials"
+  add_foreign_key "purchase_order_lines", "purchase_orders"
+  add_foreign_key "purchase_orders", "suppliers"
   add_foreign_key "sales_order_lines", "product_specs"
   add_foreign_key "sales_order_lines", "sales_orders"
   add_foreign_key "sales_orders", "customers"

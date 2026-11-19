@@ -1,0 +1,27 @@
+# Our own details, printed on purchase orders (and later delivery notes).
+# Placeholders until Stu sends the real ones: see PLAN.md §11 Q19.
+shared: &shared
+  name: "Extrudle Demo Ltd"
+  address:
+    - "Unit 4, Riverside Industrial Estate"
+    - "Anytown"
+    - "AB1 2CD"
+    - "United Kingdom"
+  phone: "01234 567890"
+  email: "purchasing@example.com"
+  vat_number: "GB 123 4567 89"
+  company_number: "01234567"
+  # Where suppliers deliver. Blank means the address above.
+  delivery_address: []
+  # Printed at the foot of every PO.
+  po_terms: >-
+    Please quote our PO number on all delivery notes and invoices. Every bag
+    must be labelled with the material, grade, batch number and net weight,
+    and a certificate of analysis must come with each delivery.
+
+development:
+  <<: *shared
+test:
+  <<: *shared
+production:
+  <<: *shared

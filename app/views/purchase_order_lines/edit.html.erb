@@ -1,0 +1,5 @@
+<% content_for :title, "Edit line on #{@purchase_order.number}" %>
+<h1 class="page-title mb-6">Edit line on <%= @purchase_order.number %></h1>
+<div class="card max-w-3xl p-6">
+  <%= render "purchase_order_lines/form", order: @purchase_order, line: @line %>
+</div>

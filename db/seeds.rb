@@ -165,6 +165,29 @@ today = Date.current
   order.update!(status: status)
 end
 
+# --- Purchase orders -----------------------------------------------------------
+# Dates are relative to today, so there's a draft, some sent POs (one overdue)
+# and a cancelled one to show.
+[
+  # [supplier, days from today, status, supplier ref, [[material, quantity, unit, price per tonne], ...]]
+  [ "Pacific Resin Exports", 21, "sent", "PRE-Q-2291", [ [ "JADE", "44", "t", "1,240.00" ] ] ],
+  [ "EuroCap Polymers BV", -1, "sent", "OC-55102", [ [ "EuroCap Co-Ex", "11", "t", "1,610.00" ] ] ],
+  [ "Circular Flake Co", 6, "sent", nil, [ [ "Clear PCW flake", "20", "t", "720.00" ] ] ],
+  [ "Midlands Masterbatch", 9, "draft", nil, [ [ "Antiblock masterbatch", "1,000", "kg", "2,950.00" ], [ "Blue tint masterbatch", "250", "kg", "3,400.00" ] ] ],
+  [ "Iberia Recycling SL", 14, "cancelled", "IR-0419", [ [ "Iberia PCW flake", "22", "t", "690.00" ] ] ]
+].each do |supplier_name, days, status, ref, lines|
+  supplier = Supplier.find_by!(name: supplier_name)
+  next if PurchaseOrder.exists?(supplier:)
+
+  order = PurchaseOrder.new(supplier:, supplier_ref: ref, expected_on: today + days)
+  order.save_with_number || raise(order.errors.full_messages.to_sentence)
+  lines.each do |material, quantity, unit, price|
+    order.lines.create!(material: Material.find_by!(name: material), quantity_unit: unit, quantity:, price_per_tonne: price)
+  end
+  order.mark_sent! if status.in?(%w[ sent cancelled ])
+  order.cancel! if status == "cancelled"
+end
+
 # --- Production plan ---------------------------------------------------------
 # Both lines start at 06:00 today (UK time). Order lines are planned in
 # required-date order, alternating lines; changeovers are added automatically.
@@ -191,5 +214,5 @@ end
 
 unless Rails.env.test?
   puts "Seeded #{User.count} users (password: #{demo_in_production ? "demo_password in credentials" : DEMO_PASSWORD}), #{Line.count} lines, #{Customer.count} customers, " \
-       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{ScheduleBlock.count} plan blocks"
+       "#{Supplier.count} suppliers, #{Material.count} materials, #{ProductSpec.count} specs, #{SalesOrder.count} orders, #{PurchaseOrder.count} POs, #{ScheduleBlock.count} plan blocks"
 end

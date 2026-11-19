@@ -3,6 +3,7 @@ class Material < ApplicationRecord
 
   belongs_to :material_category
   belongs_to :supplier, optional: true
+  has_many :purchase_order_lines, dependent: :restrict_with_error
 
   enum :origin, { virgin: "virgin", recycled: "recycled" }, default: :virgin, validate: true
   # Regrind is made in-house from edge trim and scrap.

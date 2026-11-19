@@ -44,7 +44,7 @@ module SalesOrdersHelper
   # totals use tonnes from 1 t up.
   def order_quantity(grams, unit: nil)
     unit ||= grams >= Weight::GRAMS_PER_TONNE ? "t" : "kg"
-    number = DecimalInput.from_scaled_integer(grams, SalesOrderLine::QUANTITY_UNITS.fetch(unit))
+    number = DecimalInput.from_scaled_integer(grams, EnteredQuantity::UNITS.fetch(unit))
     "#{number_with_delimiter(number)} #{unit}"
   end
 end

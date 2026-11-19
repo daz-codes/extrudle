@@ -1,0 +1,21 @@
+<%# locals: (order:, line:) %>
+<%= form_with model: [ order, line ], url: line.persisted? ? purchase_order_line_path(order, line) : purchase_order_lines_path(order),
+      scope: :purchase_order_line, class: "space-y-5" do |form| %>
+  <%= form.error_summary %>
+
+  <%= form.select_row :material_id, material_options_for(order, line.material_id), required: true,
+        select_options: { include_blank: "Choose a material" } %>
+
+  <div class="grid gap-5 sm:grid-cols-[1fr_auto]">
+    <%= form.text_row :quantity, required: true, inputmode: "decimal", autocomplete: "off" %>
+    <%= form.radio_row :quantity_unit, EnteredQuantity::UNITS.keys, labels: EnteredQuantity::UNIT_LABELS %>
+  </div>
+
+  <%= form.text_row :price_per_tonne, required: true, inputmode: "decimal", autocomplete: "off",
+        suffix: "#{Money.symbol(order.currency)}/t", hint: "In #{order.currency}, per tonne." %>
+
+  <div class="flex flex-wrap gap-3">
+    <%= form.submit line.persisted? ? "Save line" : "Add line", class: "btn btn-primary" %>
+    <% if line.persisted? %><%= link_to "Cancel", order, class: "btn btn-secondary" %><% end %>
+  </div>
+<% end %>

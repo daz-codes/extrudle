@@ -1,0 +1,20 @@
+pacific_jade:
+  purchase_order: pacific_draft
+  material: jade
+  quantity_g: 22000000
+  quantity_unit: t
+  price_per_tonne_cents: 124000
+
+albion_jade:
+  purchase_order: albion_sent
+  material: jade
+  quantity_g: 1100000
+  quantity_unit: kg
+  price_per_tonne_cents: 118550
+
+received_jade:
+  purchase_order: albion_received
+  material: jade
+  quantity_g: 5000000
+  quantity_unit: t
+  price_per_tonne_cents: 120000

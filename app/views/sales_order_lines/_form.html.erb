@@ -13,7 +13,7 @@
 
   <div class="grid gap-5 sm:grid-cols-[1fr_auto]">
     <%= form.text_row :quantity, required: true, inputmode: "decimal", autocomplete: "off" %>
-    <%= form.radio_row :quantity_unit, SalesOrderLine::QUANTITY_UNITS.keys, labels: { "kg" => "kg", "t" => "tonnes" } %>
+    <%= form.radio_row :quantity_unit, EnteredQuantity::UNITS.keys, labels: EnteredQuantity::UNIT_LABELS %>
   </div>
 
   <div class="grid gap-5 sm:grid-cols-2">
