@@ -17,7 +17,9 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
     fill_in "Email address", with: user.email_address
     fill_in "Password", with: password
     click_on "Sign in"
-    assert_no_current_path new_session_path
+    # The first sign-in after the server boots can be slow (bcrypt, cold
+    # caches); waiting longer here stops it failing now and then.
+    assert_no_current_path new_session_path, wait: 10
     wait_for_turbo
   end
 

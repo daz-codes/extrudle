@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Backup drill (PLAN.md Slice 9): proves a Litestream backup restores to a
+# working database, using the same Litestream version as the Docker image.
+#
+#   bin/backup-drill [path/to/database.sqlite3]   # default: storage/development.sqlite3
+#
+# Copies the database, replicates it with Litestream to a folder (standing in
+# for Cloudflare R2), restores it from that folder, then checks the restored
+# copy: SQLite's integrity check, and the same row counts as the original.
+# Needs Docker and sqlite3. Touches nothing outside a temporary folder.
+set -euo pipefail
+
+LITESTREAM_IMAGE="litestream/litestream:0.3.13"
+source_db="${1:-storage/development.sqlite3}"
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+
+echo "→ Copying $source_db"
+sqlite3 "$source_db" "VACUUM INTO '$work/app.sqlite3'"
+sqlite3 "$work/app.sqlite3" "PRAGMA journal_mode=WAL;" > /dev/null
+
+cat > "$work/litestream.yml" <<YML
+dbs:
+  - path: /data/app.sqlite3
+    replicas:
+      - type: file
+        path: /data/replica
+YML
+
+echo "→ Backing up with Litestream"
+docker run --rm -v "$work:/data" "$LITESTREAM_IMAGE" replicate -config /data/litestream.yml -exec "sleep 3" > "$work/replicate.log" 2>&1 \
+  || { cat "$work/replicate.log"; exit 1; }
+
+echo "→ Restoring from the backup"
+docker run --rm -v "$work:/data" "$LITESTREAM_IMAGE" restore -config /data/litestream.yml -o /data/restored.sqlite3 /data/app.sqlite3
+
+echo "→ Checking the restored copy"
+integrity="$(sqlite3 "$work/restored.sqlite3" "PRAGMA integrity_check;")"
+[ "$integrity" = "ok" ] || { echo "✗ Integrity check failed: $integrity"; exit 1; }
+
+failed=0
+for table in users customers product_specs sales_orders schedule_blocks lots stock_movements production_runs reels material_loads delivery_notes; do
+  original="$(sqlite3 "$work/app.sqlite3" "SELECT COUNT(*) FROM $table;")"
+  restored="$(sqlite3 "$work/restored.sqlite3" "SELECT COUNT(*) FROM $table;")"
+  if [ "$original" = "$restored" ]; then
+    printf "  %-18s %6s rows ✓\n" "$table" "$restored"
+  else
+    printf "  %-18s %6s rows, expected %s ✗\n" "$table" "$restored" "$original"
+    failed=1
+  fi
+done
+
+[ "$failed" = 0 ] && echo "✓ Restore drill passed" || { echo "✗ Restore drill failed"; exit 1; }

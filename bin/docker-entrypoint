@@ -1,8 +1,21 @@
 #!/bin/bash -e
 
+DATABASE=/rails/storage/production.sqlite3
+LITESTREAM_CONFIG=/rails/config/litestream.yml
+
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+  if [ -n "$LITESTREAM_BUCKET" ]; then
+    # A new server or a lost volume: bring the database back from the latest backup first.
+    litestream restore -config "$LITESTREAM_CONFIG" -if-db-not-exists -if-replica-exists "$DATABASE"
+  fi
+
   ./bin/rails db:prepare
+
+  if [ -n "$LITESTREAM_BUCKET" ]; then
+    # Run the app under Litestream, which streams every change to R2 and passes signals on.
+    exec litestream replicate -config "$LITESTREAM_CONFIG" -exec "$*"
+  fi
 fi
 
 exec "${@}"

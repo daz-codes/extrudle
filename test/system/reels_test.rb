@@ -43,9 +43,11 @@ class ReelsTest < ApplicationSystemTestCase
     assert_text "Width 701 mm: in tolerance."
     fill_in "Thickness actual", with: ".249"
     click_on "Record thickness"
-    click_on "Materials cleared from the line: yes"
-    click_on "Log, labels and documents removed: yes"
-    click_on "Line cleared for the next micron: yes"
+    # Each answer reloads the page: wait for it before the next click.
+    [ "Materials cleared from the line", "Log, labels and documents removed", "Line cleared for the next micron" ].each do |check|
+      click_on "#{check}: yes"
+      assert_text "#{check}: yes."
+    end
     assert_text "All done"
 
     accept_confirm { click_on "Finish log" }

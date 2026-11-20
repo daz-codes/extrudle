@@ -1,0 +1,18 @@
+<% content_for :title, "Import" %>
+<%= render "master_data/header", title: "Import from spreadsheets" %>
+<p class="mb-6 max-w-3xl text-ink-600">
+  Save each spreadsheet as CSV and upload it here. Every row is checked first and nothing changes until you press Import.
+  An import is all or nothing: if any row has a problem, nothing is saved. Work through them in this order, as each one uses the ones before.
+</p>
+<ol class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <% Import::KINDS.keys.each.with_index(1) do |kind, step| %>
+    <% klass = Import.kind_class(kind) %>
+    <li>
+      <%= link_to import_path(kind), class: "card block h-full p-5" do %>
+        <p class="eyebrow">Step <%= step %></p>
+        <h2 class="section-title mt-1"><%= klass.title %></h2>
+        <p class="mt-2 text-ink-600"><%= klass.description %></p>
+      <% end %>
+    </li>
+  <% end %>
+</ol>

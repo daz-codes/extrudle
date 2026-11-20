@@ -1,0 +1,155 @@
+<% content_for :title, "Help" %>
+<%# Training notes (PLAN.md Slice 9). Keep each job to a few numbered steps, in the words on the screens. %>
+<% office = Current.user.office_access? %>
+<% sections = [
+     [ "start-log", "Start a production log", :floor ],
+     [ "materials", "Load material", :floor ],
+     [ "reels", "Enter reels", :floor ],
+     [ "finish", "Finish a log", :floor ],
+     [ "down", "If Extrudle is down", :floor ],
+     [ "orders", "Take an order", :office ],
+     [ "planner", "Plan the lines", :office ],
+     [ "draft", "Prepare a new plan", :office ],
+     [ "purchasing", "Buy material", :office ],
+     [ "goods-in", "Goods in and stock", :office ],
+     [ "dispatch", "Dispatch and Sage", :office ],
+     [ "admin", "Admin: users, computers, backups and imports", :admin ]
+   ].select { |_, _, who| who == :floor || (who == :office && office) || (who == :admin && Current.user.admin?) } %>
+
+<h1 class="page-title mb-3">Help</h1>
+<p class="mb-6 max-w-3xl text-ink-600">How to do each job in Extrudle. Buttons and links are written <strong>like this</strong>, as they appear on the screen.</p>
+
+<nav aria-label="Help topics" class="card mb-8 p-5">
+  <h2 class="eyebrow mb-3">Topics</h2>
+  <ul class="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+    <% sections.each do |id, title, _| %><li><a href="#<%= id %>" class="link inline-flex min-h-12 items-center"><%= title %></a></li><% end %>
+  </ul>
+</nav>
+
+<div class="space-y-6 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-6 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6">
+  <section id="start-log" class="card scroll-mt-6 p-6">
+    <h2 class="section-title mb-4">Start a production log</h2>
+    <ol>
+      <li>On the <strong>Floor</strong> page, find your line. Under "Next on the plan", press <strong>Start log</strong>.</li>
+      <li>Check the despatch number (it carries on from the last one), and type in the technicians and batch numbers. Press <strong>Start log</strong>.</li>
+      <li>Answer each prestart check <strong>Yes</strong> or <strong>No</strong>.</li>
+      <li>When the line is up to speed, record the width and thickness. Green is in tolerance, red is out. You can record as many readings as you like.</li>
+    </ol>
+  </section>
+
+  <section id="materials" class="card scroll-mt-6 p-6">
+    <h2 class="section-title mb-4">Load material</h2>
+    <ol>
+      <li>Open the log's <strong>Materials</strong> tab (or <strong>Load material</strong> on the Floor page).</li>
+      <li>Scan the bag's label, or type its lot code (like L-2026-000123) and press Enter. It goes on its usual feed; pick another feed first if it's going somewhere else.</li>
+      <li>The bag it replaces is marked empty. If a part-used bag is coming off instead, untick <strong>The bag it replaces is empty</strong> first.</li>
+      <li>If a bag runs out and nothing goes on after it, press <strong>Bag empty</strong> on its feed.</li>
+      <li>Loaded the wrong bag? Press <strong>Remove</strong> next to it straight away.</li>
+    </ol>
+  </section>
+
+  <section id="reels" class="card scroll-mt-6 p-6">
+    <h2 class="section-title mb-4">Enter reels</h2>
+    <ol>
+      <li>Open the log's <strong>Reels</strong> tab (or <strong>Enter reels</strong> on the Floor page).</li>
+      <li>Type the weight and press <strong>Add reel</strong>. The reel number, time, pallet and initials fill themselves in; change the pallet or initials if they're wrong.</li>
+      <li>A reel over the spec's maximum weight shows <strong>Over max</strong>. It's a warning, not an error.</li>
+      <li>To correct a reel, press <strong>Edit</strong>. Only the last reel can be removed. Reels on a pallet that's on a delivery note can't change.</li>
+    </ol>
+  </section>
+
+  <section id="finish" class="card scroll-mt-6 p-6">
+    <h2 class="section-title mb-4">Finish a log</h2>
+    <ol>
+      <li>Open <strong>End of run and finish</strong>.</li>
+      <li>Record the width and thickness on the last reel, and answer the line clearance checks.</li>
+      <li>If an end reading is out of tolerance, add a comment or corrective action.</li>
+      <li>The page lists anything still missing. When it's all done, press <strong>Finish log</strong>. The material used comes off stock and the log can't change after.</li>
+      <li><strong>Print log</strong> gives the log as a PDF, like the paper form.</li>
+    </ol>
+  </section>
+
+  <section id="down" class="card scroll-mt-6 p-6">
+    <h2 class="section-title mb-4">If Extrudle is down</h2>
+    <p>Carry on on paper. Keep a few blank logs by each line, printed from <strong>Production</strong> › <strong>Blank paper log</strong>.</p>
+    <ol>
+      <li>Fill in the blank log as you would the old 5.4.1.2 form: header, checks, bags loaded with reel numbers, and each reel.</li>
+      <li>When Extrudle is back, start the log as normal and type in what's on the paper: checks, bags (with the reel they went on from), then reels.</li>
+      <li>Keep the paper copy with the printed log.</li>
+    </ol>
+  </section>
+
+  <% if office %>
+    <section id="orders" class="card scroll-mt-6 p-6">
+      <h2 class="section-title mb-4">Take an order</h2>
+      <ol>
+        <li><strong>Orders</strong> › <strong>New order</strong>: choose the customer, their PO reference and the required date. Tick urgent if it is.</li>
+        <li>Add a line for each spec, with the quantity in kg or tonnes and the price per tonne (Sage needs it for the invoice).</li>
+        <li>The order shows on the planner under "Orders to plan". It goes <strong>scheduled</strong> when it's all planned, <strong>in production</strong> when a log starts, <strong>dispatched</strong> when it's all gone, and <strong>invoiced</strong> once it's in Sage.</li>
+      </ol>
+    </section>
+
+    <section id="planner" class="card scroll-mt-6 p-6">
+      <h2 class="section-title mb-4">Plan the lines</h2>
+      <ol>
+        <li>Open <strong>Planner</strong> and choose the line.</li>
+        <li>Under "Orders to plan", press <strong>Add to D1</strong> (or D2). Change the kg to split an order across lines or jobs.</li>
+        <li>Use ▲ ▼ to change the order. Times work themselves out from each spec's line rate, and changeovers go in between different specs.</li>
+        <li>Add maintenance, a changeover or "no orders" from <strong>Add a block</strong>. Tick <strong>Fix at a time</strong> for something booked, like an engineer visit; the queue flows round it.</li>
+        <li>Late jobs show in red. <strong>Print plan</strong> gives the 5.4.1.1 sheet.</li>
+      </ol>
+    </section>
+
+    <section id="draft" class="card scroll-mt-6 p-6">
+      <h2 class="section-title mb-4">Prepare a new plan</h2>
+      <p>To rework the plan without the floor seeing half-done changes, work on a draft.</p>
+      <ol>
+        <li>On the planner, press <strong>Start a new plan</strong>. The floor keeps running the live plan.</li>
+        <li>Change the draft as much as you like. <strong>View live plan</strong> shows what the floor sees.</li>
+        <li>Press <strong>Review and publish</strong> to see what changes and what's happened meanwhile, then <strong>Publish the new plan</strong>. Or <strong>Discard</strong> to throw it away.</li>
+      </ol>
+    </section>
+
+    <section id="purchasing" class="card scroll-mt-6 p-6">
+      <h2 class="section-title mb-4">Buy material</h2>
+      <ol>
+        <li><strong>Purchasing</strong> › <strong>New purchase order</strong>: choose the supplier, then add lines of material, quantity and price per tonne.</li>
+        <li>Press <strong>Download PDF</strong> and email it to the supplier, then press <strong>Mark as sent</strong>.</li>
+        <li>To change a sent PO, press <strong>Back to draft</strong>, change it and send it again.</li>
+      </ol>
+    </section>
+
+    <section id="goods-in" class="card scroll-mt-6 p-6">
+      <h2 class="section-title mb-4">Goods in and stock</h2>
+      <ol>
+        <li>When a delivery arrives, open its PO and press <strong>Receive goods</strong>. Enter the total weight from the delivery note, the number of bags, the supplier's batch and the first bag number.</li>
+        <li>Print the labels and stick one on each bag. The QR code is the lot code the floor scans.</li>
+        <li>Stock without a PO (regrind, or the go-live count) goes in from <strong>Stock</strong> › <strong>Add stock without a PO</strong>.</li>
+        <li>Move bags between on site and storage from the lot's page. Reweighed a bag? Use <strong>Adjust weight</strong> with a reason.</li>
+        <li><strong>Stock</strong> › <strong>Bags on the lines</strong> shows what's feeding each line, empty bags waiting for a log to finish, and each bag's variance.</li>
+      </ol>
+    </section>
+
+    <section id="dispatch" class="card scroll-mt-6 p-6">
+      <h2 class="section-title mb-4">Dispatch and Sage</h2>
+      <ol>
+        <li><strong>Dispatch</strong> lists orders with finished pallets. Press <strong>New delivery note</strong>, untick any pallets not going, and add the haulier and vehicle.</li>
+        <li><strong>Print delivery note</strong> for the driver. When the lorry leaves, press <strong>Mark dispatched</strong>.</li>
+        <li>A short order is closed with <strong>Mark dispatched</strong> on the order itself.</li>
+        <li>Once a day or week, open <strong>Sage export</strong>, press <strong>Export</strong>, download the CSV and import it into Sage 50 as Audit Trail Transactions. A note missing a Sage account or a price waits until it's fixed.</li>
+      </ol>
+    </section>
+  <% end %>
+
+  <% if Current.user.admin? %>
+    <section id="admin" class="card scroll-mt-6 p-6">
+      <h2 class="section-title mb-4">Admin: users, computers, backups and imports</h2>
+      <ul>
+        <li><strong>Users</strong>: add people as Admin, Office or Floor. Deactivate someone who leaves; it signs them out everywhere.</li>
+        <li><strong>Users</strong> › <strong>Computers</strong>: only approved computers can use Extrudle. Sign in on a new computer (with an account that can sign in from any computer), then <strong>Approve this computer</strong>. <strong>Revoke</strong> signs a computer out at once.</li>
+        <li><strong>Users</strong> › <strong>Backups</strong>: every change is backed up within seconds, and each night the backup is restored and checked. If the last check failed, tell whoever looks after the server.</li>
+        <li><strong>Master data</strong> › <strong>Import</strong>: bring in spreadsheets at go-live, in the order shown. Each file is checked first, and nothing is saved unless every row is fine.</li>
+      </ul>
+    </section>
+  <% end %>
+</div>

@@ -67,6 +67,8 @@ group :test do
   gem "selenium-webdriver"
 end
 
+# CSV for spreadsheet imports and the Sage export: Ruby's own library (a bundled gem since Ruby 3.4).
+gem "csv", "~> 3.3"
 gem "prawn", "~> 2.4"
 gem "prawn-table", "~> 0.2.2"
 

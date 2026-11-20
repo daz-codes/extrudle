@@ -20,6 +20,19 @@ RUN apt-get update -qq && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
+# Litestream streams the database to Cloudflare R2 (config/litestream.yml, bin/docker-entrypoint).
+# Same version as bin/backup-drill.
+# The download is checked against pinned SHA-256s (update them with the version).
+ARG LITESTREAM_VERSION=0.3.13
+ARG LITESTREAM_SHA256_AMD64=eb75a3de5cab03875cdae9f5f539e6aedadd66607003d9b1e7a9077948818ba0
+ARG LITESTREAM_SHA256_ARM64=9585f5a508516bd66af2b2376bab4de256a5ef8e2b73ec760559e679628f2d59
+RUN arch="$(dpkg --print-architecture)" && \
+    case "$arch" in amd64) sha="$LITESTREAM_SHA256_AMD64" ;; arm64) sha="$LITESTREAM_SHA256_ARM64" ;; *) echo "No Litestream checksum for $arch" >&2; exit 1 ;; esac && \
+    curl -fsSL -o /tmp/litestream.tar.gz "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-v${LITESTREAM_VERSION}-linux-${arch}.tar.gz" && \
+    echo "${sha}  /tmp/litestream.tar.gz" | sha256sum -c - && \
+    tar -xzf /tmp/litestream.tar.gz -C /usr/local/bin litestream && \
+    rm /tmp/litestream.tar.gz
+
 # Set production environment variables and enable jemalloc for reduced memory usage and latency.
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \

@@ -1,0 +1,63 @@
+<% content_for :title, "Check #{@kind_class.title.downcase}" %>
+<% import = @import %>
+<%= render "master_data/tabs" %>
+<p class="mb-2"><%= link_to "← Import #{@kind_class.title.downcase}", import_path(@kind), class: "link text-sm" %></p>
+<h1 class="page-title mb-6">Check <%= @kind_class.title.downcase %></h1>
+
+<% if import.problems.any? %>
+  <div role="alert" class="mb-6 rounded-[11px] border border-bad-600/30 bg-bad-50 p-4 text-bad-700">
+    <p class="font-semibold">This file can't be imported:</p>
+    <ul class="mt-1 list-disc pl-6"><% import.problems.each do |problem| %><li><%= problem %></li><% end %></ul>
+  </div>
+<% end %>
+<% if import.warnings.any? %>
+  <div class="mb-6 rounded-[11px] border border-lemon-400 bg-lemon-100 p-4">
+    <ul class="list-disc pl-6"><% import.warnings.each do |warning| %><li><%= warning %></li><% end %></ul>
+  </div>
+<% end %>
+
+<% if import.results.any? %>
+  <% failed = import.results.reject(&:ok?) %>
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <p class="text-lg">
+      <%= pluralize(import.results.size, "row") %>:
+      <%= import.counts.map { |action, count| "#{count} #{action == :failed ? "with problems" : action}" }.to_sentence %>.
+    </p>
+    <% if failed.empty? %>
+      <%= form_with url: run_import_path(@kind) do %>
+        <%= hidden_field_tag :csv, @csv %>
+        <%= submit_tag "Import #{pluralize(import.results.size, "row")}", class: "btn btn-accent", data: { turbo_confirm: "Import #{pluralize(import.results.size, "row")}?" } %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <section class="card overflow-x-auto" aria-labelledby="rows-heading">
+    <h2 id="rows-heading" class="section-title px-5 pt-5">Rows</h2>
+    <table class="data-table mt-3 w-full text-left">
+      <thead>
+        <tr>
+          <th scope="col" class="px-4 py-3 text-right">Line</th>
+          <th scope="col" class="px-4 py-3">Row</th>
+          <th scope="col" class="px-4 py-3">Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% (failed + import.results.select(&:ok?)).each do |result| %>
+          <tr id="line_<%= result.line %>" class="<%= "bg-bad-50" unless result.ok? %>">
+            <td class="px-4 py-3 text-right font-mono tabular-nums"><%= result.line %></td>
+            <td class="px-4 py-3 font-semibold"><%= result.label || "—" %></td>
+            <td class="px-4 py-3">
+              <% if result.ok? %>
+                <span class="badge <%= result.action == :unchanged ? "badge-quiet" : "badge-lime" %>"><%= result.action.to_s.humanize %></span>
+              <% else %>
+                <span class="font-medium text-bad-700"><%= result.errors.to_sentence %></span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+<% end %>
+
+<p class="mt-6"><%= link_to "Upload a different file", import_path(@kind), class: "btn btn-secondary" %></p>

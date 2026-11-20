@@ -37,6 +37,11 @@ registry:
 env:
   secret:
     - RAILS_MASTER_KEY
+<% unless preview %>
+    # Litestream backups to Cloudflare R2 (docs/backups.md). The real deploy only.
+    - LITESTREAM_ACCESS_KEY_ID
+    - LITESTREAM_SECRET_ACCESS_KEY
+<% end %>
   clear:
     # The public host name: links in emails, and the only Host header the app answers.
     APP_HOST: <%= host %>
@@ -46,6 +51,11 @@ env:
     DEMO_SEEDS: <%= ENV.fetch("DEMO_SEEDS", preview.to_s) %>
     # Only approved computers can use the real system; the preview stays open to show people (PLAN.md §11 Q58).
     REQUIRE_APPROVED_COMPUTERS: <%= ENV.fetch("REQUIRE_APPROVED_COMPUTERS", (!preview).to_s) %>
+<% unless preview %>
+    # Litestream backups (docs/backups.md): the R2 bucket and its S3 endpoint.
+    LITESTREAM_BUCKET: <%= ENV.fetch("LITESTREAM_BUCKET", "extrudle-backups") %>
+    LITESTREAM_ENDPOINT: <%= ENV.fetch("LITESTREAM_ENDPOINT") { raise "Set LITESTREAM_ENDPOINT (https://<account>.r2.cloudflarestorage.com) for the real deploy" } %>
+<% end %>
 
 aliases:
   console: app exec --interactive --reuse "bin/rails console"
@@ -60,8 +70,8 @@ logging:
     max-size: 10m
     max-file: 5
 
-# SQLite databases (app, queue, cache, cable). Back this volume up off the server
-# for the real deploy (Litestream to R2, see CLAUDE.md).
+# SQLite databases (app, queue, cache, cable). On the real deploy Litestream
+# streams the app database to Cloudflare R2 (docs/backups.md).
 volumes:
   - "extrudle_storage:/rails/storage"
 

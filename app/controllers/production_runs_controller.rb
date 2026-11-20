@@ -20,6 +20,12 @@ class ProductionRunsController < ApplicationController
     end
   end
 
+  # A blank form 5.4.1.2 to fill in by hand if Extrudle is down.
+  def blank
+    pdf = BlankProductionLogPdf.new(line: Line.find_by(id: params[:line]))
+    send_data pdf.render, type: "application/pdf", disposition: "inline", filename: pdf.filename
+  end
+
   def new
     @start = ProductionRun::Start.new(schedule_block: ScheduleBlock.live.jobs.find(params[:block]))
   end
