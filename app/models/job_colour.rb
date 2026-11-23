@@ -10,7 +10,7 @@ module JobColour
   DEFAULT = "lime"
 
   # Bars dark enough to need white text.
-  DARK = %w[ cherry raspberry blackcurrant blueberry chocolate ].freeze
+  DARK = %w[ cherry blackcurrant blueberry chocolate ].freeze
 
   def self.for(block)
     block.colour.presence || block.sales_order&.customer&.colour.presence || DEFAULT

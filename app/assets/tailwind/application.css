@@ -70,8 +70,8 @@
   --color-banana: #fbe7a1;
   --color-mango: #ffbe3d;
   --color-mandarin: #ff8c33;
-  --color-cherry: #c8102e;
-  --color-raspberry: #b8255f;
+  --color-cherry: #c84756;
+  --color-raspberry: #c76498;
   --color-blackcurrant: #4b1d52;
   --color-blueberry: #3f51b5;
   --color-pistachio: #b5d99c;
@@ -376,13 +376,17 @@
   .job-colour-mandarin { @apply bg-mandarin text-ink-900; }
   .job-colour-pistachio { @apply bg-pistachio text-ink-900; }
   .job-colour-cherry { @apply bg-cherry text-white; }
-  .job-colour-raspberry { @apply bg-raspberry text-white; }
+  .job-colour-raspberry { @apply bg-raspberry text-ink-900; }
   .job-colour-blackcurrant { @apply bg-blackcurrant text-white; }
   .job-colour-blueberry { @apply bg-blueberry text-white; }
   .job-colour-chocolate { @apply bg-chocolate text-white; }
-  /* Text inside dark bars stays fully opaque so it keeps its contrast. */
-  :is(.job-colour-cherry, .job-colour-raspberry, .job-colour-blackcurrant, .job-colour-blueberry, .job-colour-chocolate) .opacity-75 {
+  /* Faded text inside the darker bars is less faded, so it keeps its contrast.
+     Cherry (white 4.7:1) and raspberry (ink 4.8:1) only just pass, so theirs isn't faded at all. */
+  :is(.job-colour-blackcurrant, .job-colour-blueberry, .job-colour-chocolate) .opacity-75 {
     opacity: 0.9;
+  }
+  :is(.job-colour-cherry, .job-colour-raspberry) .opacity-75 {
+    opacity: 1;
   }
 
   /* Colour picker: a swatch on each choice. */
