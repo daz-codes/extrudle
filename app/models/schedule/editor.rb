@@ -117,9 +117,9 @@ class Schedule::Editor
   # Applies any mix of changes to one block in a single edit (one reflow).
   # Only the keywords given are changed:
   #
-  #   editor.update(job, planned_g: 2_000_000, locked: true, starts_at: time, notes: "Trial")
+  #   editor.update(job, planned_g: 2_000_000, locked: true, starts_at: time, notes: "Trial", colour: "mango")
   def update(block, **changes)
-    unknown = changes.keys - %i[ planned_g duration_minutes locked starts_at notes ]
+    unknown = changes.keys - %i[ planned_g duration_minutes locked starts_at notes colour ]
     raise ArgumentError, "unknown changes: #{unknown.join(", ")}" if unknown.any?
 
     edit do |blocks|
@@ -130,6 +130,7 @@ class Schedule::Editor
       apply_duration(block, changes[:duration_minutes]) if changes.key?(:duration_minutes)
       apply_lock(blocks, block, changes[:locked], changes[:starts_at]) if changes.key?(:locked) || changes.key?(:starts_at)
       block.notes = changes[:notes].presence if changes.key?(:notes)
+      block.colour = changes[:colour] if changes.key?(:colour)
     end
   end
 

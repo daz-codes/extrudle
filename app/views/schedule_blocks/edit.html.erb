@@ -58,6 +58,13 @@
       <%= text_area_tag :notes, block.notes, rows: 3, class: "field-input py-2", disabled: order_locked %>
     </div>
 
+    <% if block.job? && !order_locked %>
+      <% customer = block.sales_order.customer %>
+      <%= colour_picker :colour, block.colour, legend: "Colour on the planner",
+            default: { name: customer.colour, label: "#{customer.name} (#{JobColour.label(customer.colour).downcase})" },
+            hint: "Set a default for every #{customer.name} job on the customer page." %>
+    <% end %>
+
     <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">
       <%= form.submit "Save", class: "btn btn-primary" unless order_locked %>
       <%= link_to "Cancel", planner_path_for(@line, week), class: "btn btn-secondary" %>

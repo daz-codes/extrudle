@@ -41,6 +41,6 @@ class CustomersController < ApplicationController
     end
 
     def customer_params
-      params.expect(customer: %i[ name contact_name email phone address currency notes active sage_account_ref sage_tax_code ])
+      params.expect(customer: %i[ name contact_name email phone address currency notes active sage_account_ref sage_tax_code colour ])
     end
 end

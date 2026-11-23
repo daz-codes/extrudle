@@ -92,6 +92,16 @@ class Schedule::DraftPlanTest < ActiveSupport::TestCase
     assert_equal before, live_timeline
   end
 
+  test "a job's colour is drafted and published like any other change" do
+    draft = PlanDraft.start!
+    draft_editor(draft).update(draft_copy(draft, @first), colour: "raspberry")
+    assert_nil @first.reload.colour, "the live plan waits for publish"
+    assert_equal 1, Schedule::Publish.new(draft).changes.find { _1.line == @d1 }.changed
+
+    Schedule::Publish.new(draft).call
+    assert_equal "raspberry", @first.reload.colour
+  end
+
   test "a started job can't be moved or removed in the draft, even if it started after the draft began" do
     draft = PlanDraft.start!
     start_log(@first)

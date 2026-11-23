@@ -21,6 +21,12 @@
            "Sage account" => @customer.sage_account_ref, "Sage VAT code" => @customer.sage_tax_code }.each do |label, value| %>
         <div class="flex justify-between gap-4"><dt class="text-ink-600"><%= label %></dt><dd class="text-right font-medium"><%= value.presence || "—" %></dd></div>
       <% end %>
+      <div class="flex justify-between gap-4">
+        <dt class="text-ink-600">Planner colour</dt>
+        <dd class="flex items-center gap-2 font-medium">
+          <span class="colour-swatch size-4 <%= JobColour.css_class(@customer.colour) %>"></span><%= JobColour.label(@customer.colour) %>
+        </dd>
+      </div>
     </dl>
     <% if @customer.address.present? %>
       <h3 class="mt-4 text-sm font-semibold text-ink-600">Address</h3>

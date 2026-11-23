@@ -14,6 +14,9 @@
     <%= form.radio_row :sage_tax_code, SageExport.tax_codes, label: "Sage VAT code",
           labels: { "T0" => "T0 zero rated", "T1" => "T1 standard 20%", "T2" => "T2 exempt", "T4" => "T4 EU sales" } %>
   </div>
+  <%= colour_picker "customer[colour]", customer.colour,
+        hint: "Jobs for this customer show in this colour on the planner. Each job can change it." %>
+  <% if customer.errors[:colour].any? %><p class="text-sm font-medium text-bad-700"><%= customer.errors.full_messages_for(:colour).to_sentence %></p><% end %>
   <%= form.text_area_row :notes %>
   <%= form.check_row :active, hint: "Inactive customers are hidden from new orders." %>
   <%= render "master_data/form_actions", form: form, cancel_path: customer.persisted? ? customer : customers_path %>

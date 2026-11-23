@@ -16,7 +16,7 @@
 #   publish.call
 class Schedule::Publish
   COPIED = (ScheduleBlock.column_names - %w[ id plan_draft_id source_block_id created_at updated_at ]).freeze
-  COMPARED = %w[ kind starts_at duration_minutes planned_g locked notes ].freeze
+  COMPARED = %w[ kind starts_at duration_minutes planned_g locked notes colour ].freeze
 
   LineChange = Data.define(:line, :added, :removed, :changed) do
     def any? = (added + removed + changed).positive?

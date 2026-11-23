@@ -1,15 +1,43 @@
 module PlannerHelper
-  # Timeline colours by kind. Urgent jobs are lemon; late ones get a red edge.
+  # Timeline colours by kind. Jobs use JobColour (their own colour or their
+  # customer's); urgent ones get a lemon stripe and late ones a red edge.
   def block_classes(block, warnings = [])
     base = case block.kind
-    when "job" then block.sales_order&.urgent? ? "bg-lemon-300 text-ink-900" : "bg-lime-200 text-ink-900"
+    when "job" then JobColour.css_class(JobColour.for(block))
     when "changeover" then "bg-ink-200 text-ink-700 block-hatched"
     when "planned_maintenance" then "bg-ink-800 text-white"
     when "unplanned_maintenance" then "bg-bad-50 text-bad-800 ring-1 ring-inset ring-bad-600"
     else "bg-surface text-ink-500 ring-1 ring-inset ring-ink-300 block-hatched"
     end
-    late = warnings.any? { _1.code == :late } ? "ring-2 ring-inset ring-bad-600" : nil
-    [ base, late ].compact.join(" ")
+    late = warnings.any? { _1.code == :late } ? "timeline-late" : nil
+    [ base, urgent_stripe(block), late ].compact.join(" ")
+  end
+
+  # Urgent jobs get a lemon stripe down the left edge, whatever their colour (Q73).
+  def urgent_stripe(block)
+    "timeline-urgent pl-3" if block.job? && block.sales_order&.urgent?
+  end
+
+  # Tappable colour swatches for a form field. With default:, the first choice
+  # ("") clears the colour so the bar falls back to it (a job's customer colour).
+  #
+  #   colour_picker("customer[colour]", customer.colour)
+  #   colour_picker(:colour, job.colour, default: { name: "mango", label: "Castleton (mango)" })
+  def colour_picker(field_name, selected, default: nil, legend: "Planner colour", hint: nil)
+    choice = ->(value, swatch, text) do
+      tag.label(class: "choice") do
+        radio_button_tag(field_name, value, selected.to_s == value, id: nil, class: "size-5 accent-ink-900") +
+          tag.span(class: "colour-swatch #{JobColour.css_class(swatch)}") + tag.span(text)
+      end
+    end
+    tag.fieldset do
+      tag.legend(legend, class: "field-label") +
+        tag.div(class: "flex flex-wrap gap-2") do
+          (default ? choice.("", default[:name], default[:label]) : "".html_safe) +
+            safe_join(JobColour::NAMES.map { choice.(_1, _1, JobColour.label(_1)) })
+        end +
+        (hint ? tag.p(hint, class: "field-hint") : "".html_safe)
+    end
   end
 
   def block_title(block)

@@ -268,6 +268,21 @@ if ScheduleBlock.none?
   editors[d2].add(ScheduleBlock.new(kind: "no_orders", duration_minutes: 480, notes: "Nothing to run yet"))
 end
 
+# Planner colours (JobColour) for some customers; the rest keep lime. Done once,
+# while every customer is still lime, so a planner's own choices stick.
+if Customer.where.not(colour: JobColour::DEFAULT).none?
+  { "Brightform Packaging Ltd" => "blueberry", "Castleton Thermoforming" => "mango", "Delta Blister Solutions" => "cherry",
+    "Fenwick Medical Trays" => "pistachio", "Greenway Punnets" => "mandarin", "Kestrel Food Packaging" => "raspberry",
+    "Lumen Cosmetics Packaging" => "blackcurrant", "Northgate Clamshells" => "banana",
+    "Pennine Industrial Trays" => "chocolate" }.each { |name, colour| customers[name].update!(colour:) }
+end
+
+# One job with its own colour, over its customer's (seeded once, so a planner's change sticks).
+# Not while a plan is being drafted: publishing it would put the draft's colour back.
+if PlanDraft.none? && ScheduleBlock.live.job.where.not(colour: nil).none? && (job = ScheduleBlock.live.job.order(:starts_at).second)
+  Schedule::Editor.new(job.line).update(job, colour: "raspberry")
+end
+
 # --- Production log ----------------------------------------------------------
 # D1's first job is running as despatch 731 (carrying on from the paper logs),
 # with the prestart checks done and a couple of width and thickness readings.

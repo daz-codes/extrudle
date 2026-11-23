@@ -1,0 +1,51 @@
+require "test_helper"
+
+class JobColourTest < ActiveSupport::TestCase
+  include ScheduleTestHelper
+
+  setup do
+    travel_to at(MONDAY_6AM)
+    editor = Schedule::Editor.new(lines(:d1))
+    @job = editor.add_job(sales_order_lines(:bf_open_700), starts_at: at(MONDAY_6AM))
+    @urgent = editor.add_job(sales_order_lines(:bf_overdue_700))
+  end
+
+  test "customers are lime unless chosen, urgent or not" do
+    assert_equal [ "lime", "lime" ], [ JobColour.for(@job), JobColour.for(@urgent) ]
+  end
+
+  test "the customer's colour is the default, and a job's own colour wins" do
+    customers(:brightform).update!(colour: "blueberry")
+    assert_equal [ "blueberry", "blueberry" ], [ JobColour.for(@job.reload), JobColour.for(@urgent.reload) ]
+
+    @job.update!(colour: "mango")
+    assert_equal "mango", JobColour.for(@job)
+  end
+
+  test "colours must be on the list, blank means none, and only jobs have one" do
+    customer = customers(:brightform)
+    customer.colour = "puce"
+    assert_not customer.valid?
+    customer.colour = ""
+    assert_not customer.valid?, "a customer always has a colour"
+    assert_equal "lime", Customer.create!(name: "New Trays Ltd").colour
+
+    gap = Schedule::Editor.new(lines(:d2)).add(block("no_orders", 60), starts_at: at(MONDAY_6AM))
+    gap.colour = "cherry"
+    assert_not gap.valid?
+  end
+
+  test "urgent jobs get a lemon stripe whatever their colour" do
+    helpers = ApplicationController.helpers
+    assert_match "timeline-urgent", helpers.block_classes(@urgent)
+    assert_no_match "timeline-urgent", helpers.block_classes(@job), "only urgent jobs"
+
+    @urgent.update!(colour: "lemon")
+    assert_match "timeline-urgent", helpers.block_classes(@urgent)
+  end
+
+  test "every colour has a style" do
+    css = Rails.root.join("app/assets/tailwind/application.css").read
+    JobColour::NAMES.each { assert_includes css, ".#{JobColour.css_class(_1)} {" }
+  end
+end

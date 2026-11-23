@@ -65,6 +65,18 @@
   --color-lime-900: #414f12;
   --color-lime-950: #222c04;
 
+  /* Planner job colours (JobColour::NAMES), as well as lime-200 and lemon-300 (lime is the default).
+     Light ones carry ink-900 text and dark ones white, all at least 4.5:1. */
+  --color-banana: #fbe7a1;
+  --color-mango: #ffbe3d;
+  --color-mandarin: #ff8c33;
+  --color-cherry: #c8102e;
+  --color-raspberry: #b8255f;
+  --color-blackcurrant: #4b1d52;
+  --color-blueberry: #3f51b5;
+  --color-pistachio: #b5d99c;
+  --color-chocolate: #6b4226;
+
   --color-lemon-50: #fefff0;
   --color-lemon-100: #fcffd1;
   --color-lemon-200: #f9ffa6;
@@ -344,6 +356,40 @@
     content: "";
     @apply absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-lime-300 ring-2 ring-ink-900;
   }
+  /* Urgent: a lemon stripe down the left edge, with a dark edge so it shows
+     on lemon and other light colours too. Inset
+     3px so the late ring still shows round it (PLAN.md §11 Q73). */
+  .timeline-urgent::before {
+    content: "";
+    @apply pointer-events-none absolute inset-y-[3px] left-[3px] w-1.5 rounded-sm bg-lemon-300 ring-1 ring-ink-900/60;
+  }
+  /* Late: a red ring with a white edge inside, so it shows on red bars too. */
+  .timeline-late {
+    box-shadow: inset 0 0 0 2px var(--color-bad-600), inset 0 0 0 3px var(--color-surface);
+  }
+
+  /* Job colours (JobColour). Bars and the swatches in the colour picker share them. */
+  .job-colour-lime { @apply bg-lime-200 text-ink-900; }
+  .job-colour-lemon { @apply bg-lemon-300 text-ink-900; }
+  .job-colour-banana { @apply bg-banana text-ink-900; }
+  .job-colour-mango { @apply bg-mango text-ink-900; }
+  .job-colour-mandarin { @apply bg-mandarin text-ink-900; }
+  .job-colour-pistachio { @apply bg-pistachio text-ink-900; }
+  .job-colour-cherry { @apply bg-cherry text-white; }
+  .job-colour-raspberry { @apply bg-raspberry text-white; }
+  .job-colour-blackcurrant { @apply bg-blackcurrant text-white; }
+  .job-colour-blueberry { @apply bg-blueberry text-white; }
+  .job-colour-chocolate { @apply bg-chocolate text-white; }
+  /* Text inside dark bars stays fully opaque so it keeps its contrast. */
+  :is(.job-colour-cherry, .job-colour-raspberry, .job-colour-blackcurrant, .job-colour-blueberry, .job-colour-chocolate) .opacity-75 {
+    opacity: 0.9;
+  }
+
+  /* Colour picker: a swatch on each choice. */
+  .colour-swatch {
+    @apply inline-flex size-6 shrink-0 rounded-md ring-1 ring-ink-900/15 ring-inset;
+  }
+
   .block-hatched {
     background-image: repeating-linear-gradient(135deg, rgb(24 24 27 / 0.07) 0 5px, transparent 5px 10px);
   }
