@@ -35,6 +35,18 @@ class JobColourTest < ActiveSupport::TestCase
     assert_not gap.valid?
   end
 
+  test "a coloured urgent job gets a lemon stripe; a lemon one doesn't need it" do
+    helpers = ApplicationController.helpers
+    assert_no_match "timeline-urgent", helpers.block_classes(@urgent)
+
+    customers(:brightform).update!(colour: "cherry")
+    assert_match "timeline-urgent", helpers.block_classes(@urgent.reload)
+    assert_no_match "timeline-urgent", helpers.block_classes(@job.reload), "only urgent jobs"
+
+    @urgent.update!(colour: "lemon")
+    assert_no_match "timeline-urgent", helpers.block_classes(@urgent)
+  end
+
   test "every colour has a style" do
     css = Rails.root.join("app/assets/tailwind/application.css").read
     JobColour::NAMES.each { assert_includes css, ".#{JobColour.css_class(_1)} {" }

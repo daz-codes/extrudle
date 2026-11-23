@@ -10,7 +10,12 @@ module PlannerHelper
     else "bg-surface text-ink-500 ring-1 ring-inset ring-ink-300 block-hatched"
     end
     late = warnings.any? { _1.code == :late } ? "timeline-late" : nil
-    [ base, late ].compact.join(" ")
+    [ base, urgent_stripe(block), late ].compact.join(" ")
+  end
+
+  # A coloured urgent job isn't lemon, so it gets a lemon stripe instead (Q73).
+  def urgent_stripe(block)
+    "timeline-urgent pl-3" if block.job? && block.sales_order&.urgent? && JobColour.for(block) != "lemon"
   end
 
   # Tappable colour swatches for a form field. The first choice ("") clears the

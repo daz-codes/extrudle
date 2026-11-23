@@ -4,6 +4,8 @@
     <ul class="flex flex-wrap gap-3 text-xs text-ink-600" aria-label="Key">
       <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm job-colour-lime"></span>Job (no colour set)</li>
       <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm job-colour-lemon"></span>Urgent job</li>
+      <li class="flex items-center gap-1.5"><span class="relative size-3 rounded-sm job-colour-blueberry"><span class="absolute inset-y-0 left-0 w-1 rounded-l-sm bg-lemon-300"></span></span>Urgent job with a colour</li>
+      <li class="flex items-center gap-1.5"><span class="flex gap-0.5"><% %w[ mango cherry pistachio ].each do |name| %><span class="size-3 rounded-sm <%= JobColour.css_class(name) %>"></span><% end %></span>Customer or job colour</li>
       <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-surface timeline-late"></span>Late</li>
       <li class="flex items-center gap-1.5"><span class="block-hatched size-3 rounded-sm bg-ink-200"></span>Changeover</li>
       <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-ink-800"></span>Maintenance</li>
@@ -40,7 +42,7 @@
               <% if segment.span >= 3 || block.locked? %>
                 <span class="flex items-center gap-1 truncate font-semibold">
                   <%= lock_icon if block.locked? %>
-                  <% if block.job? && block.sales_order.urgent? && segment.span >= 6 %><span class="rounded-sm bg-ink-900 px-1 text-[0.6rem] tracking-wide text-lemon-300 uppercase">Urgent</span><% end %>
+                  <% if block.job? && block.sales_order.urgent? && segment.span >= 6 %><span class="rounded-sm bg-ink-900 px-1 text-[0.6rem] tracking-wide text-lemon-300 uppercase ring-1 ring-lemon-300">Urgent</span><% end %>
                   <% if segment.span >= 3 %><%= block_title(block) %><% end %>
                 </span>
               <% end %>

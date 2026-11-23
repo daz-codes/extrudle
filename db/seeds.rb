@@ -274,7 +274,8 @@ if ScheduleBlock.none?
 end
 
 # One job with its own colour, over its customer's (seeded once, so a planner's change sticks).
-if ScheduleBlock.live.job.where.not(colour: nil).none? && (job = ScheduleBlock.live.job.order(:starts_at).second)
+# Not while a plan is being drafted: publishing it would put the draft's colour back.
+if PlanDraft.none? && ScheduleBlock.live.job.where.not(colour: nil).none? && (job = ScheduleBlock.live.job.order(:starts_at).second)
   Schedule::Editor.new(job.line).update(job, colour: "raspberry")
 end
 

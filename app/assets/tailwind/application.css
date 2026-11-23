@@ -356,6 +356,13 @@
     content: "";
     @apply absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-lime-300 ring-2 ring-ink-900;
   }
+  /* Urgent with a customer or job colour (so not lemon): a lemon stripe down
+     the left edge, with a dark edge so it shows on light colours too. Inset
+     3px so the late ring still shows round it (PLAN.md §11 Q73). */
+  .timeline-urgent::before {
+    content: "";
+    @apply pointer-events-none absolute inset-y-[3px] left-[3px] w-1.5 rounded-sm bg-lemon-300 ring-1 ring-ink-900/60;
+  }
   /* Late: a red ring with a white edge inside, so it shows on red bars too. */
   .timeline-late {
     box-shadow: inset 0 0 0 2px var(--color-bad-600), inset 0 0 0 3px var(--color-surface);
