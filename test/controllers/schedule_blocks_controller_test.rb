@@ -183,4 +183,23 @@ class ScheduleBlocksControllerTest < ActionDispatch::IntegrationTest
     assert_select "h3", text: "Warnings this week"
     assert_select "h3 + ul a", text: /No rate.*so 30m is an estimate/m
   end
+
+  test "a job's colour: the customer's by default, its own if picked, and back again" do
+    customers(:brightform).update!(colour: "cherry")
+    job = Schedule::Editor.new(@d1).add_job(@order_line, planned_g: 1_900_000, starts_at: at(MONDAY_6AM))
+    get planner_path(line: "D1", week: "2026-11-16")
+    assert_select ".timeline-block.job-colour-cherry"
+
+    get edit_schedule_block_path(job)
+    assert_select "input[type=radio][name=colour][value=''][checked]"
+    assert_select "label", text: /Brightform Packaging Ltd \(cherry\)/
+
+    patch schedule_block_path(job), params: { colour: "pistachio", planned_kg: "1900" }
+    assert_equal "pistachio", job.reload.colour
+    get planner_path(line: "D1", week: "2026-11-16")
+    assert_select ".timeline-block.job-colour-pistachio"
+
+    patch schedule_block_path(job), params: { colour: "", planned_kg: "1900" }
+    assert_nil job.reload.colour
+  end
 end

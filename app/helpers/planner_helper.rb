@@ -1,15 +1,37 @@
 module PlannerHelper
-  # Timeline colours by kind. Urgent jobs are lemon; late ones get a red edge.
+  # Timeline colours by kind. Jobs use JobColour (their own colour, the
+  # customer's, or lime / lemon if urgent); late ones get a red edge.
   def block_classes(block, warnings = [])
     base = case block.kind
-    when "job" then block.sales_order&.urgent? ? "bg-lemon-300 text-ink-900" : "bg-lime-200 text-ink-900"
+    when "job" then JobColour.css_class(JobColour.for(block))
     when "changeover" then "bg-ink-200 text-ink-700 block-hatched"
     when "planned_maintenance" then "bg-ink-800 text-white"
     when "unplanned_maintenance" then "bg-bad-50 text-bad-800 ring-1 ring-inset ring-bad-600"
     else "bg-surface text-ink-500 ring-1 ring-inset ring-ink-300 block-hatched"
     end
-    late = warnings.any? { _1.code == :late } ? "ring-2 ring-inset ring-bad-600" : nil
+    late = warnings.any? { _1.code == :late } ? "timeline-late" : nil
     [ base, late ].compact.join(" ")
+  end
+
+  # Tappable colour swatches for a form field. The first choice ("") clears the
+  # colour, so the bar falls back to default_name (the customer's or lime).
+  #
+  #   colour_picker("customer[colour]", customer.colour, default_label: "None (lime, lemon if urgent)")
+  def colour_picker(field_name, selected, default_label:, default_name: "lime", legend: "Planner colour", hint: nil)
+    choice = ->(value, swatch, text) do
+      tag.label(class: "choice") do
+        radio_button_tag(field_name, value, selected.to_s == value, id: nil, class: "size-5 accent-ink-900") +
+          tag.span(class: "colour-swatch #{JobColour.css_class(swatch)}") + tag.span(text)
+      end
+    end
+    tag.fieldset do
+      tag.legend(legend, class: "field-label") +
+        tag.div(class: "flex flex-wrap gap-2") do
+          choice.("", default_name, default_label) +
+            safe_join(JobColour::NAMES.map { choice.(_1, _1, JobColour.label(_1)) })
+        end +
+        (hint ? tag.p(hint, class: "field-hint") : "".html_safe)
+    end
   end
 
   def block_title(block)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_23_100000) do
   create_table "backup_checks", force: :cascade do |t|
     t.boolean "ok", null: false
     t.text "message", null: false
@@ -35,6 +35,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_160000) do
     t.datetime "updated_at", null: false
     t.string "sage_account_ref"
     t.string "sage_tax_code", default: "T1", null: false
+    t.string "colour"
     t.index ["name"], name: "index_customers_on_name", unique: true
   end
 
@@ -399,6 +400,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_160000) do
     t.boolean "automatic", default: false, null: false
     t.integer "plan_draft_id"
     t.integer "source_block_id"
+    t.string "colour"
     t.index ["line_id", "position"], name: "index_schedule_blocks_on_line_id_and_position"
     t.index ["line_id", "starts_at"], name: "index_schedule_blocks_on_line_id_and_starts_at"
     t.index ["line_id"], name: "index_schedule_blocks_on_line_id"

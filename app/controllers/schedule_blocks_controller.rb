@@ -78,6 +78,7 @@ class ScheduleBlocksController < ApplicationController
       changes[:locked] = params[:locked] == "1" if params.key?(:locked)
       changes[:starts_at] = time_param(:starts_at) if params[:locked] == "1" && params[:starts_at].present?
       changes[:notes] = params[:notes] if params.key?(:notes)
+      changes[:colour] = params[:colour].presence if @block.job? && params.key?(:colour)
       changes
     end
 
