@@ -18,19 +18,20 @@ module PlannerHelper
     "timeline-urgent pl-3" if block.job? && block.sales_order&.urgent?
   end
 
-  # Tappable colour swatches for a form field, one per JobColour.
+  # Tappable colour swatches for a form field, one per JobColour, in a grid of
+  # equal-width options: 3 x 4 (two columns on a phone).
   #
   #   colour_picker("customer[colour]", customer.colour)
   def colour_picker(field_name, selected, legend: "Planner colour", hint: nil)
     choice = ->(value, swatch, text) do
-      tag.label(class: "choice") do
+      tag.label(class: "choice w-full") do
         radio_button_tag(field_name, value, selected.to_s == value, id: nil, class: "size-5 accent-ink-900") +
           tag.span(class: "colour-swatch #{JobColour.css_class(swatch)}") + tag.span(text)
       end
     end
     tag.fieldset do
       tag.legend(legend, class: "field-label") +
-        tag.div(class: "flex flex-wrap gap-2") do
+        tag.div(class: "grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3") do
           safe_join(JobColour::NAMES.map { choice.(_1, _1, JobColour.label(_1)) })
         end +
         (hint ? tag.p(hint, class: "field-hint") : "".html_safe)
