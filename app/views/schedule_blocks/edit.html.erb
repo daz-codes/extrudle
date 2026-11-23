@@ -60,9 +60,8 @@
 
     <% if block.job? && !order_locked %>
       <% customer = block.sales_order.customer %>
-      <%= colour_picker :colour, block.colour, legend: "Colour on the planner",
-            default: { name: customer.colour, label: "#{customer.name} (#{JobColour.label(customer.colour).downcase})" },
-            hint: "Set a default for every #{customer.name} job on the customer page." %>
+      <%= colour_picker :colour, block.colour || customer.colour, legend: "Colour on the planner",
+            hint: "Starts as the customer's colour. Change it here for this job only." %>
     <% end %>
 
     <div class="flex flex-wrap gap-3 border-t border-ink-200 pt-5">

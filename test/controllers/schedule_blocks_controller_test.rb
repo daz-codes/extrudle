@@ -191,15 +191,21 @@ class ScheduleBlocksControllerTest < ActionDispatch::IntegrationTest
     assert_select ".timeline-block.job-colour-cherry"
 
     get edit_schedule_block_path(job)
-    assert_select "input[type=radio][name=colour][value=''][checked]"
-    assert_select "label", text: /Brightform Packaging Ltd \(cherry\)/
+    assert_select "input[type=radio][name=colour]", JobColour::NAMES.size
+    assert_select "input[type=radio][name=colour][value=cherry][checked]"
 
     patch schedule_block_path(job), params: { colour: "pistachio", planned_kg: "1900" }
     assert_equal "pistachio", job.reload.colour
     get planner_path(line: "D1", week: "2026-11-16")
     assert_select ".timeline-block.job-colour-pistachio"
 
-    patch schedule_block_path(job), params: { colour: "", planned_kg: "1900" }
+    get edit_schedule_block_path(job)
+    assert_select "input[type=radio][name=colour][value=pistachio][checked]"
+
+    # Back to the customer's colour: stored as nil, so it follows the customer.
+    patch schedule_block_path(job), params: { colour: "cherry", planned_kg: "1900" }
     assert_nil job.reload.colour
+    customers(:brightform).update!(colour: "mango")
+    assert_equal "mango", JobColour.for(job.reload)
   end
 end

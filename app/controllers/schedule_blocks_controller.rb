@@ -78,7 +78,7 @@ class ScheduleBlocksController < ApplicationController
       changes[:locked] = params[:locked] == "1" if params.key?(:locked)
       changes[:starts_at] = time_param(:starts_at) if params[:locked] == "1" && params[:starts_at].present?
       changes[:notes] = params[:notes] if params.key?(:notes)
-      changes[:colour] = params[:colour].presence if @block.job? && params.key?(:colour)
+      changes[:colour] = job_colour(params[:colour]) if @block.job? && params.key?(:colour)
       changes
     end
 
@@ -133,5 +133,11 @@ class ScheduleBlocksController < ApplicationController
         format.turbo_stream { render_board(status: :unprocessable_content) }
         format.html { redirect_to planner_path_for(@line, Schedule::Timeline.week_start_for(week_param)), alert: message }
       end
+    end
+
+    # The customer's own colour is stored as nil, so the job keeps following
+    # the customer if theirs changes later.
+    def job_colour(picked)
+      picked.presence unless picked == @block.sales_order.customer.colour
     end
 end

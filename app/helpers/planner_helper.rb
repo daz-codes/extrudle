@@ -18,12 +18,10 @@ module PlannerHelper
     "timeline-urgent pl-3" if block.job? && block.sales_order&.urgent?
   end
 
-  # Tappable colour swatches for a form field. With default:, the first choice
-  # ("") clears the colour so the bar falls back to it (a job's customer colour).
+  # Tappable colour swatches for a form field, one per JobColour.
   #
   #   colour_picker("customer[colour]", customer.colour)
-  #   colour_picker(:colour, job.colour, default: { name: "mango", label: "Castleton (mango)" })
-  def colour_picker(field_name, selected, default: nil, legend: "Planner colour", hint: nil)
+  def colour_picker(field_name, selected, legend: "Planner colour", hint: nil)
     choice = ->(value, swatch, text) do
       tag.label(class: "choice") do
         radio_button_tag(field_name, value, selected.to_s == value, id: nil, class: "size-5 accent-ink-900") +
@@ -33,8 +31,7 @@ module PlannerHelper
     tag.fieldset do
       tag.legend(legend, class: "field-label") +
         tag.div(class: "flex flex-wrap gap-2") do
-          (default ? choice.("", default[:name], default[:label]) : "".html_safe) +
-            safe_join(JobColour::NAMES.map { choice.(_1, _1, JobColour.label(_1)) })
+          safe_join(JobColour::NAMES.map { choice.(_1, _1, JobColour.label(_1)) })
         end +
         (hint ? tag.p(hint, class: "field-hint") : "".html_safe)
     end
