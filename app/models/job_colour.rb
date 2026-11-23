@@ -4,10 +4,10 @@
 # The swatches themselves live in app/assets/tailwind/application.css
 # (.job-colour-<name>); views never use raw hex.
 module JobColour
-  NAMES = %w[ lime lemon banana mango mandarin cherry raspberry blackcurrant blueberry pistachio chocolate carbon ].freeze
+  NAMES = %w[ lime lemon banana mango mandarin cherry raspberry blackcurrant blueberry pistachio chocolate ].freeze
 
   # Bars dark enough to need white text.
-  DARK = %w[ cherry raspberry blackcurrant blueberry chocolate carbon ].freeze
+  DARK = %w[ cherry raspberry blackcurrant blueberry chocolate ].freeze
 
   def self.for(block)
     block.colour.presence || block.sales_order&.customer&.colour.presence ||

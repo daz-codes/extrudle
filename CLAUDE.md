@@ -60,7 +60,7 @@ Clean and modern: zinc greys on a light grey canvas, with two fluorescent highli
 | `lime-*` | Primary highlight (`lime-300 #d4f53c`): title underlines, current tab, `btn-accent`, selected choices, input focus, the wordmark |
 | `lemon-*` | Secondary highlight (`lemon-300 #f5ff70`): link underlines, table row hover, warnings ("No rates"), notices |
 | `ok` / `bad` | QA pass/fail, target vs actual (emerald / red) |
-| `banana`, `mango`, `mandarin`, `cherry`, `raspberry`, `blackcurrant`, `blueberry`, `pistachio`, `chocolate`, `carbon` | Planner job colours only, via `.job-colour-<name>` (with lime and lemon). Never use them elsewhere |
+| `banana`, `mango`, `mandarin`, `cherry`, `raspberry`, `blackcurrant`, `blueberry`, `pistachio`, `chocolate` | Planner job colours only, via `.job-colour-<name>` (with lime and lemon). Never use them elsewhere |
 
 - Fonts: **Geist** for text and headings, **Geist Mono** for numbers in tables, table headers, eyebrows and units. Both are self-hosted in `app/assets/fonts` (no external font requests: floor terminals may be offline).
 - Use `tabular-nums` for every weight, quantity and time, in tables, cards and `/floor/*` pages alike.
