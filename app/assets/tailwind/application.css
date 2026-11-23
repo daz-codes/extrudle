@@ -75,6 +75,7 @@
   --color-blackcurrant: #4b1d52;
   --color-blueberry: #01547e;
   --color-pistachio: #b5d99c;
+  --color-avocado: #3f6b2a;
   --color-chocolate: #835535;
 
   --color-lemon-50: #fefff0;
@@ -356,16 +357,19 @@
     content: "";
     @apply absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-lime-300 ring-2 ring-ink-900;
   }
-  /* Urgent: a lemon stripe down the left edge, with a dark edge so it shows
-     on lemon and other light colours too. Inset
-     3px so the late ring still shows round it (PLAN.md §11 Q73). */
-  .timeline-urgent::before {
-    content: "";
-    @apply pointer-events-none absolute inset-y-[3px] left-[3px] w-1.5 rounded-sm bg-lemon-300 ring-1 ring-ink-900/60;
+  /* Urgent: a black double border (black, a white gap, black), which shows on
+     every job colour and uses none of them (PLAN.md §11 Q73). */
+  .timeline-urgent {
+    @apply px-2;
+    box-shadow: inset 0 0 0 2px var(--color-ink-900), inset 0 0 0 4px var(--color-surface), inset 0 0 0 6px var(--color-ink-900);
   }
   /* Late: a red ring with a white edge inside, so it shows on red bars too. */
   .timeline-late {
     box-shadow: inset 0 0 0 2px var(--color-bad-600), inset 0 0 0 3px var(--color-surface);
+  }
+  /* Urgent and late: the double border's outer line turns red. */
+  .timeline-urgent.timeline-late {
+    box-shadow: inset 0 0 0 2px var(--color-bad-600), inset 0 0 0 4px var(--color-surface), inset 0 0 0 6px var(--color-ink-900);
   }
 
   /* Job colours (JobColour). Bars and the swatches in the colour picker share them. */
@@ -375,6 +379,7 @@
   .job-colour-mango { @apply bg-mango text-ink-900; }
   .job-colour-mandarin { @apply bg-mandarin text-ink-900; }
   .job-colour-pistachio { @apply bg-pistachio text-ink-900; }
+  .job-colour-avocado { @apply bg-avocado text-white; }
   .job-colour-cherry { @apply bg-cherry text-white; }
   .job-colour-raspberry { @apply bg-raspberry text-ink-900; }
   .job-colour-blackcurrant { @apply bg-blackcurrant text-white; }
@@ -382,7 +387,7 @@
   .job-colour-chocolate { @apply bg-chocolate text-white; }
   /* Faded text inside the darker bars is less faded, so it keeps its contrast.
      Cherry (white 4.7:1) and raspberry (ink 4.8:1) only just pass, so theirs isn't faded at all. */
-  :is(.job-colour-blackcurrant, .job-colour-blueberry, .job-colour-chocolate) .opacity-75 {
+  :is(.job-colour-avocado, .job-colour-blackcurrant, .job-colour-blueberry, .job-colour-chocolate) .opacity-75 {
     opacity: 0.9;
   }
   :is(.job-colour-cherry, .job-colour-raspberry) .opacity-75 {
