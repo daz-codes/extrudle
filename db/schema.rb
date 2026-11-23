@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_23_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_23_150000) do
   create_table "backup_checks", force: :cascade do |t|
     t.boolean "ok", null: false
     t.text "message", null: false
