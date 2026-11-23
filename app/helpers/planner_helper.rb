@@ -1,6 +1,6 @@
 module PlannerHelper
   # Timeline colours by kind. Jobs use JobColour (their own colour or their
-  # customer's); urgent ones get a lemon stripe and late ones a red edge.
+  # customer's); urgent ones get a black double border and late ones a red edge.
   def block_classes(block, warnings = [])
     base = case block.kind
     when "job" then JobColour.css_class(JobColour.for(block))
@@ -10,12 +10,12 @@ module PlannerHelper
     else "bg-surface text-ink-500 ring-1 ring-inset ring-ink-300 block-hatched"
     end
     late = warnings.any? { _1.code == :late } ? "timeline-late" : nil
-    [ base, urgent_stripe(block), late ].compact.join(" ")
+    [ base, urgent_border(block), late ].compact.join(" ")
   end
 
-  # Urgent jobs get a lemon stripe down the left edge, whatever their colour (Q73).
-  def urgent_stripe(block)
-    "timeline-urgent pl-3" if block.job? && block.sales_order&.urgent?
+  # Urgent jobs get a black double border, whatever their colour (Q73).
+  def urgent_border(block)
+    "timeline-urgent" if block.job? && block.sales_order&.urgent?
   end
 
   # Tappable colour swatches for a form field, one per JobColour, in a grid of

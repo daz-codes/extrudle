@@ -35,7 +35,7 @@ class JobColourTest < ActiveSupport::TestCase
     assert_not gap.valid?
   end
 
-  test "urgent jobs get a lemon stripe whatever their colour" do
+  test "urgent jobs get a double border whatever their colour" do
     helpers = ApplicationController.helpers
     assert_match "timeline-urgent", helpers.block_classes(@urgent)
     assert_no_match "timeline-urgent", helpers.block_classes(@job), "only urgent jobs"

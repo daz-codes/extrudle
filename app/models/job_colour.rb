@@ -1,7 +1,7 @@
 # Colours for job bars on the planner timeline. Every customer has a colour
 # (lime unless chosen) and each job (schedule block) can override it. Lemon
-# and lime are ordinary choices; urgent jobs are marked with a lemon stripe
-# (PlannerHelper#urgent_stripe), not by colour.
+# and lime are ordinary choices; urgent jobs are marked with a black double border
+# (PlannerHelper#urgent_border), not by colour.
 # The swatches themselves live in app/assets/tailwind/application.css
 # (.job-colour-<name>); views never use raw hex.
 module JobColour
