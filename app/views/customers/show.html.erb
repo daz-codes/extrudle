@@ -24,7 +24,7 @@
       <div class="flex justify-between gap-4">
         <dt class="text-ink-600">Planner colour</dt>
         <dd class="flex items-center gap-2 font-medium">
-          <% if @customer.colour %><span class="colour-swatch size-4 <%= JobColour.css_class(@customer.colour) %>"></span><%= JobColour.label(@customer.colour) %><% else %>—<% end %>
+          <span class="colour-swatch size-4 <%= JobColour.css_class(@customer.colour) %>"></span><%= JobColour.label(@customer.colour) %>
         </dd>
       </div>
     </dl>

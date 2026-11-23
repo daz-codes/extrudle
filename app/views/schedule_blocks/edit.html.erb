@@ -61,8 +61,7 @@
     <% if block.job? && !order_locked %>
       <% customer = block.sales_order.customer %>
       <%= colour_picker :colour, block.colour, legend: "Colour on the planner",
-            default_name: customer.colour || (block.sales_order.urgent? ? "lemon" : "lime"),
-            default_label: customer.colour ? "#{customer.name} (#{JobColour.label(customer.colour).downcase})" : "Default (#{block.sales_order.urgent? ? "lemon, urgent" : "lime"})",
+            default: { name: customer.colour, label: "#{customer.name} (#{JobColour.label(customer.colour).downcase})" },
             hint: "Set a default for every #{customer.name} job on the customer page." %>
     <% end %>
 

@@ -12,9 +12,9 @@ class Customer < ApplicationRecord
   validates :currency, inclusion: { in: Currency::CODES }
   # Sage 50 account references are up to 8 characters.
   validates :sage_account_ref, length: { maximum: 8 }, uniqueness: { case_sensitive: false }, allow_nil: true
-  # Default planner bar colour for this customer's jobs (JobColour); nil keeps lime/lemon.
-  normalizes :colour, with: ->(c) { c.strip.presence }
-  validates :colour, inclusion: { in: JobColour::NAMES }, allow_nil: true
+  # Planner bar colour for this customer's jobs (JobColour), lime unless chosen.
+  normalizes :colour, with: ->(c) { c.strip }
+  validates :colour, inclusion: { in: JobColour::NAMES }
   validates :sage_tax_code, inclusion: { in: ->(_) { SageExport.tax_codes } }
 
   scope :by_name, -> { order(:name) }

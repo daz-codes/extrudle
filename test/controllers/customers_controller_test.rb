@@ -30,7 +30,8 @@ class CustomersControllerTest < ActionDispatch::IntegrationTest
 
   test "pick a planner colour" do
     get edit_customer_path(customers(:rhine))
-    assert_select "input[type=radio][name='customer[colour]']", JobColour::NAMES.size + 1
+    assert_select "input[type=radio][name='customer[colour]']", JobColour::NAMES.size
+    assert_select "input[type=radio][name='customer[colour]'][value=lime][checked]"
 
     patch customer_path(customers(:rhine)), params: { customer: { colour: "blackcurrant" } }
     assert_equal "blackcurrant", customers(:rhine).reload.colour

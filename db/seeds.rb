@@ -82,19 +82,14 @@ customers = [
   [ "Pennine Industrial Trays", "Chris Walsh", "GBP", "Unit 22, Pennine Business Park\nHuddersfield\nHD2 1GQ" ],
   [ "Rhine Valley Verpackung GmbH", "Jonas Weber", "EUR", "Industriestraße 12\n67059 Ludwigshafen\nGermany" ]
 ].to_h do |name, contact, currency, address|
-  # Planner colours (JobColour) for some customers; the rest stay lime/lemon.
-  colour = { "Brightform Packaging Ltd" => "blueberry", "Castleton Thermoforming" => "mango", "Delta Blister Solutions" => "cherry",
-             "Fenwick Medical Trays" => "pistachio", "Greenway Punnets" => "mandarin", "Kestrel Food Packaging" => "raspberry",
-             "Lumen Cosmetics Packaging" => "blackcurrant", "Northgate Clamshells" => "banana",
-             "Pennine Industrial Trays" => "chocolate" }[name]
   # Sage 50 style account references (BRIGHT01). EU customers use T4, the rest T1.
   sage_ref = "#{name.gsub(/[^A-Za-z]/, "").first(6).upcase}01"
   customer = Customer.find_or_create_by!(name: name) do
     _1.assign_attributes(contact_name: contact, currency: currency, address: address, sage_account_ref: sage_ref,
-                         sage_tax_code: currency == "EUR" ? "T4" : "T1", colour: colour)
+                         sage_tax_code: currency == "EUR" ? "T4" : "T1")
   end
   # Fill in what was added to the seeds after this customer was created (the preview keeps its data).
-  missing = { address: address, sage_account_ref: sage_ref, colour: colour }.select { |field, _| customer[field].blank? }
+  missing = { address: address, sage_account_ref: sage_ref }.select { |field, _| customer[field].blank? }
   missing[:sage_tax_code] = "T4" if currency == "EUR" && missing.key?(:sage_account_ref)
   customer.update!(missing) if missing.any?
   [ name, customer ]
@@ -271,6 +266,15 @@ if ScheduleBlock.none?
   end
 
   editors[d2].add(ScheduleBlock.new(kind: "no_orders", duration_minutes: 480, notes: "Nothing to run yet"))
+end
+
+# Planner colours (JobColour) for some customers; the rest keep lime. Done once,
+# while every customer is still lime, so a planner's own choices stick.
+if Customer.where.not(colour: JobColour::DEFAULT).none?
+  { "Brightform Packaging Ltd" => "blueberry", "Castleton Thermoforming" => "mango", "Delta Blister Solutions" => "cherry",
+    "Fenwick Medical Trays" => "pistachio", "Greenway Punnets" => "mandarin", "Kestrel Food Packaging" => "raspberry",
+    "Lumen Cosmetics Packaging" => "blackcurrant", "Northgate Clamshells" => "banana",
+    "Pennine Industrial Trays" => "chocolate" }.each { |name, colour| customers[name].update!(colour:) }
 end
 
 # One job with its own colour, over its customer's (seeded once, so a planner's change sticks).

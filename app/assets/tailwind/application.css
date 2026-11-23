@@ -65,7 +65,7 @@
   --color-lime-900: #414f12;
   --color-lime-950: #222c04;
 
-  /* Planner job colours (JobColour::NAMES), as well as lime-200 and lemon-300.
+  /* Planner job colours (JobColour::NAMES), as well as lime-200 and lemon-300 (lime is the default).
      Light ones carry ink-900 text and dark ones white, all at least 4.5:1. */
   --color-banana: #fbe7a1;
   --color-mango: #ffbe3d;
@@ -356,8 +356,8 @@
     content: "";
     @apply absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-lime-300 ring-2 ring-ink-900;
   }
-  /* Urgent with a customer or job colour (so not lemon): a lemon stripe down
-     the left edge, with a dark edge so it shows on light colours too. Inset
+  /* Urgent: a lemon stripe down the left edge, with a dark edge so it shows
+     on lemon and other light colours too. Inset
      3px so the late ring still shows round it (PLAN.md §11 Q73). */
   .timeline-urgent::before {
     content: "";

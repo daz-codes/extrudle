@@ -2,10 +2,8 @@
   <div class="mb-3 flex flex-wrap items-baseline justify-between gap-3">
     <h2 id="timeline-heading" class="section-title">Line <%= @line.name %> this week</h2>
     <ul class="flex flex-wrap gap-3 text-xs text-ink-600" aria-label="Key">
-      <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm job-colour-lime"></span>Job (no colour set)</li>
-      <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm job-colour-lemon"></span>Urgent job</li>
-      <li class="flex items-center gap-1.5"><span class="relative size-3 rounded-sm job-colour-blueberry"><span class="absolute inset-y-0 left-0 w-1 rounded-l-sm bg-lemon-300"></span></span>Urgent job with a colour</li>
-      <li class="flex items-center gap-1.5"><span class="flex gap-0.5"><% %w[ mango cherry pistachio ].each do |name| %><span class="size-3 rounded-sm <%= JobColour.css_class(name) %>"></span><% end %></span>Customer or job colour</li>
+      <li class="flex items-center gap-1.5"><span class="flex gap-0.5"><% %w[ lime mango cherry ].each do |name| %><span class="size-3 rounded-sm <%= JobColour.css_class(name) %>"></span><% end %></span>Job (customer or job colour)</li>
+      <li class="flex items-center gap-1.5"><span class="relative size-3 rounded-sm job-colour-lime"><span class="absolute inset-y-0 left-0 w-1 rounded-l-sm bg-lemon-300 ring-1 ring-ink-900/60"></span></span>Urgent job</li>
       <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-surface timeline-late"></span>Late</li>
       <li class="flex items-center gap-1.5"><span class="block-hatched size-3 rounded-sm bg-ink-200"></span>Changeover</li>
       <li class="flex items-center gap-1.5"><span class="size-3 rounded-sm bg-ink-800"></span>Maintenance</li>

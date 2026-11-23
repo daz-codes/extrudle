@@ -35,7 +35,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_23_100000) do
     t.datetime "updated_at", null: false
     t.string "sage_account_ref"
     t.string "sage_tax_code", default: "T1", null: false
-    t.string "colour"
+    t.string "colour", default: "lime", null: false
     t.index ["name"], name: "index_customers_on_name", unique: true
   end
 
