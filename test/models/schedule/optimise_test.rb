@@ -118,6 +118,18 @@ class Schedule::OptimiseTest < ActiveSupport::TestCase
     assert_equal 1, result.after.late_orders, "only one fits today, but neither can move to D2"
   end
 
+  test "a \"no orders\" block goes after the last job, so added jobs don't leave a gap" do
+    @d2.update!(active: false)
+    a = spec("A-1")
+    @live.add_job(order_line(a, kg: 200, due: "2026-11-30"))
+    @live.add(block("no_orders", 480, notes: "Nothing to run yet"))
+    order_line(a, kg: 200, due: "2026-11-20") # not planned yet
+
+    optimise
+    assert_equal %w[job job no_orders], draft_kinds(@d1)
+    assert_equal "Nothing to run yet", PlanDraft.current.plan.blocks_for(@d1).ordered.last.notes
+  end
+
   test "locked blocks stay put, started jobs keep their place, and planner changeovers go" do
     @d2.update!(active: false)
     a = spec("A-1")

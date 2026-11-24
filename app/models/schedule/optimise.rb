@@ -11,8 +11,9 @@
 # * Order lines with weight still to plan get a job for the rest (Q77).
 # * Locked blocks never move; started jobs and other blocks the planner added
 #   (maintenance, no orders) keep their place in the queue, and jobs fill the
-#   places between them. Changeovers are rebuilt automatically, so the
-#   planner's own unlocked changeovers are dropped (Q79).
+#   places between them. "No orders" blocks go after the last job, as they
+#   stand for the line having nothing to run. Changeovers are rebuilt
+#   automatically, so the planner's own unlocked changeovers are dropped (Q79).
 # * Urgent orders' jobs go first on their line, whatever their dates (Q78).
 #
 # What "best" means, in order (Q76): fewest late orders, then the fewest
@@ -38,7 +39,7 @@ class Schedule::Optimise
   # Something on a line's queue that keeps its place: a started job, maintenance, no orders.
   Fixed = Struct.new(:block, :spec_id, :minutes, keyword_init: true)
 
-  LineState = Struct.new(:line, :anchor, :locked, :template, :changeover_minutes, keyword_init: true)
+  LineState = Struct.new(:line, :anchor, :locked, :template, :trailing, :changeover_minutes, keyword_init: true)
 
   Score = Data.define(:late_orders, :late_minutes, :changeovers, :finish_minutes) do
     include Comparable
@@ -110,11 +111,14 @@ class Schedule::Optimise
       flowing.sort_by! { [ _1.position, _1.id ] }
 
       template = []
+      trailing = []
       current = []
       flowing.each do |block|
         next if block.changeover? # rebuilt automatically (Q79)
 
-        if movable?(block)
+        if block.no_orders?
+          trailing << Fixed.new(block:, spec_id: nil, minutes: block.duration_minutes) # after the last job
+        elsif movable?(block)
           task = task_for_block(block, line)
           @tasks << task
           current << task
@@ -126,7 +130,7 @@ class Schedule::Optimise
 
       anchor = plan.queue_start(line) || flowing.filter_map(&:starts_at).min || Time.current
       @states[line.id] = LineState.new(
-        line:, template:,
+        line:, template:, trailing:,
         anchor: Schedule.snap_up(anchor).to_i,
         locked: locked.map { [ _1.starts_at.to_i, _1.ends_at.to_i ] }.sort,
         changeover_minutes: Schedule.round_up_to_slot(line.default_changeover_minutes)
@@ -202,7 +206,8 @@ class Schedule::Optimise
       [ ends, changeovers ]
     end
 
-    # Jobs fill the job places in the template; extra jobs go on the end.
+    # Jobs fill the job places in the template; extra jobs go on the end,
+    # then the "no orders" blocks.
     def queue(state, sequence)
       jobs = sequence.each
       items = state.template.filter_map do |slot|
@@ -215,7 +220,7 @@ class Schedule::Optimise
         end
       end
       loop { items << jobs.next }
-      items
+      items + state.trailing
     end
 
     # Starts the block at the first time it fits around locked blocks; returns its end.
