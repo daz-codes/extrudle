@@ -411,4 +411,31 @@ class Schedule::EditorTest < ActiveSupport::TestCase
     assert_raises(Schedule::Error) { @editor.add(block("no_orders", 45), starts_at: at("2026-11-23 06:00")) }
     assert_equal at(MONDAY_6AM), @d1.queue_starts_at
   end
+
+  test "rearrange sets the whole queue, adds new blocks, takes off the rest and rebuilds changeovers" do
+    job = @editor.add_job(@order_line, starts_at: at(MONDAY_6AM))
+    idle = @editor.add(block("no_orders", 60))
+    gone = @editor.add(block("no_orders", 120))
+    visit = @editor.add(block("planned_maintenance", 60, locked: true, starts_at: at("2026-11-25 06:00")))
+    stock = ScheduleBlock.new(kind: "job", sales_order_line: stock_order_line, planned_g: 1_000_000, duration_minutes: 120)
+
+    @editor.rearrange([ idle, stock, job ])
+    assert_equal [ [ "no_orders", "Mon 06:00", "Mon 07:00" ], [ "job", "Mon 07:00", "Mon 09:00" ], [ "changeover", "Mon 09:00", "Mon 10:00" ] ],
+                 timeline(@d1).first(3)
+    assert_not ScheduleBlock.exists?(gone.id)
+    assert_equal [ at("2026-11-25 06:00"), true ], [ visit.reload.starts_at, visit.locked? ]
+    assert_equal @d1, stock.reload.line
+  end
+
+  test "rearrange won't take off a started job, put a locked block in the queue or take another line's block" do
+    started = planned_job(starts_at: at(MONDAY_6AM))
+    assert ProductionRun::Start.new(schedule_block: started).tap { _1.user = users(:floor) }.save
+    visit = @editor.add(block("planned_maintenance", 60, locked: true, starts_at: at("2026-11-25 06:00")))
+    other = Schedule::Editor.new(lines(:d2)).add(block("no_orders", 60), starts_at: at(MONDAY_6AM))
+
+    assert_match "has started", assert_raises(Schedule::Error) { @editor.rearrange([]) }.message
+    assert_raises(Schedule::Error) { @editor.rearrange([ started, visit ]) }
+    assert_raises(Schedule::Error) { @editor.rearrange([ started, other ]) }
+    assert ScheduleBlock.exists?(started.id)
+  end
 end
