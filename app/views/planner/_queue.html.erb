@@ -20,8 +20,18 @@
       <% movable = @read_only ? [] : @blocks.reject { _1.locked? || _1.automatic? } %>
       <% @blocks.each do |block| %>
         <% warnings = @warnings[block] || [] %>
-        <tr id="<%= dom_id(block) %>" class="align-top <%= "bg-lemon-50" if block.job? && block.sales_order.urgent? %>">
-          <td class="px-4 py-3 font-mono text-ink-500 tabular-nums"><%= block.position %></td>
+        <tr id="<%= dom_id(block) %>" class="align-top <%= "bg-lemon-50" if block.job? && block.sales_order.urgent? %>"
+            <%= "data-planner-drag-target=row" unless block.locked? || block.automatic? %> data-starts-at="<%= block.starts_at.iso8601 %>" data-ends-at="<%= block.ends_at.iso8601 %>">
+          <td class="px-4 py-3 font-mono text-ink-500 tabular-nums">
+            <div class="flex items-center gap-1">
+              <% if movable.include?(block) && draggable_block?(block) %>
+                <%# Drag handle (Slice 10). The ▲ ▼ buttons do the same for keyboards and screen readers. %>
+                <span class="queue-handle" aria-hidden="true" title="Drag to move"
+                      data-drop-url="<%= drop_schedule_block_path(block) %>" data-action="pointerdown->planner-drag#press">⠿</span>
+              <% end %>
+              <%= block.position %>
+            </div>
+          </td>
           <td class="px-4 py-3 text-sm tabular-nums">
             <div class="whitespace-nowrap"><%= plan_time(block.starts_at) %></div>
             <div class="whitespace-nowrap text-ink-500">→ <%= plan_finish(block) %></div>

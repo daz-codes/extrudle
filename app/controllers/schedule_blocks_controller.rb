@@ -3,8 +3,8 @@
 class ScheduleBlocksController < ApplicationController
   include PlannerBoard
   require_role :admin, :office
-  before_action :set_block, only: %i[ edit update destroy move ]
-  before_action :keep_live_plan_while_drafting, only: %i[ edit update destroy move ]
+  before_action :set_block, only: %i[ edit update destroy move drop ]
+  before_action :keep_live_plan_while_drafting, only: %i[ edit update destroy move drop ]
 
   # Adds to the plan being edited: the draft if there is one.
   def create
@@ -51,6 +51,19 @@ class ScheduleBlocksController < ApplicationController
     Schedule::Editor.new(@line, plan: @plan).move(@block, params[:direction] == "up" ? :up : :down)
     done nil
   rescue Schedule::Error => e
+    failed e.message
+  end
+
+  # Dragged on the timeline to a new start (Slice 10). A queued block moves to
+  # that place in the queue and the line reflows (§11 Q74); a locked block is
+  # pinned at the new time (§11 Q75).
+  def drop
+    at = time_param(:at) || raise(ArgumentError, "Choose a time to move it to")
+    editor = Schedule::Editor.new(@line, plan: @plan)
+    @block.locked? ? editor.lock(@block, starts_at: at) : editor.move_to_time(@block, at)
+    @block.reload
+    done "#{@block} now runs #{helpers.plan_range(@block)}."
+  rescue Schedule::Error, ArgumentError => e
     failed e.message
   end
 

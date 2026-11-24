@@ -18,7 +18,7 @@ module PlannerBoard
       @read_only = @plan.live? && @draft.present?
       @queue_start = @plan.queue_start(line)
       @blocks = @plan.blocks_for(line).ordered
-        .includes(:source_block, sales_order_line: [ { sales_order: :customer }, { product_spec: :line_rates } ]).to_a
+        .includes(:production_run, { source_block: :production_run }, sales_order_line: [ { sales_order: :customer }, { product_spec: :line_rates } ]).to_a
       @queue_empty = @blocks.none? { !_1.locked? }
       @warnings = Schedule::Warnings.for_line(line, @blocks, plan: @plan)
       @timeline = Schedule::Timeline.new(@blocks, week_start: week_start)

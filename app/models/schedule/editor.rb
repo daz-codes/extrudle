@@ -95,6 +95,29 @@ class Schedule::Editor
     end
   end
 
+  # Moves an unlocked block to the place in the queue nearest a time, e.g.
+  # where it was dropped on the timeline (Slice 10). It goes just before the
+  # first other block in the queue whose midpoint is after the time, or to the
+  # end: dropped over the left half of a block it goes before it, over the right
+  # half after it. It reorders the queue and the line reflows, so the block runs
+  # as near the time as the queue allows; it isn't pinned there (§11 Q74). The
+  # queue start doesn't change, and nothing is moved past a started job.
+  def move_to_time(block, time)
+    raise Schedule::Error, "Choose a time to move it to" unless time
+
+    edit do |blocks|
+      block = find_movable(blocks, block)
+      queue = flowing(blocks).reject(&:automatic?)
+      others = queue - [ block ]
+      to = others.index { _1.starts_at + (_1.duration_minutes * 30).seconds > time } || others.size
+      from = queue.index(block)
+      passed = to < from ? others[to...from] : others[from...to]
+      passed.each { ensure_can_pass!(_1) }
+
+      block.queue_key = to < others.size ? others[to].queue_key - BigDecimal("0.5") : queue_end(blocks)
+    end
+  end
+
   # New duration for a non-job block, or a manual estimate for a job with no rate.
   def resize(block, duration_minutes)
     update(block, duration_minutes: duration_minutes)
@@ -272,6 +295,14 @@ class Schedule::Editor
       return unless block.persisted? && block.started?
 
       raise Schedule::Error, "This job has started (it has a production log), so it can't be moved or removed"
+    end
+
+    # Moving a block past another moves that one too.
+    def ensure_can_pass!(other)
+      ensure_order_editable!(other.sales_order) if other.job?
+      return unless other.persisted? && other.started?
+
+      raise Schedule::Error, "#{other} has started (it has a production log), so jobs can't be moved past it"
     end
 
     def validate_position!(position)

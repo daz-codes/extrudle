@@ -109,6 +109,61 @@ class Schedule::EditorTest < ActiveSupport::TestCase
     assert_equal [ c, a, b ].map(&:id), @d1.schedule_blocks.ordered.map(&:id)
   end
 
+  test "move_to_time puts a block before the first block whose midpoint is after the time" do
+    a = @editor.add(block("no_orders", 60)) # Mon 06:00–07:00, midpoint 06:30
+    b = @editor.add(block("no_orders", 60)) # 07:00–08:00, midpoint 07:30
+    c = @editor.add(block("no_orders", 60)) # 08:00–09:00, midpoint 08:30
+    order = -> { @d1.schedule_blocks.ordered.map(&:id) }
+
+    @editor.move_to_time(c, at("2026-11-16 07:00")) # left half of b
+    assert_equal [ a, c, b ].map(&:id), order.call
+    assert_equal [ [ "no_orders", "Mon 06:00", "Mon 07:00" ], [ "no_orders", "Mon 07:00", "Mon 08:00" ], [ "no_orders", "Mon 08:00", "Mon 09:00" ] ], timeline(@d1)
+
+    @editor.move_to_time(a, at("2026-11-16 08:30")) # right half of b, now 08:00–09:00
+    assert_equal [ c, b, a ].map(&:id), order.call
+
+    @editor.move_to_time(c, at("2026-11-18 12:00")) # long after the end
+    assert_equal [ b, a, c ].map(&:id), order.call
+
+    @editor.move_to_time(c, at("2026-11-15 12:00")) # before the queue starts
+    assert_equal [ c, b, a ].map(&:id), order.call
+    assert_equal at(MONDAY_6AM), @d1.queue_starts_at, "the queue start doesn't change"
+  end
+
+  test "move_to_time dropped on its own place, or with no time, changes nothing" do
+    a = @editor.add(block("no_orders", 60))
+    b = @editor.add(block("no_orders", 60))
+    @editor.move_to_time(b, at("2026-11-16 07:30"))
+    assert_equal [ a, b ].map(&:id), @d1.schedule_blocks.ordered.map(&:id)
+
+    assert_raises(Schedule::Error) { @editor.move_to_time(b, nil) }
+  end
+
+  test "move_to_time rebuilds changeovers and skips over locked blocks" do
+    first = @editor.add_job(@order_line, planned_g: 190_000) # BF-700, 1 h
+    stock = @editor.add_job(stock_order_line)                 # stock spec: changeover before it
+    assert_equal %w[job changeover job], @d1.schedule_blocks.ordered.map(&:kind)
+
+    @editor.move_to_time(stock, at(MONDAY_6AM))
+    assert_equal [ stock.id, nil, first.id ], @d1.schedule_blocks.ordered.map { _1.job? ? _1.id : nil }
+    assert_equal %w[job changeover job], @d1.schedule_blocks.ordered.map(&:kind)
+
+    maintenance = @editor.add(block("planned_maintenance", 60, locked: true, starts_at: at("2026-11-16 12:00")))
+    assert_raises(Schedule::Error) { @editor.move_to_time(maintenance, at(MONDAY_6AM)) }
+    assert_raises(Schedule::Error) { @editor.move_to_time(@d1.schedule_blocks.changeover.first, at(MONDAY_6AM)) }
+  end
+
+  test "move_to_time won't move a started job or move a job past one" do
+    started = planned_job(starts_at: at(MONDAY_6AM))
+    assert ProductionRun::Start.new(schedule_block: started).tap { _1.user = users(:floor) }.save
+    later = @editor.add(block("no_orders", 60))
+
+    error = assert_raises(Schedule::Error) { @editor.move_to_time(later, at(MONDAY_6AM)) }
+    assert_match "has started", error.message
+    assert_raises(Schedule::Error) { @editor.move_to_time(started, at("2026-11-20 06:00")) }
+    assert_equal [ started.id, later.id ], @d1.schedule_blocks.ordered.map(&:id)
+  end
+
   test "the line keeps its start when the first block is removed or moved down" do
     a = @editor.add(block("no_orders", 60))
     @editor.add(block("changeover", 30))

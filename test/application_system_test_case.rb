@@ -1,5 +1,21 @@
 require "test_helper"
 
+# Chrome 158 refuses the origin "*" that Capybara 3.40 sends to
+# Storage.clearDataForOrigin when it resets the session between tests. Clear
+# the cookies and the app's own storage another way instead. Remove this once
+# Capybara sends a real origin.
+module ClearStorageWithoutWildcardOrigin
+  def execute_cdp(cmd, **args)
+    super
+  rescue Selenium::WebDriver::Error::InvalidArgumentError => e
+    raise unless cmd == "Storage.clearDataForOrigin" && args[:origin] == "*" && e.message.include?("not a valid URL")
+
+    super("Network.clearBrowserCookies")
+    super(cmd, **args, origin: Capybara.current_session.server.base_url) if Capybara.current_session.server
+  end
+end
+Capybara::Selenium::Driver::ChromeDriver.prepend(ClearStorageWithoutWildcardOrigin)
+
 class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   # Find icon buttons (▲ ▼ ✕) by their accessible names.
   Capybara.enable_aria_label = true

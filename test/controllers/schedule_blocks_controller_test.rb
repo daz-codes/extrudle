@@ -81,6 +81,64 @@ class ScheduleBlocksControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ a, b ].map(&:id), @d1.schedule_blocks.ordered.map(&:id)
   end
 
+  test "drop a queued block at a time reorders the queue" do
+    editor = Schedule::Editor.new(@d1)
+    a = editor.add(block("no_orders", 60), starts_at: at(MONDAY_6AM))
+    b = editor.add(block("changeover", 30))
+
+    patch drop_schedule_block_path(b, at: "2026-11-16T06:00:00Z", week: "2026-11-16"), as: :turbo_stream
+    assert_response :success
+    assert_match(/turbo-stream action="replace" target="planner_board"/, response.body)
+    assert_match "Changeover now runs Mon 16 Nov 06:00 – 06:30", response.body
+    assert_equal [ b, a ].map(&:id), @d1.schedule_blocks.ordered.map(&:id)
+  end
+
+  test "drop a locked block pins it at the new time" do
+    maintenance = Schedule::Editor.new(@d1).add(block("planned_maintenance", 60, locked: true, starts_at: at("2026-11-16 12:00")))
+    patch drop_schedule_block_path(maintenance, at: "2026-11-17T09:30:00Z"), as: :turbo_stream
+    assert_response :success
+    assert_equal at("2026-11-17 09:30"), maintenance.reload.starts_at
+    assert maintenance.locked?
+  end
+
+  test "drops that can't happen are explained" do
+    editor = Schedule::Editor.new(@d1)
+    editor.add_job(@order_line, planned_g: 190_000, starts_at: at(MONDAY_6AM))
+    editor.add_job(stock_order_line)
+    changeover = @d1.schedule_blocks.changeover.sole
+
+    patch drop_schedule_block_path(changeover, at: "2026-11-16T06:00:00Z"), as: :turbo_stream
+    assert_response :unprocessable_content
+    assert_match(/added automatically/, response.body)
+
+    patch drop_schedule_block_path(changeover, at: "soon"), as: :turbo_stream
+    assert_response :unprocessable_content
+  end
+
+  test "dropping on the live plan while drafting is refused; the draft can be changed" do
+    editor = Schedule::Editor.new(@d1)
+    a = editor.add(block("no_orders", 60), starts_at: at(MONDAY_6AM))
+    b = editor.add(block("changeover", 30))
+    draft = PlanDraft.start!
+
+    patch drop_schedule_block_path(b, at: "2026-11-16T06:00:00Z"), as: :turbo_stream
+    assert_response :unprocessable_content
+    assert_equal [ a, b ].map(&:id), @d1.schedule_blocks.ordered.map(&:id)
+
+    copy = draft.blocks.find_by!(source_block: b)
+    patch drop_schedule_block_path(copy, at: "2026-11-16T06:00:00Z"), as: :turbo_stream
+    assert_response :success
+    assert_equal [ copy.id, draft.blocks.find_by!(source_block: a).id ], draft.blocks.where(line: @d1).ordered.map(&:id)
+    assert_equal [ a, b ].map(&:id), @d1.schedule_blocks.ordered.map(&:id), "the live plan is unchanged"
+  end
+
+  test "floor users can't drop blocks" do
+    b = Schedule::Editor.new(@d1).add(block("no_orders", 60), starts_at: at(MONDAY_6AM))
+    sign_in_as users(:floor)
+    patch drop_schedule_block_path(b, at: "2026-11-16T09:00:00Z")
+    assert_redirected_to floor_root_path
+  end
+
   test "remove a job and the order goes back to open" do
     job = Schedule::Editor.new(@d1).add_job(@order_line, starts_at: at(MONDAY_6AM))
     assert @order_line.sales_order.reload.scheduled?
