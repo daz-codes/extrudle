@@ -1,5 +1,12 @@
 <%# Everything that changes when the plan changes. Replaced as a whole by Turbo Streams. %>
-<div id="planner_board" class="space-y-6">
+<%# planner-drag: drag bars on the timeline, or queue rows by their handle (Slice 10). %>
+<div id="planner_board" class="space-y-6" data-controller="planner-drag" data-action="keydown@window->planner-drag#cancelOnEscape">
+  <% unless @read_only %>
+    <%= form_with url: planner_path, method: :patch, class: "hidden", data: { planner_drag_target: "form" } do %>
+      <%= hidden_field_tag :at, nil, id: nil, data: { planner_drag_target: "at" } %>
+      <%= hidden_field_tag :week, @week_start.iso8601, id: nil %>
+    <% end %>
+  <% end %>
   <%= render "planner/timeline" %>
 
   <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">

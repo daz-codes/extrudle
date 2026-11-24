@@ -27,7 +27,7 @@
           <span class="font-semibold text-ink-900"><%= l(day.date, format: "%a") %></span>
           <span class="font-mono text-ink-500"><%= l(day.date, format: "%-d %b") %></span>
         </div>
-        <div class="timeline-track timeline-grid h-14">
+        <div class="timeline-track timeline-grid h-14" data-planner-drag-target="track" data-day-start="<%= day.starts_at.iso8601 %>" data-slots="<%= day.slots %>">
           <% day.segments.each do |segment| %>
             <% block = segment.block %>
             <% warnings = @warnings[block] || [] %>
@@ -35,7 +35,8 @@
                   class: "timeline-block #{block_classes(block, warnings)} #{"rounded-l-none" if segment.continues_before} #{"rounded-r-none" if segment.continues_after}",
                   style: "grid-column: #{segment.from_slot} / #{segment.to_slot}",
                   title: "#{block_title(block)}\n#{plan_range(block)} (#{duration_text(block.duration_minutes)})#{"\n" + warnings.map(&:message).join("\n") if warnings.any?}",
-                  data: { turbo_frame: "_top" } do %>
+                  draggable: false,
+                  data: { turbo_frame: "_top", **drag_data(block) } do %>
               <% if segment.span >= 3 || block.locked? %>
                 <span class="flex items-center gap-1 truncate font-semibold">
                   <%= lock_icon if block.locked? %>

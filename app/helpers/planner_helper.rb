@@ -13,6 +13,22 @@ module PlannerHelper
     [ base, urgent_border(block), late ].compact.join(" ")
   end
 
+  # Data for a timeline bar that can be dragged to a new time (Slice 10), or
+  # none: not on a read-only plan, automatic changeovers (they follow their
+  # jobs), started jobs, or jobs for orders whose plan can't change.
+  def drag_data(block)
+    return {} unless draggable_block?(block)
+
+    { planner_drag_target: "bar", drop_url: drop_schedule_block_path(block), starts_at: block.starts_at.iso8601,
+      minutes: block.duration_minutes, action: "pointerdown->planner-drag#press" }
+  end
+
+  def draggable_block?(block)
+    return false if @read_only || block.automatic? || block.started?
+
+    !block.job? || SalesOrder::ACTIVE_STATUSES.include?(block.sales_order.status)
+  end
+
   # Urgent jobs get a black double border, whatever their colour (Q73).
   def urgent_border(block)
     "timeline-urgent" if block.job? && block.sales_order&.urgent?

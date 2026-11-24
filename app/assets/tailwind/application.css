@@ -357,6 +357,37 @@
     content: "";
     @apply absolute -top-1 left-1/2 size-2.5 -translate-x-1/2 rounded-full bg-lime-300 ring-2 ring-ink-900;
   }
+  /* Drag and drop on the planner (Slice 10, planner-drag controller). Bars that
+     can move don't select text or show the link callout on a long press. */
+  .timeline-block[data-drop-url] {
+    @apply cursor-grab select-none;
+    -webkit-touch-callout: none;
+  }
+  .planner-dragging,
+  .planner-dragging * {
+    @apply cursor-grabbing select-none;
+  }
+  .timeline-block.drag-source,
+  tr.drag-source {
+    @apply opacity-40;
+  }
+  .timeline-ghost {
+    @apply pointer-events-none relative z-30 mx-px flex min-w-0 items-center overflow-visible rounded-md border-2 border-dashed border-ink-900 bg-lime-300/60 px-1.5;
+    grid-row: 1;
+  }
+  .timeline-ghost-label {
+    @apply absolute -top-6 left-0 rounded-sm bg-ink-900 px-1.5 py-0.5 font-mono text-[0.7rem] whitespace-nowrap text-white tabular-nums;
+  }
+  .queue-handle {
+    @apply -my-2 -ml-2 flex min-h-12 w-8 cursor-grab touch-none items-center justify-center rounded-md text-lg text-ink-500 select-none hover:bg-ink-100 active:bg-ink-200;
+  }
+  tr.drop-before {
+    box-shadow: inset 0 3px 0 var(--color-ink-900);
+  }
+  tr.drop-after {
+    box-shadow: inset 0 -3px 0 var(--color-ink-900);
+  }
+
   /* Urgent: a black double border (black, a white gap, black), which shows on
      every job colour and uses none of them (PLAN.md §11 Q73). */
   .timeline-urgent {

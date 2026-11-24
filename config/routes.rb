@@ -65,7 +65,10 @@ Rails.application.routes.draw do
     post :publish
   end
   resources :schedule_blocks, path: "planner/blocks", only: %i[ create edit update destroy ] do
-    patch :move, on: :member
+    member do
+      patch :move
+      patch :drop
+    end
   end
 
   resources :production_runs, path: "production", except: :destroy do
