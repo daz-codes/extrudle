@@ -3,9 +3,13 @@
   <section class="card mb-6 flex flex-wrap items-center justify-between gap-4 p-5" aria-label="Plan">
     <div>
       <p class="font-semibold text-ink-900">Live plan</p>
-      <p class="text-sm text-ink-600">Changes here show on the floor straight away. To prepare a new plan without the floor seeing it, start a draft.</p>
+      <p class="text-sm text-ink-600">Changes here show on the floor straight away. To prepare a new plan without the floor seeing it, start a draft. Optimise drafts a plan for both lines around the required dates.</p>
     </div>
-    <%= button_to "Start a new plan", plan_draft_path(line: @line.name), method: :post, class: "btn btn-secondary" %>
+    <div class="flex flex-wrap gap-3">
+      <%= button_to "Start a new plan", plan_draft_path(line: @line.name), method: :post, class: "btn btn-secondary" %>
+      <%= button_to "Optimise", plan_optimisation_path(line: @line.name), method: :post, class: "btn btn-secondary",
+            form: { data: { turbo_confirm: "Replan both lines around the required dates? This starts a draft plan. The live plan stays as it is until you publish." } } %>
+    </div>
   </section>
 <% elsif @read_only %>
   <section class="card mb-6 flex flex-wrap items-center justify-between gap-4 p-5" aria-label="Plan">
@@ -26,6 +30,8 @@
     </div>
     <div class="flex flex-wrap gap-3">
       <%= link_to "View live plan", planner_path_for(@line, @week_start, plan: "live"), class: "btn btn-secondary" %>
+      <%= button_to "Optimise", plan_optimisation_path(line: @line.name), method: :post, class: "btn btn-secondary",
+            form: { data: { turbo_confirm: "Replan both lines in this draft around the required dates? Jobs that haven't started are reordered and may change line." } } %>
       <%= button_to "Discard", plan_draft_path(line: @line.name), method: :delete, class: "btn btn-secondary",
             form: { data: { turbo_confirm: "Discard the draft plan? The live plan stays as it is." } } %>
       <%= link_to "Review and publish", plan_draft_path(line: @line.name), class: "btn btn-accent" %>

@@ -38,4 +38,12 @@ class DraftPlansTest < ApplicationSystemTestCase
     assert_selector "tbody tr:first-child", text: "SO-00002"
     assert_operator @second.reload.starts_at, :<, @first.reload.starts_at
   end
+
+  test "optimise replans both lines in a draft" do
+    click_on "Planner"
+    accept_confirm { click_on "Optimise" }
+    assert_text "Both lines are replanned in the draft."
+    assert_text "Draft plan"
+    assert_selector "tbody tr:first-child", text: "SO-00002" # urgent, so first
+  end
 end

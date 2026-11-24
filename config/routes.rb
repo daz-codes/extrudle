@@ -64,6 +64,7 @@ Rails.application.routes.draw do
   resource :plan_draft, path: "planner/draft", only: %i[ show create destroy ] do
     post :publish
   end
+  resource :plan_optimisation, path: "planner/optimise", only: :create
   resources :schedule_blocks, path: "planner/blocks", only: %i[ create edit update destroy ] do
     member do
       patch :move

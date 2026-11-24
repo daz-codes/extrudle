@@ -118,6 +118,37 @@ class Schedule::Editor
     end
   end
 
+  # Sets the line's whole queue in one edit (Schedule::Optimise, Slice 11).
+  # queue: the unlocked blocks in their new order, this line's own and new
+  # unsaved ones (e.g. a job moving here from the other line). This line's
+  # unlocked blocks left out are taken off, except automatic changeovers, which
+  # are rebuilt. Started jobs can't be taken off; keeping them in place is up to
+  # the caller. Locked blocks stay where they are.
+  def rearrange(queue)
+    edit do |blocks|
+      queue = queue.reject(&:automatic?).map { _1.persisted? ? find(blocks, _1) : _1 }
+      raise Schedule::Error, "Locked blocks keep their time, so they can't be put in the queue" if queue.any?(&:locked?)
+
+      flowing(blocks).each do |block|
+        next if block.automatic? || queue.include?(block)
+
+        ensure_order_editable!(block.sales_order) if block.job?
+        ensure_not_started!(block)
+        discard(blocks, block)
+      end
+
+      queue.each.with_index(1) do |block, index|
+        unless block.persisted?
+          ensure_order_editable!(block.sales_order) if block.job?
+          block.line = line
+          block.plan_draft = plan.draft
+          blocks << block
+        end
+        block.queue_key = index
+      end
+    end
+  end
+
   # New duration for a non-job block, or a manual estimate for a job with no rate.
   def resize(block, duration_minutes)
     update(block, duration_minutes: duration_minutes)
