@@ -19,6 +19,11 @@ class PlannerDragTest < ApplicationSystemTestCase
     find(".timeline-block[href*='/planner/blocks/#{block_record.id}/edit']")
   end
 
+  # One Selenium action builder per test, so a held button stays held between steps.
+  def pointer
+    @pointer ||= page.driver.browser.action
+  end
+
   def queue_order
     lines(:d1).schedule_blocks.reload.ordered.map(&:id)
   end
@@ -42,6 +47,39 @@ class PlannerDragTest < ApplicationSystemTestCase
     find("#schedule_block_#{@b.id} .queue-handle").drag_to(find("#schedule_block_#{@a.id}"))
     assert_text "Changeover now runs Mon 16 Nov 06:00 – 08:00"
     assert_equal [ @b, @a, @c ].map(&:id), queue_order
+  end
+
+  test "letting go beside the timeline cancels the drag" do
+    visit planner_path(line: "D1", week: "2026-11-16")
+    wait_for_turbo
+
+    pointer.click_and_hold(bar(@c).native).move_by(-40, 0).perform
+    assert_selector ".timeline-ghost"
+    # Level with Monday's track, but just past its right-hand end.
+    monday = find(".timeline-track[data-day-start^='2026-11-16']")
+    pointer.move_to(monday.native, monday.native.size.width / 2 + 6, 0).perform
+    assert_no_selector ".timeline-ghost"
+    pointer.release.perform
+
+    wait_for_turbo
+    assert_no_text "now runs"
+    assert_equal [ @a, @b, @c ].map(&:id), queue_order
+  end
+
+  test "Esc cancels a drag, and letting go over the bar doesn't open it" do
+    visit planner_path(line: "D1", week: "2026-11-16")
+    wait_for_turbo
+
+    pointer.click_and_hold(bar(@a).native).move_by(40, 0).perform
+    assert_selector ".timeline-ghost"
+    pointer.send_keys(:escape).perform
+    assert_no_selector ".timeline-ghost"
+    pointer.move_to(bar(@a).native).release.perform
+
+    wait_for_turbo
+    assert_current_path planner_path(line: "D1", week: "2026-11-16")
+    assert_no_field "Notes", with: "First" # the bar's Edit page
+    assert_equal [ @a, @b, @c ].map(&:id), queue_order
   end
 
   test "clicking a bar still opens it, and the live plan can't be dragged while drafting" do

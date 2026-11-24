@@ -37,7 +37,9 @@ export default class extends Controller {
 
   // pointerdown on a bar or a queue handle.
   press(event) {
-    if (!this.hasFormTarget || this.drag || event.button > 0) return
+    // One pointer at a time (a second finger mid-hold is ignored), and none
+    // while a drop is still saving: its time would be read off the old board.
+    if (!this.hasFormTarget || this.pending || this.submitting || event.button > 0) return
 
     const handle = event.currentTarget
     const row = handle.closest("tr")
@@ -78,7 +80,18 @@ export default class extends Controller {
   }
 
   cancelOnEscape(event) {
-    if (event.key === "Escape" && this.pending) this.cancel()
+    if (event.key !== "Escape" || !this.pending) return
+    const dragging = this.drag
+    this.cancel()
+    // Letting go over the bar afterwards mustn't open it.
+    if (dragging) window.addEventListener("pointerup", () => this.swallowNextClick(), { capture: true, once: true })
+  }
+
+  // turbo:submit-end. A successful drop replaces the board (and this
+  // controller); a failed one leaves it, so let it take drags again.
+  submitted() {
+    this.submitting = false
+    this.element.removeAttribute("aria-busy")
   }
 
   // Private
@@ -145,6 +158,7 @@ export default class extends Controller {
     if (!track) return null
 
     const rect = track.getBoundingClientRect()
+    if (x < rect.left || x > rect.right) return null
     const slots = Number(track.dataset.slots)
     const slot = Math.min(slots - 1, Math.max(0, Math.floor(((x - rect.left) / rect.width) * slots)))
     return this.dayStart(track) + slot * SLOT_MS
@@ -166,6 +180,7 @@ export default class extends Controller {
   submit(url, at) {
     this.formTarget.action = url
     this.atTarget.value = at
+    this.submitting = true
     this.element.setAttribute("aria-busy", "true")
     this.cancel()
     this.formTarget.requestSubmit()
