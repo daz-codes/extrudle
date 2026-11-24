@@ -49,6 +49,45 @@ class PlannerDragTest < ApplicationSystemTestCase
     assert_equal [ @b, @a, @c ].map(&:id), queue_order
   end
 
+  test "a locked row isn't a place in the queue, so a row can't be dropped on it" do
+    maintenance = Schedule::Editor.new(lines(:d1)).add(block("planned_maintenance", 60, locked: true, starts_at: at("2026-11-16 14:00")))
+    visit planner_path(line: "D1", week: "2026-11-16")
+    wait_for_turbo
+
+    pointer.click_and_hold(find("#schedule_block_#{@a.id} .queue-handle").native).move_by(0, 20).perform
+    pointer.move_to(find("#schedule_block_#{maintenance.id}").native).perform
+    assert_no_selector "tr.drop-before, tr.drop-after"
+    pointer.release.perform
+
+    wait_for_turbo
+    assert_no_text "now runs"
+    assert_equal [ @a, @b, @c, maintenance ].map(&:id), queue_order
+  end
+
+  test "resting near the side of a narrow timeline scrolls it" do
+    page.driver.browser.manage.window.resize_to(800, 1000)
+    visit planner_path(line: "D1", week: "2026-11-16")
+    wait_for_turbo
+    scroller = find("[data-planner-drag-target=scroller]")
+    assert_equal 0, scroller.evaluate_script("this.scrollLeft")
+
+    pointer.click_and_hold(bar(@a).native).move_by(10, 0).perform
+    pointer.move_to(scroller.native, scroller.native.size.width / 2 - 10, 0).perform # just inside its right-hand side
+    assert eventually { scroller.evaluate_script("this.scrollLeft").positive? }, "the timeline scrolls sideways"
+    pointer.send_keys(:escape).release.perform
+  ensure
+    page.driver.browser.manage.window.resize_to(1400, 1000)
+  end
+
+  # Waits up to 2 real seconds (travel_to freezes Time) for the block to be true.
+  def eventually
+    give_up = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2
+    until (result = yield) || Process.clock_gettime(Process::CLOCK_MONOTONIC) > give_up
+      sleep 0.05
+    end
+    result
+  end
+
   test "letting go beside the timeline cancels the drag" do
     visit planner_path(line: "D1", week: "2026-11-16")
     wait_for_turbo
