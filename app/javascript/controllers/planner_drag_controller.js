@@ -13,16 +13,23 @@ import { Controller } from "@hotwired/stimulus"
 // pixels, so a click still opens the block. On touch a bar needs a short
 // press and hold, so the timeline can still be scrolled sideways; the queue's
 // handles have touch-action: none and drag at once.
+//
+// Held near the top or bottom of the window the page scrolls, and near either
+// side of the timeline it scrolls sideways, so a drag can reach anywhere. It
+// waits a moment first, so passing an edge or dropping near one doesn't scroll.
 const SLOT_MS = 30 * 60 * 1000
 const HOLD_MS = 350
 const MOVE_PX = 6
+const EDGE_PX = 48
+const SCROLL_PX = 12
+const EDGE_WAIT_MS = 300
 
 const timeFormat = new Intl.DateTimeFormat("en-GB", {
   weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London"
 })
 
 export default class extends Controller {
-  static targets = ["form", "at", "track", "bar", "row"]
+  static targets = ["form", "at", "track", "bar", "row", "scroller"]
 
   connect() {
     this.onMove = this.move.bind(this)
@@ -37,6 +44,9 @@ export default class extends Controller {
 
   // pointerdown on a bar or a queue handle.
   press(event) {
+    // A mouse can't press twice without letting go, so a press still pending
+    // lost its release (an alert, or let go outside the window): drop it.
+    if (this.pending?.mouse && event.pointerType === "mouse") this.cancel()
     // One pointer at a time (a second finger mid-hold is ignored), and none
     // while a drop is still saving: its time would be read off the old board.
     if (!this.hasFormTarget || this.pending || this.submitting || event.button > 0) return
@@ -45,7 +55,7 @@ export default class extends Controller {
     const row = handle.closest("tr")
     this.pending = {
       handle, row, source: row || handle, pointerId: event.pointerId,
-      x: event.clientX, y: event.clientY, touch: event.pointerType === "touch" && !row
+      x: event.clientX, y: event.clientY, touch: event.pointerType === "touch" && !row, mouse: event.pointerType === "mouse"
     }
     if (this.pending.touch) this.holdTimer = setTimeout(() => this.begin(event), HOLD_MS)
 
@@ -59,6 +69,7 @@ export default class extends Controller {
   move(event) {
     const pending = this.pending
     if (!pending || event.pointerId !== pending.pointerId) return
+    if (pending.mouse && event.buttons === 0) return this.cancel() // the release was lost
 
     if (!this.drag) {
       const moved = Math.hypot(event.clientX - pending.x, event.clientY - pending.y) > MOVE_PX
@@ -66,7 +77,8 @@ export default class extends Controller {
       if (pending.touch) return this.cancel() // moved before the hold: the finger is scrolling
       this.begin(event)
     }
-    this.drag.row ? this.overRow(event) : this.overTimeline(event)
+    this.pointer = { clientX: event.clientX, clientY: event.clientY }
+    this.over(this.pointer)
   }
 
   up(event) {
@@ -96,12 +108,52 @@ export default class extends Controller {
 
   // Private
 
+  over(point) {
+    this.drag.row ? this.overRow(point) : this.overTimeline(point)
+  }
+
+  // While dragging, scroll when the pointer has rested near the window's top
+  // or bottom, or near either side of the timeline, then re-read what's under it.
+  autoScroll(now) {
+    if (!this.drag) return
+    const [dx, dy] = this.pointer ? this.edgeDirection(this.pointer) : [0, 0]
+    if (!dx && !dy) {
+      this.edgeSince = null
+    } else if (!this.edgeSince) {
+      this.edgeSince = now
+    } else if (now - this.edgeSince >= EDGE_WAIT_MS) {
+      const scrollY = window.scrollY
+      window.scrollBy(0, dy * SCROLL_PX)
+      let scrolled = window.scrollY !== scrollY
+      if (dx) {
+        const left = this.scrollerTarget.scrollLeft
+        this.scrollerTarget.scrollLeft += dx * SCROLL_PX
+        scrolled ||= this.scrollerTarget.scrollLeft !== left
+      }
+      if (scrolled) this.over(this.pointer)
+    }
+    this.frame = requestAnimationFrame((time) => this.autoScroll(time))
+  }
+
+  // -1, 0 or 1 across (timeline bars only) and down.
+  edgeDirection({ clientX: x, clientY: y }) {
+    const dy = y < EDGE_PX ? -1 : y > window.innerHeight - EDGE_PX ? 1 : 0
+    let dx = 0
+    if (!this.drag.row && this.hasScrollerTarget) {
+      const rect = this.scrollerTarget.getBoundingClientRect()
+      dx = x < rect.left + EDGE_PX ? -1 : x > rect.right - EDGE_PX ? 1 : 0
+    }
+    return [dx, dy]
+  }
+
   begin(event) {
     const { handle, row, source } = this.pending
     clearTimeout(this.holdTimer)
     this.drag = { url: handle.dataset.dropUrl, row, source }
     source.classList.add("drag-source")
     document.documentElement.classList.add("planner-dragging")
+    this.edgeSince = null
+    this.frame = requestAnimationFrame((time) => this.autoScroll(time))
 
     if (!row) {
       const startsAt = Date.parse(handle.dataset.startsAt)
@@ -135,7 +187,9 @@ export default class extends Controller {
     this.drag.at = new Date(start).toISOString()
   }
 
-  // A row dragged onto another goes before it when moving up and after it when moving down.
+  // A row dragged onto another goes before it when moving up and after it when
+  // moving down. Only queued rows are targets: locked blocks and automatic
+  // changeovers aren't places in the queue, so dropping there would mislead.
   overRow(event) {
     const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("tr")
     this.rowTargets.forEach((r) => r.classList.remove("drop-before", "drop-after"))
@@ -203,6 +257,7 @@ export default class extends Controller {
 
   cancel() {
     clearTimeout(this.holdTimer)
+    cancelAnimationFrame(this.frame)
     this.ghost?.remove()
     this.drag?.source.classList.remove("drag-source")
     this.rowTargets.forEach((r) => r.classList.remove("drop-before", "drop-after"))
@@ -212,6 +267,6 @@ export default class extends Controller {
     window.removeEventListener("pointercancel", this.onUp)
     window.removeEventListener("touchmove", this.onTouchMove)
     window.removeEventListener("contextmenu", this.onContextMenu)
-    this.pending = this.drag = this.ghost = null
+    this.pending = this.drag = this.ghost = this.pointer = null
   }
 }

@@ -21,7 +21,7 @@
       <% @blocks.each do |block| %>
         <% warnings = @warnings[block] || [] %>
         <tr id="<%= dom_id(block) %>" class="align-top <%= "bg-lemon-50" if block.job? && block.sales_order.urgent? %>"
-            data-planner-drag-target="row" data-starts-at="<%= block.starts_at.iso8601 %>" data-ends-at="<%= block.ends_at.iso8601 %>">
+            <%= "data-planner-drag-target=row" unless block.locked? || block.automatic? %> data-starts-at="<%= block.starts_at.iso8601 %>" data-ends-at="<%= block.ends_at.iso8601 %>">
           <td class="px-4 py-3 font-mono text-ink-500 tabular-nums">
             <div class="flex items-center gap-1">
               <% if movable.include?(block) && draggable_block?(block) %>
