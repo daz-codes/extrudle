@@ -94,7 +94,7 @@
     <section id="orders" class="card scroll-mt-6 p-6">
       <h2 class="section-title mb-4">Take an order</h2>
       <ol>
-        <li><strong>Orders</strong> › <strong>New order</strong>: choose the customer, their PO reference and the required date. Tick urgent if it is.</li>
+        <li><strong>Orders</strong> › <strong>New order</strong>: choose the customer, their PO reference and the required date. For a "w/c" date, tick <strong>Any day that week</strong>: it's due by the Friday. If the customer has more than one site, type it in <strong>Delivery site</strong>; it goes on the plan and the delivery note. Tick urgent if it is.</li>
         <li>Add a line for each spec, with the quantity in kg or tonnes and the price per tonne (Sage needs it for the invoice).</li>
         <li>The order shows on the planner under "Orders to plan". It goes <strong>scheduled</strong> when it's all planned, <strong>in production</strong> when a log starts, <strong>dispatched</strong> when it's all gone, and <strong>invoiced</strong> once it's in Sage.</li>
       </ol>
@@ -105,10 +105,10 @@
       <ol>
         <li>Open <strong>Planner</strong> and choose the line.</li>
         <li>Under "Orders to plan", press <strong>Add to D1</strong> (or D2). Change the kg to split an order across lines or jobs.</li>
-        <li>Use ▲ ▼ to change the order, or drag: a bar on the week (on a touch screen, press and hold it first) or a row in the queue by its ⠿ handle. Times work themselves out from each spec's line rate, and changeovers go in between different specs.</li>
+        <li>Use ▲ ▼ to change the order, or drag: a bar on the week (on a touch screen, press and hold it first) or a row in the queue by its ⠿ handle. Times work themselves out from each spec's line rate, or the line's default rate (Master data › Lines) for specs without one. Changeovers go in between different specs, unless the line's changeover time is 0.</li>
         <li>Dragging a job changes its place in the queue: it runs as near to where you dropped it as the jobs around it allow, and everything after it moves up or down. To keep a job at an exact time, tick <strong>Fix at a time</strong> on its Edit page. Maintenance and other locked blocks are different: drag one on the week and it's fixed at the time you drop it on, and the jobs move round it (it can't go over a job that has started). Dragging maintenance in the queue only changes its place. Press Esc to cancel a drag.</li>
         <li>Add maintenance, a changeover or "no orders" from <strong>Add a block</strong>. Tick <strong>Fix at a time</strong> for something booked, like an engineer visit; the queue flows round it.</li>
-        <li>Late jobs show in red. <strong>Print plan</strong> gives the 5.4.1.1 sheet.</li>
+        <li>Late jobs show in red. <strong>Print plan</strong> gives the 5.4.1.1 sheet, with each job's hours and the form's document control at the foot of every page.</li>
         <li>To colour code the plan, pick a <strong>Planner colour</strong> on a customer (Master data › Customers › Edit). Their jobs show in it; customers start as lime. Press a job on the planner to give that one job a different colour; it starts as the customer's. Urgent jobs have a black double border; if they're also late, its outer line is red.</li>
       </ol>
     </section>

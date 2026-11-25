@@ -11,6 +11,7 @@ class Import::ProductSpecs < Import::Base
   column :silicone, example: "Underside", hint: "None, Underside, Reverse or Both."
   column :silicone_pct, label: "Silicone %", aliases: %w[ silicone_percent silicone_pct ], example: "0.5"
   column :antiblock, example: "Yes"
+  column :antifog_pct, label: "Anti-fog %", aliases: %w[ antifog anti_fog anti_fog_pct antifog_percent ], example: "", hint: "Blank for none."
   column :core_inches, label: "Core (inches)", aliases: %w[ core core_size ], example: "6"
   column :core_orientation, aliases: %w[ orientation ], example: "Horizontal"
   column :reel_limit, example: "Max diameter", hint: "Max diameter or Max roll on side."
@@ -60,7 +61,7 @@ class Import::ProductSpecs < Import::Base
 
     def spec_attributes(values)
       attributes = values.slice("width_mm", "max_diameter_mm", "reels_per_pallet", "packaging_notes", "customer_part_no",
-                                "customer_tool_no", "customer_product_code", "customer_description", "silicone_pct", "max_reel_kg", "core_inches")
+                                "customer_tool_no", "customer_product_code", "customer_description", "silicone_pct", "antifog_pct", "max_reel_kg", "core_inches")
       attributes["customer"] = find_by_name(Customer, values["customer"], "customer") if values["customer"]
       attributes["thickness_micron"] = thickness(values["thickness"]) if values["thickness"]
       attributes["material_type"] = choice(values["material_type"], ProductSpec.material_types.keys, "Material type") if values["material_type"]

@@ -12,8 +12,14 @@ module SalesOrdersHelper
     tag.span(order.status.humanize, class: "badge #{ORDER_STATUS_BADGES.fetch(order.status)}")
   end
 
+  # "Mon 30 Nov 2026", or "w/c Mon 30 Nov 2026" for a week order (§11 Q90).
+  def required_on_text(order, format: "%a %-d %b %Y")
+    text = l(order.required_on, format:)
+    order.required_week? ? "w/c #{text}" : text
+  end
+
   def required_date(order)
-    text = l(order.required_on, format: "%a %-d %b %Y")
+    text = required_on_text(order)
     if order.late?
       tag.span(class: "font-semibold text-bad-700") { "#{text} · late" }
     else

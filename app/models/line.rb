@@ -11,6 +11,8 @@ class Line < ApplicationRecord
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }
   validates :default_changeover_minutes, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  # Used for specs with no rate of their own on this line (§11 Q89).
+  validates :default_kg_per_hour, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
   validates :position, numericality: { only_integer: true }
 
   scope :ordered, -> { order(:position, :name) }

@@ -60,7 +60,7 @@ class ProductSpecsController < ApplicationController
 
     def product_spec_params
       params.expect(product_spec: %i[
-        code customer_id width_mm thickness_micron material_type pe silicone silicone_pct antiblock
+        code customer_id width_mm thickness_micron material_type pe silicone silicone_pct antiblock antifog_pct
         core_inches core_orientation reel_limit max_diameter_mm max_reel_kg pallet_type reels_per_pallet
         label_inside_core packaging_notes customer_part_no customer_tool_no customer_product_code
         customer_description active

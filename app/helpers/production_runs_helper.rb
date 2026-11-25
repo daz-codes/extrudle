@@ -20,10 +20,11 @@ module ProductionRunsHelper
       "PE" => yes_no(spec.pe),
       "Silicone" => silicone_summary(spec),
       "Antiblock" => yes_no(spec.antiblock),
+      "Anti-fog" => antifog_summary(spec),
       "Core" => "#{spec.core_inches}\" #{spec.core_orientation}",
       "Reel size" => reel_size_summary(spec),
       "Quantity" => order_quantity(line.quantity_g, unit: line.quantity_unit),
-      "Required by" => l(order.required_on, format: "%a %-d %b %Y"),
+      "Required by" => required_on_text(order),
       "Customer batch" => line.customer_batch_no
     }.compact
   end

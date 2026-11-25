@@ -8,6 +8,10 @@
     <%= form.number_row :default_changeover_minutes, step: 30, min: 0, suffix: "min", hint: "The planner suggests this between jobs." %>
     <%= form.number_row :position, label: "Display order", step: 1 %>
   </div>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <%= form.number_row :default_kg_per_hour, label: "Default rate", step: 1, min: 1, suffix: "kg/h",
+          hint: "Used for specs with no rate of their own on this line. Leave blank to need a rate per spec." %>
+  </div>
   <%= form.check_row :active, hint: "Inactive lines are hidden from the planner." %>
   <%= render "master_data/form_actions", form: form, cancel_path: lines_path %>
 <% end %>

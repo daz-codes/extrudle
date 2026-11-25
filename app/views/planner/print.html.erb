@@ -20,6 +20,7 @@
         <tr>
           <th>#</th>
           <th>Start – finish</th>
+          <th class="text-right">Hours</th>
           <th>Customer &amp; order no.</th>
           <th class="text-right">Quantity</th>
           <th class="text-right">Micron</th>
@@ -40,20 +41,21 @@
             <tr class="<%= "print-urgent" if order.urgent? %> <%= "print-late" if late %>">
               <td><%= index + 1 %></td>
               <td class="whitespace-nowrap"><%= plan_range(block) %></td>
+              <td class="text-right whitespace-nowrap font-semibold"><%= print_hours(block.duration_minutes) %></td>
               <td>
-                <strong><%= order.customer.name %></strong> · <%= order.number %><%= " · PO #{order.customer_po_ref}" if order.customer_po_ref %>
+                <strong><%= order.customer.name %></strong><%= " #{order.delivery_site}" if order.delivery_site %> · <%= order.number %><%= " · PO #{order.customer_po_ref}" if order.customer_po_ref %>
                 <div>
                   <%= [ ("Part #{spec.customer_part_no}" if spec.customer_part_no.present?), ("Tool #{spec.customer_tool_no}" if spec.customer_tool_no.present?),
                         ("Product #{spec.customer_product_code}" if spec.customer_product_code.present?) ].compact.join(" · ") %>
                 </div>
-                <div>Required <%= l(order.required_on, format: "%-d/%m") %><%= " · URGENT" if order.urgent? %><%= " · LATE" if late %></div>
+                <div>Required <%= required_on_text(order, format: "%-d/%m") %><%= " · URGENT" if order.urgent? %><%= " · LATE" if late %></div>
               </td>
               <td class="text-right whitespace-nowrap"><%= kg(block.planned_g) %></td>
               <td class="text-right font-semibold"><%= spec.paper_gauge %></td>
               <td class="text-right font-semibold"><%= spec.width_mm %></td>
               <td><%= yes_no(spec.pe) %></td>
               <td><%= silicone_summary(spec) %></td>
-              <td><%= yes_no(spec.antiblock) %></td>
+              <td><%= yes_no(spec.antiblock) %><% if spec.antifog_bp %><div class="font-semibold">Anti-fog <%= spec.antifog_pct %>%</div><% end %></td>
               <td><%= reel_size_summary(spec) %></td>
               <td>
                 <%= spec.core_inches %>" core, <%= spec.core_orientation %>. <%= spec.pallet_type.humanize %> pallet<%= ", #{spec.reels_per_pallet}/pallet" if spec.reels_per_pallet %>.
@@ -65,6 +67,7 @@
             <tr class="print-other">
               <td><%= index + 1 %></td>
               <td class="whitespace-nowrap"><%= plan_range(block) %></td>
+              <td class="text-right whitespace-nowrap"><%= print_hours(block.duration_minutes) %></td>
               <td colspan="9">
                 <strong><%= block_title(block) %></strong> · <%= duration_text(block.duration_minutes) %><%= " · fixed time" if block.locked? %><%= " · #{block.notes}" if block.notes.present? %>
               </td>
@@ -72,9 +75,21 @@
           <% end %>
         <% end %>
         <% if plan[:blocks].empty? %>
-          <tr><td colspan="11" class="py-6 text-center">Nothing planned.</td></tr>
+          <tr><td colspan="12" class="py-6 text-center">Nothing planned.</td></tr>
         <% end %>
       </tbody>
+      <%# A table footer repeats on every printed page, like the paper form's document control box. %>
+      <% control = Company.form("5.4.1.1") %>
+      <% if control.any? %>
+        <tfoot>
+          <tr class="print-control">
+            <td colspan="12">
+              Written by <strong><%= control[:written_by] %></strong> · Authorised by <strong><%= control[:authorised_by] %></strong> ·
+              Issue no. <strong><%= control[:issue_no] %></strong> · Issue date <strong><%= control[:issue_date] %></strong>
+            </td>
+          </tr>
+        </tfoot>
+      <% end %>
     </table>
   </section>
 <% end %>

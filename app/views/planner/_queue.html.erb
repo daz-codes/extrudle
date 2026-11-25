@@ -48,7 +48,7 @@
             </div>
             <% if (subtitle = block_subtitle(block)) %><div class="text-sm text-ink-600"><%= subtitle %></div><% end %>
             <% if block.job? %>
-              <div class="text-sm text-ink-500"><%= block.product_spec.paper_gauge %> × <%= block.product_spec.width_mm %> mm · required <%= l(block.sales_order.required_on, format: "%a %-d %b") %></div>
+              <div class="text-sm text-ink-500"><%= block.product_spec.paper_gauge %> × <%= block.product_spec.width_mm %> mm · required <%= required_on_text(block.sales_order, format: "%a %-d %b") %></div>
             <% end %>
             <% warnings.each do |warning| %>
               <p class="mt-1 text-sm font-medium <%= warning.code == :late ? "text-bad-700" : "text-ink-800" %>">

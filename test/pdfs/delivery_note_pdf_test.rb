@@ -24,4 +24,10 @@ class DeliveryNotePdfTest < ActiveSupport::TestCase
     note.mark_dispatched!
     assert_not_includes pdf_text(note), "DRAFT"
   end
+
+  test "the order's delivery site goes under Deliver to (Q91)" do
+    run = run_with_pallets(pallets: [ [ 400 ] ], finish: true)
+    sales_order_lines(:bf_open_700).sales_order.update_columns(delivery_site: "Cinderford")
+    assert_includes pdf_text(delivery_note_for(run, [ 1 ])), "Cinderford"
+  end
 end

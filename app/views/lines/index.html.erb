@@ -13,7 +13,8 @@
       </div>
       <dl class="mt-4 grid grid-cols-2 gap-3">
         <div><dt class="text-sm text-ink-600">Default changeover</dt><dd class="text-lg font-semibold tabular-nums"><%= line.default_changeover_minutes %> min</dd></div>
-        <div><dt class="text-sm text-ink-600">Specs with a rate</dt><dd class="text-lg font-semibold tabular-nums"><%= line.line_rates.size %></dd></div>
+        <div><dt class="text-sm text-ink-600">Default rate</dt><dd class="text-lg font-semibold tabular-nums"><%= line.default_kg_per_hour ? "#{line.default_kg_per_hour} kg/h" : "None" %></dd></div>
+        <div><dt class="text-sm text-ink-600">Specs with their own rate</dt><dd class="text-lg font-semibold tabular-nums"><%= line.line_rates.size %></dd></div>
       </dl>
       <div class="mt-4"><%= link_to "Edit", edit_line_path(line), class: "btn btn-secondary", aria: { label: "Edit line #{line.name}" } %></div>
     </section>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_23_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_25_101811) do
   create_table "backup_checks", force: :cascade do |t|
     t.boolean "ok", null: false
     t.text "message", null: false
@@ -110,8 +110,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_23_150000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "queue_starts_at"
+    t.integer "default_kg_per_hour"
     t.index ["name"], name: "index_lines_on_name", unique: true
     t.check_constraint "default_changeover_minutes >= 0", name: "lines_changeover_non_negative"
+    t.check_constraint "default_kg_per_hour IS NULL OR default_kg_per_hour > 0", name: "lines_default_rate_positive"
   end
 
   create_table "lots", force: :cascade do |t|
@@ -230,8 +232,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_23_150000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "antifog_bp"
     t.index ["code", "revision"], name: "index_product_specs_on_code_and_revision", unique: true
     t.index ["customer_id"], name: "index_product_specs_on_customer_id"
+    t.check_constraint "antifog_bp IS NULL OR (antifog_bp > 0 AND antifog_bp <= 10000)", name: "product_specs_antifog_range"
     t.check_constraint "revision > 0", name: "product_specs_revision_positive"
     t.check_constraint "thickness_micron > 0", name: "product_specs_thickness_positive"
     t.check_constraint "width_mm > 0", name: "product_specs_width_positive"
@@ -379,6 +383,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_23_150000) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "required_week", default: false, null: false
+    t.string "delivery_site"
     t.index ["customer_id"], name: "index_sales_orders_on_customer_id"
     t.index ["number"], name: "index_sales_orders_on_number", unique: true
     t.index ["status", "required_on"], name: "index_sales_orders_on_status_and_required_on"

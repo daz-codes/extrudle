@@ -20,4 +20,9 @@ module Company
   end
 
   def po_terms = details[:po_terms]
+
+  # Written by, authorised by, issue number and date for a paper form, e.g. form("5.4.1.1").
+  def form(number)
+    (details[:forms] || {}).transform_keys(&:to_s).fetch(number.to_s, {})
+  end
 end

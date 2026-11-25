@@ -29,6 +29,8 @@ en:
         pe: PE
         silicone_pct: Silicone %
         silicone_bp: Silicone %
+        antifog_pct: Anti-fog
+        antifog_bp: Anti-fog
         antiblock: Antiblock
         core_inches: Core size
         core_orientation: Core orientation

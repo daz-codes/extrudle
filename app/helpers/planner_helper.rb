@@ -72,6 +72,13 @@ module PlannerHelper
 
   def duration_text(minutes) = Schedule.duration_text(minutes)
 
+  # Hours as the paper plan writes them: "10", "10½" (durations are whole 30-minute slots).
+  def print_hours(minutes)
+    hours, rest = minutes.divmod(60)
+    half = rest >= 30 ? "½" : ""
+    hours.zero? && half.present? ? half : "#{hours}#{half}"
+  end
+
   def plan_time(time)
     l(time, format: "%a %-d %b %H:%M")
   end

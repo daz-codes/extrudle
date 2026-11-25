@@ -34,18 +34,19 @@ class Schedule::Warnings
     end
 
     def no_rate(block)
-      return if block.line_rate
+      return if block.kg_per_hour
 
       Warning.new(:no_rate, "Line #{@line.name} has no rate for #{block.product_spec}, so #{duration(block.duration_minutes)} is an estimate")
     end
 
-    # "Late" means finishing after the end of the required day, UK time (§11 Q16).
+    # "Late" means finishing after the end of the required day, or a week
+    # order's Friday, UK time (§11 Q16, Q90).
     def late(block)
       order = block.sales_order
-      deadline = order.required_on.end_of_day
-      return unless block.ends_at > deadline
+      return unless block.ends_at > order.deadline
 
-      Warning.new(:late, "Finishes #{I18n.l(block.ends_at, format: '%a %-d %b %H:%M')}, after #{order.number}'s required date (#{I18n.l(order.required_on, format: '%a %-d %b')})")
+      required = order.required_week? ? "w/c #{I18n.l(order.required_on, format: '%a %-d %b')}" : I18n.l(order.required_on, format: "%a %-d %b")
+      Warning.new(:late, "Finishes #{I18n.l(block.ends_at, format: '%a %-d %b %H:%M')}, after #{order.number}'s required date (#{required})")
     end
 
     def over_planned(block)

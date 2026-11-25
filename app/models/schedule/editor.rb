@@ -268,7 +268,7 @@ class Schedule::Editor
     def apply_duration(block, minutes)
       return if minutes == block.duration_minutes
       raise Schedule::Error, AUTOMATIC_MESSAGE if block.automatic?
-      raise Schedule::Error, "#{block} takes as long as the line rate says. Change the planned weight instead." if block.job? && block.line_rate
+      raise Schedule::Error, "#{block} takes as long as the line rate says. Change the planned weight instead." if block.job? && block.kg_per_hour
 
       block.duration_minutes = minutes
     end

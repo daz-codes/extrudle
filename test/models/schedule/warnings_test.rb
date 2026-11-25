@@ -34,6 +34,27 @@ class Schedule::WarningsTest < ActiveSupport::TestCase
     assert_match(/after SO-00001's required date \(Tue 17 Nov\)/, warning.message)
   end
 
+  test "a week order is late only after the end of its Friday (Q90)" do
+    order_line = sales_order_lines(:bf_open_700)
+    order_line.sales_order.update!(required_on: Date.new(2026, 11, 16), required_week: true) # w/c Mon 16 Nov
+    job = @editor.add_job(order_line, planned_g: 7_980_000) # 42 h: Mon 06:00 → Wed 00:00
+    assert_not_includes codes(job), :late
+
+    order_line.sales_order.update!(required_on: Date.new(2026, 11, 9)) # w/c 9 Nov: due by Fri 13 Nov
+    warning = Schedule::Warnings.for_line(@d1)[job.reload].detect { _1.code == :late }
+    assert_match "after SO-00001's required date (w/c Mon 9 Nov)", warning.message
+  end
+
+  test "a line's default rate times jobs for specs with no rate of their own, and isn't an estimate (Q89)" do
+    @d1.update!(default_kg_per_hour: 500)
+    job = @editor.add_job(stock_order_line(kg: 1_000)) # STK-1000-500 has no rate on D1
+    assert_equal 120, job.reload.duration_minutes
+    assert_not_includes codes(job), :no_rate
+
+    own = @editor.add_job(sales_order_lines(:bf_open_700), planned_g: 1_900_000)
+    assert_equal 600, own.reload.duration_minutes, "a spec's own rate (190 kg/h) still wins"
+  end
+
   test "no rate for the line" do
     job = @editor.add_job(stock_order_line, duration_minutes: 120)
     warning = Schedule::Warnings.for_line(@d1)[job.reload].first

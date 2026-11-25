@@ -31,6 +31,16 @@ class SalesOrdersControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", text: "SO-00001", count: 0
   end
 
+  test "a week order with a delivery site" do
+    post sales_orders_path, params: { sales_order: { customer_id: customers(:rhine).id, required_on: "2026-12-02", required_week: "1", delivery_site: "Cinderford" } }
+    order = SalesOrder.order(:id).last
+    assert_equal [ Date.new(2026, 11, 30), true, "Cinderford" ], [ order.required_on, order.required_week, order.delivery_site ]
+
+    follow_redirect!
+    assert_select "p", /w\/c Mon 30 Nov 2026/
+    assert_select "p", /Cinderford/
+  end
+
   test "create then add a line in tonnes" do
     assert_difference "SalesOrder.count" do
       post sales_orders_path, params: { sales_order: { customer_id: customers(:rhine).id, customer_po_ref: "rv-1", required_on: Date.current + 10 } }

@@ -57,14 +57,14 @@ class ImportTest < ActiveSupport::TestCase
   end
 
   test "product specs: new codes with line rates, paper gauge thickness, yes/no flags" do
-    text = "Code,Customer,Width (mm),Thickness,Silicone,Silicone %,PE,Antiblock,Reel limit,Max diameter (mm),Max reel (kg),D1 rate (kg/h),rate_d2\n" \
-           "imp-700-250,Brightform Packaging Ltd,700,.250,Underside,0.5,No,Yes,Max diameter,1000,\"1,100\",190,175\n"
+    text = "Code,Customer,Width (mm),Thickness,Silicone,Silicone %,PE,Antiblock,Anti-fog %,Reel limit,Max diameter (mm),Max reel (kg),D1 rate (kg/h),rate_d2\n" \
+           "imp-700-250,Brightform Packaging Ltd,700,.250,Underside,0.5,No,Yes,2,Max diameter,1000,\"1,100\",190,175\n"
     result = import("product_specs", text)
     assert result.ok?, result.results.flat_map(&:errors).to_sentence
 
     spec = ProductSpec.find_by!(code: "IMP-700-250")
-    assert_equal [ 700, 250, "underside", 50, false, true, 1_100_000 ],
-                 [ spec.width_mm, spec.thickness_micron, spec.silicone, spec.silicone_bp, spec.pe, spec.antiblock, spec.max_reel_g ]
+    assert_equal [ 700, 250, "underside", 50, false, true, 200, 1_100_000 ],
+                 [ spec.width_mm, spec.thickness_micron, spec.silicone, spec.silicone_bp, spec.pe, spec.antiblock, spec.antifog_bp, spec.max_reel_g ]
     assert_equal({ "D1" => 190, "D2" => 175 }, spec.line_rates.includes(:line).to_h { [ _1.line.name, _1.kg_per_hour ] })
   end
 

@@ -25,7 +25,7 @@
         <tr id="<%= dom_id(order, :ready) %>">
           <td class="px-4 py-3 font-mono"><%= link_to order.number, order, class: "link" %></td>
           <td class="px-4 py-3"><%= order.customer.name %></td>
-          <td class="px-4 py-3 tabular-nums"><%= l(order.required_on, format: "%a %-d %b") %> <%= urgent_badge(order) %></td>
+          <td class="px-4 py-3 tabular-nums"><%= required_on_text(order, format: "%a %-d %b") %> <%= urgent_badge(order) %></td>
           <td class="px-4 py-3 text-right tabular-nums"><%= pallets.size %></td>
           <td class="px-4 py-3 text-right tabular-nums"><%= kg(pallets.sum(&:weight_g)) %></td>
           <td class="px-4 py-3 text-right"><%= link_to "New delivery note", new_delivery_note_path(order: order.id), class: "btn btn-primary" %></td>

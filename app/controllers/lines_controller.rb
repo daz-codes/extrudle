@@ -37,6 +37,6 @@ class LinesController < ApplicationController
     end
 
     def line_params
-      params.expect(line: %i[ name machine_no default_changeover_minutes position active ])
+      params.expect(line: %i[ name machine_no default_changeover_minutes default_kg_per_hour position active ])
     end
 end

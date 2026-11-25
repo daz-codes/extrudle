@@ -27,6 +27,8 @@
       <%= form.check_row :pe, label: "PE" %>
       <%= form.check_row :antiblock %>
     </div>
+    <%= form.text_row :antifog_pct, label: "Anti-fog", inputmode: "decimal", suffix: "%", wrapper: "max-w-48",
+          hint: "Blank for none. Say which side in the packaging notes." %>
     <div class="space-y-5 silicone-fields">
       <%= form.radio_row :silicone, ProductSpec.silicones.keys %>
       <%= form.text_row :silicone_pct, inputmode: "decimal", suffix: "%", wrapper: "js-silicone-pct max-w-48" %>

@@ -10,6 +10,7 @@
     </div>
     <p class="mt-2 text-ink-600">
       <%= link_to order.customer.name, order.customer, class: "link" %>
+      <% if order.delivery_site %> · <%= order.delivery_site %><% end %>
       <% if order.customer_po_ref %> · PO <%= order.customer_po_ref %><% end %>
     </p>
   </div>

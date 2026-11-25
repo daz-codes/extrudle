@@ -174,6 +174,32 @@ class ProductSpecTest < ActiveSupport::TestCase
     assert_not_includes ProductSpec.search("2231"), product_specs(:stock)
   end
 
+  test "anti-fog is an optional percentage, copied when duplicated (Q93)" do
+    spec = product_specs(:bf_700)
+    spec.antifog_pct = "2"
+    assert spec.valid?
+    assert_equal 200, spec.antifog_bp
+    assert_equal 200, spec.duplicate.antifog_bp
+
+    spec.antifog_pct = "0"
+    assert_not spec.valid?
+    spec.antifog_pct = ""
+    assert spec.valid?
+    assert_nil spec.antifog_bp
+  end
+
+  test "kg per hour on a line: the spec's own rate, else the line's default (Q89)" do
+    d1, d2 = lines(:d1), lines(:d2)
+    spec = product_specs(:stock)
+    assert_nil spec.kg_per_hour_on(d1)
+    d1.update!(default_kg_per_hour: 500)
+    assert_equal 500, spec.kg_per_hour_on(d1)
+
+    own = product_specs(:bf_700)
+    assert_equal own.rate_for(d2).kg_per_hour, own.kg_per_hour_on(d2)
+    assert_not d1.tap { _1.default_kg_per_hour = 0 }.valid?
+  end
+
   test "to_s shows the revision after the first" do
     assert_equal "BF-700-250", product_specs(:bf_700).to_s
     assert_equal "X rev 2", ProductSpec.new(code: "X", revision: 2).to_s
