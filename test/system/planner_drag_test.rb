@@ -62,6 +62,24 @@ class PlannerDragTest < ApplicationSystemTestCase
     assert_equal at("2026-11-16 09:00"), @b.reload.starts_at
   end
 
+  test "the line says when a drop would pass a job that has started, and nothing is sent" do
+    job = Schedule::Editor.new(lines(:d1)).add_job(sales_order_lines(:bf_open_700), planned_g: 380_000) # 12:00–14:00
+    maintenance = Schedule::Editor.new(lines(:d1)).add(block("planned_maintenance", 60))                 # 14:00–15:00
+    assert ProductionRun::Start.new(schedule_block: job).tap { _1.user = users(:floor) }.save
+    visit planner_path(line: "D1", week: "2026-11-16")
+    wait_for_turbo
+
+    first = bar(@a).native
+    pointer.click_and_hold(bar(maintenance).native).move_by(-20, 0).perform
+    pointer.move_to(first, -first.size.width / 4, 0).perform
+    assert_selector ".timeline-insert.is-blocked", text: "Can't go here: SO-00001 BF-700-250 has started"
+    pointer.release.perform
+    wait_for_turbo
+
+    assert_no_text "now runs"
+    assert_equal [ @a, @b, @c, job, maintenance ].map(&:id), queue_order
+  end
+
   test "dropping a bar back where it is changes nothing" do
     visit planner_path(line: "D1", week: "2026-11-16")
     wait_for_turbo

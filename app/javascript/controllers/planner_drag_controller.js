@@ -216,8 +216,17 @@ export default class extends Controller {
     const unchanged = queue[here - 1]?.id === before?.id && queue[here + 1]?.id === after?.id
     const join = after ? Date.parse(after.startsAt) : this.endOf(before)
     const where = !before ? `First, before ${after.label}` : !after ? `Last, after ${before.label}` : `Between ${before.label} and ${after.label}`
-    this.placeInsert(join, pointerAt, unchanged ? `Stays here: ${where.toLowerCase()}` : `${where} · ${timeFormat.format(join)}`)
-    this.drag.at = unchanged ? null : new Date(pointerAt).toISOString()
+    // The server won't move a block past a job that has started (or whose order
+    // is finished), so say so here rather than after the drop.
+    const to = index === -1 ? others.length : index
+    const passed = to < here ? others.slice(to, here) : others.slice(here, to)
+    const stuck = unchanged ? null : passed.find((b) => b.stuck)
+    const label = unchanged ? `Stays here: ${where.toLowerCase()}`
+      : stuck ? `Can't go here: ${stuck.label} ${stuck.stuck}`
+      : `${where} · ${timeFormat.format(join)}`
+    this.placeInsert(join, pointerAt, label)
+    this.ghost.classList.toggle("is-blocked", !!stuck)
+    this.drag.at = unchanged || stuck ? null : new Date(pointerAt).toISOString()
   }
 
   // The line goes on the join if it's on this week, or else just the label

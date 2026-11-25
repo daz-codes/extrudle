@@ -389,6 +389,12 @@
   .timeline-insert.off-week {
     @apply border-0;
   }
+  .timeline-insert.is-blocked {
+    @apply border-dashed border-bad-600;
+  }
+  .timeline-insert.is-blocked .timeline-ghost-label {
+    @apply bg-bad-700;
+  }
   .timeline-insert.at-end .timeline-ghost-label {
     @apply right-0 left-auto;
   }

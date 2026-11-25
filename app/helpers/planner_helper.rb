@@ -30,8 +30,17 @@ module PlannerHelper
     return [] if @read_only
 
     blocks.reject { _1.locked? || _1.automatic? }.map do |block|
-      { id: block.id, label: block.to_s, startsAt: block.starts_at.iso8601, minutes: block.duration_minutes }
+      { id: block.id, label: block.to_s, startsAt: block.starts_at.iso8601, minutes: block.duration_minutes,
+        stuck: stuck_reason(block) }.compact
     end
+  end
+
+  # Why nothing can be moved past this block (Schedule::Editor#ensure_can_pass!), or nil.
+  def stuck_reason(block)
+    return unless block.job?
+    return "has started" if block.started?
+
+    "is #{block.sales_order.status.humanize.downcase}" unless SalesOrder::ACTIVE_STATUSES.include?(block.sales_order.status)
   end
 
   def draggable_block?(block)
