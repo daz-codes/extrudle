@@ -6,8 +6,10 @@ import { Controller } from "@hotwired/stimulus"
 // dragged by their handle. Either way the drop sends PATCH …/drop with the new
 // start time ("at"), and the server decides what that means: a queued block
 // moves to that place in the queue and the line reflows (§11 Q74), a locked
-// block is pinned at the new time (§11 Q75). Nothing is planned in the
-// browser; the board comes back as a Turbo Stream.
+// block is pinned at the new time (§11 Q75), and so is maintenance dragged on
+// the timeline (§11 Q80). Queue rows send "queue", so a row dragged in the
+// table is only reordered. Nothing is planned in the browser; the board comes
+// back as a Turbo Stream.
 //
 // Pointer events cover mouse, pen and touch. A mouse drag starts after a few
 // pixels, so a click still opens the block. On touch a bar needs a short
@@ -29,7 +31,7 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", {
 })
 
 export default class extends Controller {
-  static targets = ["form", "at", "track", "bar", "row", "scroller"]
+  static targets = ["form", "at", "queue", "track", "bar", "row", "scroller"]
 
   connect() {
     this.onMove = this.move.bind(this)
@@ -86,7 +88,7 @@ export default class extends Controller {
     const drag = this.drag
     if (drag && event.type === "pointerup") {
       this.swallowNextClick()
-      if (drag.at && drag.at !== drag.from) return this.submit(drag.url, drag.at)
+      if (drag.at && drag.at !== drag.from) return this.submit(drag.url, drag.at, !!drag.row)
     }
     this.cancel()
   }
@@ -231,9 +233,10 @@ export default class extends Controller {
     this.drag.at = null
   }
 
-  submit(url, at) {
+  submit(url, at, queue) {
     this.formTarget.action = url
     this.atTarget.value = at
+    this.queueTarget.value = queue ? "1" : ""
     this.submitting = true
     this.element.setAttribute("aria-busy", "true")
     this.cancel()
