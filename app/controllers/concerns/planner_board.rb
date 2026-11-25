@@ -30,7 +30,7 @@ module PlannerBoard
       SalesOrderLine.joins(:sales_order).merge(SalesOrder.active)
         .includes({ sales_order: :customer }, { product_spec: :line_rates })
         .select { @plan.unplanned_g(_1).positive? }
-        .sort_by { [ _1.sales_order.required_on, _1.sales_order.urgent? ? 0 : 1, _1.sales_order.number, _1.id ] }
+        .sort_by { [ _1.sales_order.due_on, _1.sales_order.urgent? ? 0 : 1, _1.sales_order.number, _1.id ] }
     end
 
     def week_param

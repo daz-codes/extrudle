@@ -62,9 +62,12 @@ stu_email = (Rails.application.credentials.demo_admin_email.presence if demo_in_
 end
 
 # --- Lines -------------------------------------------------------------------
+# Rates and changeovers as on Stu's paper plans (16 Nov 2026): about 500 kg/h on
+# D1 and 570 kg/h on D2 whatever the spec, and no time planned for changeovers
+# (PLAN.md §11 Q88, Q89).
 lines = [
-  { name: "D1", machine_no: "1", default_changeover_minutes: 60, position: 1 },
-  { name: "D2", machine_no: "2", default_changeover_minutes: 90, position: 2 }
+  { name: "D1", machine_no: "1", default_changeover_minutes: 0, default_kg_per_hour: 500, position: 1 },
+  { name: "D2", machine_no: "2", default_changeover_minutes: 0, default_kg_per_hour: 570, position: 2 }
 ].to_h { |attrs| [ attrs[:name], Line.find_or_create_by!(name: attrs[:name]) { _1.assign_attributes(attrs) } ] }
 
 # --- Customers ---------------------------------------------------------------
@@ -132,17 +135,18 @@ end
 
 # --- Product specs and line rates --------------------------------------------
 # [code, customer, width mm, micron, silicone, silicone %, antiblock, PE, D1 kg/h, D2 kg/h, extras]
+# A nil rate uses the line's default. KF-900-450 is wound on 500 kg rolls, which run slower on D2.
 [
-  [ "BF-700-250", "Brightform Packaging Ltd", 700, 250, "underside", "0.5", true, false, 190, 175, { customer_part_no: "BF-2231" } ],
-  [ "BF-650-300", "Brightform Packaging Ltd", 650, 300, "underside", "0.5", true, false, 195, 180, {} ],
-  [ "CT-820-400", "Castleton Thermoforming", 820, 400, "none", nil, false, false, 210, 200, { reels_per_pallet: 1 } ],
-  [ "DB-560-200", "Delta Blister Solutions", 560, 200, "both", "0.8", true, false, 165, nil, { customer_tool_no: "T-118" } ],
-  [ "FM-600-350", "Fenwick Medical Trays", 600, 350, "none", nil, false, true, 180, 170, { label_inside_core: true, packaging_notes: "Best-quality pallets only." } ],
-  [ "GP-750-275", "Greenway Punnets", 750, 275, "reverse", "0.4", true, false, 200, 190, {} ],
-  [ "KF-900-450", "Kestrel Food Packaging", 900, 450, "none", nil, false, true, 220, 205, { core_inches: 3 } ],
-  [ "LC-500-180", "Lumen Cosmetics Packaging", 500, 180, "underside", "0.6", true, false, 150, nil, { packaging_notes: "Least adhesive tape on core." } ],
-  [ "OF-700-250", "Orchard Fresh Containers", 700, 250, "underside", "0.5", true, false, 190, 175, { customer_product_code: "OF-PUN-250" } ],
-  [ "STK-1000-500", nil, 1000, 500, "none", nil, false, false, 230, 215, { reel_limit: "max_roll_on_side" } ]
+  [ "BF-700-250", "Brightform Packaging Ltd", 700, 250, "underside", "0.5", true, false, nil, nil, { customer_part_no: "BF-2231" } ],
+  [ "BF-650-300", "Brightform Packaging Ltd", 650, 300, "underside", "0.5", true, false, nil, nil, {} ],
+  [ "CT-820-400", "Castleton Thermoforming", 820, 400, "none", nil, false, false, nil, nil, { reels_per_pallet: 1 } ],
+  [ "DB-560-200", "Delta Blister Solutions", 560, 200, "both", "0.8", true, false, nil, nil, { customer_tool_no: "T-118" } ],
+  [ "FM-600-350", "Fenwick Medical Trays", 600, 350, "none", nil, false, true, nil, nil, { label_inside_core: true, packaging_notes: "Best-quality pallets only." } ],
+  [ "GP-750-275", "Greenway Punnets", 750, 275, "reverse", "0.4", true, false, nil, nil, {} ],
+  [ "KF-900-450", "Kestrel Food Packaging", 900, 450, "none", nil, false, true, nil, 500, { core_inches: 3 } ],
+  [ "LC-500-180", "Lumen Cosmetics Packaging", 500, 180, "underside", "0.6", true, false, nil, nil, { packaging_notes: "Least adhesive tape on core." } ],
+  [ "OF-700-250", "Orchard Fresh Containers", 700, 250, "underside", "0.5", true, false, nil, nil, { customer_product_code: "OF-PUN-250", antifog_pct: "2", packaging_notes: "Anti-fog on one side only: label which side." } ],
+  [ "STK-1000-500", nil, 1000, 500, "none", nil, false, false, nil, nil, { reel_limit: "max_roll_on_side" } ]
 ].each do |code, customer, width, micron, silicone, silicone_pct, antiblock, pe, d1, d2, extras|
   spec = ProductSpec.find_or_create_by!(code: code, revision: 1) do |s|
     s.assign_attributes({
@@ -162,22 +166,23 @@ end
 # this-week and later orders to show.
 today = Date.current
 [
-  # [customer PO, customer, days from today, urgent, status, [[spec code, quantity kg], ...]]
+  # [customer PO, customer, days from today, urgent, status, [[spec code, quantity kg], ...], extras]
   [ "M15159", "Brightform Packaging Ltd", -2, true, "open", [ [ "BF-700-250", 10_000 ] ] ],
   [ "P15745", "Brightform Packaging Ltd", 3, false, "open", [ [ "BF-650-300", 6_500 ], [ "BF-700-250", 4_000 ] ] ],
   [ "CT-88213", "Castleton Thermoforming", 5, false, "open", [ [ "CT-820-400", 12_000 ] ] ],
   [ "DBS-4410", "Delta Blister Solutions", 1, true, "open", [ [ "DB-560-200", 3_200 ] ] ],
   [ "FMT-0921", "Fenwick Medical Trays", 9, false, "open", [ [ "FM-600-350", 8_000 ] ] ],
-  [ "GP-7781", "Greenway Punnets", 12, false, "open", [ [ "GP-750-275", 15_000 ] ] ],
-  [ "KFP-3302", "Kestrel Food Packaging", 16, false, "open", [ [ "KF-900-450", 20_000 ], [ "STK-1000-500", 5_000 ] ] ],
+  [ "GP-7781", "Greenway Punnets", 12, false, "open", [ [ "GP-750-275", 15_000 ] ], { required_week: true } ],
+  [ "KFP-3302", "Kestrel Food Packaging", 16, false, "open", [ [ "KF-900-450", 20_000 ], [ "STK-1000-500", 5_000 ] ], { delivery_site: "Cinderford" } ],
   [ "LCP-118", "Lumen Cosmetics Packaging", 24, false, "open", [ [ "LC-500-180", 2_500 ] ] ],
   [ "OFC-5520", "Orchard Fresh Containers", 30, false, "open", [ [ "OF-700-250", 9_000 ] ] ],
   [ "PIT-207", "Pennine Industrial Trays", 7, false, "cancelled", [ [ "STK-1000-500", 4_000 ] ] ]
-].each do |po, customer_name, days, urgent, status, lines|
+].each do |po, customer_name, days, urgent, status, lines, extras = {}|
   customer = customers.fetch(customer_name)
   order = SalesOrder.find_or_create_by!(customer: customer, customer_po_ref: po) do |o|
     o.required_on = today + days
     o.urgent = urgent
+    o.assign_attributes(extras)
   end
   next unless order.lines.none?
 

@@ -4,7 +4,7 @@ class ProductSpec < ApplicationRecord
 
   # Columns copied by "Duplicate as new". Identity, revision and timestamps are not copied.
   COPYABLE_ATTRIBUTES = %w[
-    customer_id width_mm thickness_micron material_type pe silicone silicone_bp antiblock
+    customer_id width_mm thickness_micron material_type pe silicone silicone_bp antiblock antifog_bp
     core_inches core_orientation reel_limit max_diameter_mm max_reel_g pallet_type reels_per_pallet
     label_inside_core packaging_notes customer_part_no customer_tool_no customer_product_code customer_description
   ].freeze
@@ -25,6 +25,8 @@ class ProductSpec < ApplicationRecord
   CORE_SIZES = [ 3, 6 ].freeze
 
   scaled_attribute :silicone_pct, column: :silicone_bp, scale: 100
+  # Anti-fog additive, blank for none ("Anti Fog 2%" on the paper plan; §11 Q93).
+  scaled_attribute :antifog_pct, column: :antifog_bp, scale: 100
   scaled_attribute :max_reel_kg, column: :max_reel_g, scale: Weight::GRAMS_PER_KG
 
   normalizes :code, with: ->(c) { c.strip.upcase }
@@ -39,6 +41,7 @@ class ProductSpec < ApplicationRecord
   validates :reels_per_pallet, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
   validates :max_reel_g, numericality: { greater_than: 0 }, allow_nil: true
   validates :silicone_bp, presence: true, numericality: { greater_than: 0, less_than_or_equal_to: 10_000 }, unless: :silicone_none?
+  validates :antifog_bp, numericality: { greater_than: 0, less_than_or_equal_to: 10_000 }, allow_nil: true
 
   # The form hides these fields when they don't apply; drop any stale values.
   before_validation { clear_scaled_attribute(:silicone_pct) if silicone_none? }
@@ -111,6 +114,12 @@ class ProductSpec < ApplicationRecord
 
   def rate_for(line)
     line_rates.detect { |rate| rate.line_id == line.id }
+  end
+
+  # kg/h on a line: this spec's own rate there, or else the line's default
+  # rate (§11 Q89). Nil when neither is set.
+  def kg_per_hour_on(line)
+    rate_for(line)&.kg_per_hour || line.default_kg_per_hour
   end
 
   # The paper plan writes the thickness in mm: 250µm as ".250", 1000µm as "1.000".

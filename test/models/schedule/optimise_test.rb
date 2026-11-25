@@ -108,6 +108,27 @@ class Schedule::OptimiseTest < ActiveSupport::TestCase
     assert_match "Planned 1 job for orders that weren't on the plan.", result.summary
   end
 
+  test "uses a line's default rate for specs with no rate of their own (Q89)" do
+    @d2.update!(active: false)
+    @d1.update!(default_kg_per_hour: 500)
+    no_rate = stock_order_line(kg: 1_000)
+
+    result = optimise
+    assert_empty result.unplannable
+    assert_equal 1_000_000, PlanDraft.current.plan.planned_g(no_rate)
+    assert_equal [ 120 ], PlanDraft.current.plan.blocks_for(@d1).jobs.map(&:duration_minutes)
+  end
+
+  test "a week order counts as on time until the end of its Friday (Q90)" do
+    @d2.update!(active: false)
+    a = spec("A-1")
+    week = order_line(a, kg: 2_000, due: "2026-11-16") # 20 hours
+    week.sales_order.update!(required_week: true)
+    @live.add_job(week)
+
+    assert_equal 0, optimise.after.late_orders
+  end
+
   test "keeps jobs on the lines that have a rate for their spec" do
     d1_only = spec("D1-ONLY", lines: [ @d1 ])
     2.times { @live.add_job(order_line(d1_only, kg: 1_500, due: "2026-11-16")) }

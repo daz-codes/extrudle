@@ -64,6 +64,29 @@ class SalesOrderTest < ActiveSupport::TestCase
     assert_not sales_orders(:bf_dispatched).late?
   end
 
+  test "a week order is stored as its Monday and is due by the Friday (Q90)" do
+    order = SalesOrder.create!(customer: customers(:rhine), required_on: Date.new(2026, 12, 2), required_week: true) # a Wednesday
+    assert_equal Date.new(2026, 11, 30), order.required_on
+    assert_equal Date.new(2026, 12, 4), order.due_on
+    assert_equal Time.zone.parse("2026-12-05 00:00"), order.deadline
+
+    friday, saturday = Date.new(2026, 12, 4), Date.new(2026, 12, 5)
+    assert_not order.late?(today: friday)
+    assert order.late?(today: saturday)
+    assert_not_includes SalesOrder.in_window("overdue", today: friday), order
+    assert_includes SalesOrder.in_window("overdue", today: saturday), order
+    [ friday, saturday ].each do |today|
+      assert_equal SalesOrder.in_window("overdue", today:).count, SalesOrder.window_counts(today:)["overdue"]
+    end
+  end
+
+  test "a day order's deadline is the end of its day, and the delivery site is tidied" do
+    order = SalesOrder.create!(customer: customers(:rhine), required_on: Date.new(2026, 12, 2), delivery_site: "  Cinderford ")
+    assert_equal [ Date.new(2026, 12, 2), Time.zone.parse("2026-12-03 00:00"), "Cinderford" ], [ order.due_on, order.deadline, order.delivery_site ]
+    order.update!(delivery_site: " ")
+    assert_nil order.delivery_site
+  end
+
   test "date windows" do
     today = Date.current
     assert_includes SalesOrder.in_window("overdue", today:), sales_orders(:bf_overdue)

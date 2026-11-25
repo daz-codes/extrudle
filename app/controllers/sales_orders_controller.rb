@@ -79,6 +79,6 @@ class SalesOrdersController < ApplicationController
     end
 
     def sales_order_params
-      params.expect(sales_order: %i[ customer_id customer_po_ref required_on urgent notes ])
+      params.expect(sales_order: %i[ customer_id customer_po_ref required_on required_week delivery_site urgent notes ])
     end
 end

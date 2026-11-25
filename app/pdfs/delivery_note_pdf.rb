@@ -57,7 +57,7 @@ class DeliveryNotePdf
       customer = order.customer
       address = (note.delivery_address || customer.address).to_s.lines.map(&:strip).compact_blank
       boxes(pdf, [ [ "Customer", [ customer.name, customer.contact_name, customer.phone ].compact_blank ],
-                   [ "Deliver to", [ customer.name ] + address ] ])
+                   [ "Deliver to", [ customer.name, order.delivery_site ].compact + address ] ])
     end
 
     def references(pdf)

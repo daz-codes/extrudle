@@ -33,6 +33,10 @@ module MasterDataHelper
     end
   end
 
+  def antifog_summary(spec)
+    spec.antifog_bp ? "#{spec.antifog_pct}%" : "None"
+  end
+
   def silicone_summary(spec)
     return "None" if spec.silicone_none?
     "#{spec.silicone.humanize} #{spec.silicone_pct}%"

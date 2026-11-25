@@ -32,7 +32,7 @@
       </div>
     <% end %>
 
-    <% if !block.job? || !block.line_rate %>
+    <% if !block.job? || !block.kg_per_hour %>
       <div class="max-w-xs">
         <%= label_tag :duration_hours, "Hours", class: "field-label" %>
         <%= number_field_tag :duration_hours, hours_value(block.duration_minutes), min: 0.5, step: 0.5, class: "field-input", disabled: order_locked || block.automatic? %>
@@ -78,7 +78,7 @@
       <% if block.job? %>
         <h2 class="eyebrow mt-4">Order</h2>
         <p class="mt-2"><%= link_to block.sales_order.number, block.sales_order, class: "link font-semibold" %> · <%= block.sales_order.customer.name %></p>
-        <p class="text-sm text-ink-600">Required <%= l(block.sales_order.required_on, format: "%a %-d %b") %> · <%= link_to block.product_spec.to_s, block.product_spec, class: "link" %></p>
+        <p class="text-sm text-ink-600">Required <%= required_on_text(block.sales_order, format: "%a %-d %b") %> · <%= link_to block.product_spec.to_s, block.product_spec, class: "link" %></p>
       <% end %>
     </section>
     <% if @warnings.any? %>

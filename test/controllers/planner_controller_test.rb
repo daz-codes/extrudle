@@ -46,4 +46,20 @@ class PlannerControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr.print-urgent", /SO-00001/
     assert_select "td", text: ".250"
   end
+
+  test "the print shows hours, week dates, delivery sites, anti-fog and the form's document control" do
+    order = sales_orders(:bf_open)
+    order.update!(required_on: Date.new(2026, 11, 30), required_week: true, delivery_site: "Cinderford")
+    order.lines.first.product_spec.update_columns(antifog_bp: 200)
+    Schedule::Editor.new(lines(:d1)).add_job(sales_order_lines(:bf_open_700), planned_g: 1_900_000, starts_at: Time.current.beginning_of_hour + 1.hour)
+
+    get planner_print_path(line: "D1")
+    assert_response :success
+    assert_select "th", "Hours"
+    assert_select "td", text: "10" # 1,900 kg at 190 kg/h
+    assert_select "td", /Brightform Packaging Ltd Cinderford/
+    assert_select "td", /Required w\/c 30\/11/
+    assert_select "td", /Anti-fog 2%/
+    assert_select "tfoot", /Written by K Ogden · Authorised by H James · Issue no. 1 · Issue date 30-9-25/
+  end
 end

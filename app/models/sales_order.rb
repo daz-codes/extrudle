@@ -17,6 +17,13 @@ class SalesOrder < ApplicationRecord
   EDITABLE_STATUSES = %w[ open scheduled ].freeze
 
   normalizes :customer_po_ref, with: ->(ref) { ref.strip.upcase.presence }
+  normalizes :delivery_site, with: ->(site) { site.strip.presence }
+
+  # A week order ("Required w/c 30/11/26") is stored as that week's Monday (§11 Q90).
+  before_validation { self.required_on = required_on.beginning_of_week if required_week? && required_on }
+
+  # Days after a week order's Monday that it can still go: Monday to Friday (§11 Q90).
+  WEEK_DAYS_ALLOWED = 4
 
   validates :required_on, presence: true
   validate :customer_is_active, if: -> { new_record? || will_save_change_to_customer_id? }
@@ -38,9 +45,14 @@ class SalesOrder < ApplicationRecord
     "later" => "Later"
   }.freeze
 
+  # Past their last allowed day: the required day, or a week order's Friday.
+  scope :overdue_on, ->(today) {
+    where(required_week: false, required_on: ...today).or(where(required_week: true, required_on: ...(today - WEEK_DAYS_ALLOWED)))
+  }
+
   scope :in_window, ->(window, today: Date.current) {
     case window
-    when "overdue" then where(required_on: ...today, status: ACTIVE_STATUSES)
+    when "overdue" then overdue_on(today).where(status: ACTIVE_STATUSES)
     when "this_week" then where(required_on: today..today.end_of_week)
     when "next_two_weeks" then where(required_on: (today.end_of_week + 1)..(today.end_of_week + 14))
     when "later" then where(required_on: (today.end_of_week + 15)..)
@@ -51,9 +63,9 @@ class SalesOrder < ApplicationRecord
   # Order counts per date window, in one query. Overdue only counts orders still to make.
   def self.window_counts(today: Date.current)
     eow = today.end_of_week
-    binds = { today:, eow:, next_start: eow + 1, next_end: eow + 14, later: eow + 15, active: ACTIVE_STATUSES }
+    binds = { today:, week_cut: today - WEEK_DAYS_ALLOWED, eow:, next_start: eow + 1, next_end: eow + 14, later: eow + 15, active: ACTIVE_STATUSES }
     conditions = [
-      "sales_orders.required_on < :today AND sales_orders.status IN (:active)",
+      "(sales_orders.required_on < (CASE WHEN sales_orders.required_week THEN :week_cut ELSE :today END)) AND sales_orders.status IN (:active)",
       "sales_orders.required_on BETWEEN :today AND :eow",
       "sales_orders.required_on BETWEEN :next_start AND :next_end",
       "sales_orders.required_on >= :later"
@@ -73,8 +85,18 @@ class SalesOrder < ApplicationRecord
     EDITABLE_STATUSES.include?(status)
   end
 
+  # The last day it can go: the required day, or the Friday of a week order (§11 Q90).
+  def due_on
+    required_week? ? required_on + WEEK_DAYS_ALLOWED : required_on
+  end
+
+  # A job is late if it finishes after this: the end of the due day, UK time (§11 Q16, Q90).
+  def deadline
+    (due_on + 1).in_time_zone
+  end
+
   def late?(today: Date.current)
-    required_on.present? && required_on < today && ACTIVE_STATUSES.include?(status)
+    required_on.present? && due_on < today && ACTIVE_STATUSES.include?(status)
   end
 
   # Cancelling takes the order's jobs off the planner too.

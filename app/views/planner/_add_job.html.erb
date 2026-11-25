@@ -8,7 +8,7 @@
     <ul class="space-y-3">
       <% @unplanned.first(12).each do |order_line| %>
         <% order = order_line.sales_order %>
-        <% rate = order_line.product_spec.rate_for(@line) %>
+        <% rate = order_line.product_spec.kg_per_hour_on(@line) %>
         <li id="<%= dom_id(order_line, :unplanned) %>" class="rounded-[14px] border border-ink-200 p-4 <%= "bg-lemon-50" if order.urgent? %>">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
             <span class="font-semibold text-ink-900"><%= order.number %> · <%= order_line.product_spec %></span>
@@ -17,7 +17,7 @@
           <p class="text-sm text-ink-600"><%= order.customer.name %> · <%= kg(@plan.unplanned_g(order_line)) %> to plan<%= " of #{kg(order_line.quantity_g)}" if @plan.planned_g(order_line).positive? %></p>
           <p class="text-sm <%= rate ? "text-ink-500" : "font-medium text-ink-800" %>">
             <% if rate %>
-              <%= rate.kg_per_hour %> kg/h on <%= @line.name %> ≈ <%= duration_text(Schedule.job_minutes(@plan.unplanned_g(order_line), rate.kg_per_hour)) %>
+              <%= rate %> kg/h on <%= @line.name %><%= " (line default)" unless order_line.product_spec.rate_for(@line) %> ≈ <%= duration_text(Schedule.job_minutes(@plan.unplanned_g(order_line), rate)) %>
             <% else %>
               <span class="badge badge-lemon mr-1">No rate</span><%= @line.name %> has no rate for this spec. Enter an estimated time.
             <% end %>

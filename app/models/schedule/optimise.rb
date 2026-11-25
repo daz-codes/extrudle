@@ -166,18 +166,17 @@ class Schedule::Optimise
       end
     end
 
+    # Lines that can make the spec: its own rate there, or the line's default (§11 Q89).
     def minutes_by_line(spec, planned_g)
-      line_ids = @lines.map(&:id)
-      spec.line_rates.select { line_ids.include?(_1.line_id) }
-        .to_h { [ _1.line_id, Schedule.job_minutes(planned_g, _1.kg_per_hour) ] }
+      @lines.filter_map { |line| (rate = spec.kg_per_hour_on(line)) && [ line.id, Schedule.job_minutes(planned_g, rate) ] }.to_h
     end
 
     def new_task(order_line, planned_g, minutes, block: nil, home_line_id: nil)
       order = order_line.sales_order
       Task.new(block:, order_line:, planned_g:, minutes:, home_line_id:,
                spec_id: order_line.product_spec_id, urgent: order.urgent?, order_id: order.id,
-               # Late means finishing after the end of the required day, UK time (§11 Q16).
-               deadline: (order.required_on + 1).in_time_zone.to_i)
+               # Late means finishing after the end of the required day, or a week order's Friday (§11 Q16, Q90).
+               deadline: order.deadline.to_i)
     end
 
     # ---- Scoring ---------------------------------------------------------

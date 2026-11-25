@@ -14,6 +14,14 @@ shared: &shared
   # Where suppliers deliver. Blank means the address above.
   delivery_address: []
   # Printed at the foot of every PO.
+  # Document control printed on our versions of the paper forms, as on Stu's
+  # copies (PLAN.md §11 Q92).
+  forms:
+    "5.4.1.1":
+      written_by: "K Ogden"
+      authorised_by: "H James"
+      issue_no: "1"
+      issue_date: "30-9-25"
   po_terms: >-
     Please quote our PO number on all delivery notes and invoices. Every bag
     must be labelled with the material, grade, batch number and net weight,

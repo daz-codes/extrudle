@@ -46,7 +46,7 @@
         <td class="px-4 py-3 text-lg font-semibold tabular-nums"><%= spec.width_mm %></td>
         <td class="px-4 py-3"><%= yes_no(spec.pe) %></td>
         <td class="px-4 py-3"><%= silicone_summary(spec) %></td>
-        <td class="px-4 py-3"><%= yes_no(spec.antiblock) %></td>
+        <td class="px-4 py-3"><%= yes_no(spec.antiblock) %><% if spec.antifog_bp %><div class="font-semibold">Anti-fog <%= spec.antifog_pct %>%</div><% end %></td>
         <td class="px-4 py-3"><%= reel_size_summary(spec) %></td>
         <td class="px-4 py-3 text-sm">
           <%= spec.core_inches %>" core, <%= spec.core_orientation %>.
@@ -93,7 +93,7 @@
 
   <section class="card p-5" aria-labelledby="line-rates-heading">
     <h2 id="line-rates-heading" class="section-title">Line rates</h2>
-    <p class="mb-4 text-sm text-ink-600">Output on each line. The planner uses this to work out how long a job takes.</p>
+    <p class="mb-4 text-sm text-ink-600">Output on each line. The planner uses this to work out how long a job takes. Leave it blank to use the line's default rate, where it has one.</p>
 
     <div class="space-y-3">
       <% @lines.each do |line| %>
@@ -106,7 +106,7 @@
             <div class="flex-1">
               <%= form.label :kg_per_hour, "Rate on #{line.name}", class: "sr-only" %>
               <div class="field-group">
-                <%= form.number_field :kg_per_hour, min: 1, step: 1, required: true, placeholder: "Not set", class: "field-input tabular-nums" %>
+                <%= form.number_field :kg_per_hour, min: 1, step: 1, required: true, placeholder: line.default_kg_per_hour ? "Line default #{line.default_kg_per_hour}" : "Not set", class: "field-input tabular-nums" %>
                 <span class="field-suffix">kg/h</span>
               </div>
             </div>

@@ -51,17 +51,23 @@ class ScheduleBlock < ApplicationRecord
   delegate :product_spec, to: :sales_order_line, allow_nil: true
   delegate :sales_order, to: :sales_order_line, allow_nil: true
 
+  # The spec's own rate on this line, if it has one.
   def line_rate
     return unless job? && product_spec
 
-    product_spec.line_rates.detect { _1.line_id == line_id }
+    product_spec.rate_for(line)
+  end
+
+  # kg/h for a job: the spec's rate on this line, or the line's default (§11 Q89).
+  def kg_per_hour
+    product_spec.kg_per_hour_on(line) if job? && product_spec
   end
 
   # For jobs with a rate, the duration comes from planned weight ÷ rate.
   # Jobs without a rate keep their manual duration (and get a warning).
   def calculated_duration_minutes
-    rate = line_rate
-    rate ? Schedule.job_minutes(planned_g, rate.kg_per_hour) : duration_minutes
+    rate = kg_per_hour
+    rate ? Schedule.job_minutes(planned_g, rate) : duration_minutes
   end
 
   def refresh_duration

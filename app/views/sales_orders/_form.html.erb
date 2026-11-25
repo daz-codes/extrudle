@@ -12,8 +12,12 @@
   <% end %>
   <div class="grid gap-5 sm:grid-cols-2">
     <%= form.text_row :customer_po_ref, hint: "Their order number, e.g. M15159" %>
-    <%= form.date_row :required_on, required: true, hint: "When it must be despatched." %>
+    <div>
+      <%= form.date_row :required_on, required: true, hint: "When it must be despatched." %>
+      <%= form.check_row :required_week, label: "Any day that week", hint: "For \"w/c\" dates: due by the Friday." %>
+    </div>
   </div>
+  <%= form.text_row :delivery_site, label: "Delivery site", hint: "If they have more than one, e.g. Cinderford. Goes on the delivery note and plan." %>
   <%= form.check_row :urgent, hint: "Highlighted on the order list and, later, the planner." %>
   <%= form.text_area_row :notes %>
   <%= render "master_data/form_actions", form: form, cancel_path: sales_order.persisted? ? sales_order : sales_orders_path %>
