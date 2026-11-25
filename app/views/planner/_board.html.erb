@@ -4,6 +4,7 @@
   <% unless @read_only %>
     <%= form_with url: planner_path, method: :patch, class: "hidden", data: { planner_drag_target: "form" } do %>
       <%= hidden_field_tag :at, nil, id: nil, data: { planner_drag_target: "at" } %>
+      <%= hidden_field_tag :queue, nil, id: nil, data: { planner_drag_target: "queue" } %>
       <%= hidden_field_tag :week, @week_start.iso8601, id: nil %>
     <% end %>
   <% end %>

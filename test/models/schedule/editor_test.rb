@@ -164,6 +164,20 @@ class Schedule::EditorTest < ActiveSupport::TestCase
     assert_equal [ started.id, later.id ], @d1.schedule_blocks.ordered.map(&:id)
   end
 
+  test "a block can't be fixed at a time over a started job, as that would push the running job back" do
+    started = planned_job(starts_at: at(MONDAY_6AM))
+    assert ProductionRun::Start.new(schedule_block: started).tap { _1.user = users(:floor) }.save
+    maintenance = @editor.add(block("planned_maintenance", 60))
+
+    error = assert_raises(Schedule::Error) { @editor.lock(maintenance, starts_at: started.starts_at + 1.hour) }
+    assert_match "#{started} has started and runs until", error.message
+    assert_equal at(MONDAY_6AM), started.reload.starts_at
+    assert_not maintenance.reload.locked?
+
+    @editor.lock(maintenance, starts_at: started.ends_at)
+    assert_equal [ started.ends_at, true ], [ maintenance.reload.starts_at, maintenance.locked? ]
+  end
+
   test "the line keeps its start when the first block is removed or moved down" do
     a = @editor.add(block("no_orders", 60))
     @editor.add(block("changeover", 30))

@@ -19,6 +19,10 @@ class ScheduleBlock < ApplicationRecord
 
   scaled_attribute :planned_kg, column: :planned_g, scale: Weight::GRAMS_PER_KG
 
+  def maintenance?
+    planned_maintenance? || unplanned_maintenance?
+  end
+
   # Kinds the planner can add by hand (jobs come from order lines).
   ADDABLE_KINDS = (kinds.keys - [ "job" ]).freeze
 

@@ -283,6 +283,7 @@ class Schedule::Editor
       if locked
         block.locked = true
         block.starts_at = Schedule.snap_up(starts_at) if starts_at
+        ensure_clear_of_started_jobs!(blocks, block)
       elsif block.locked?
         later = flowing(blocks).detect { _1.starts_at && _1.starts_at >= block.starts_at }
         block.locked = false
@@ -326,6 +327,23 @@ class Schedule::Editor
       return unless block.persisted? && block.started?
 
       raise Schedule::Error, "This job has started (it has a production log), so it can't be moved or removed"
+    end
+
+    # A block fixed at a time mustn't overlap a job that has started: jobs
+    # aren't split, so reflow would put the running job after it, as if it
+    # hadn't begun yet (§11 Q80).
+    def ensure_clear_of_started_jobs!(blocks, block)
+      return unless block.starts_at
+
+      ends_at = block.starts_at + block.duration_minutes.minutes
+      running = blocks.detect do |other|
+        other != block && other.persisted? && other.started? && other.starts_at && other.ends_at &&
+          other.starts_at < ends_at && block.starts_at < other.ends_at
+      end
+      return unless running
+
+      until_time = I18n.l(running.ends_at.in_time_zone("Europe/London"), format: "%a %-d %b %H:%M")
+      raise Schedule::Error, "#{running} has started and runs until #{until_time}, so this can't be fixed at a time before then"
     end
 
     # Moving a block past another moves that one too.
