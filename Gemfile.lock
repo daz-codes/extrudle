@@ -433,6 +433,7 @@ DEPENDENCIES
   rails (~> 8.1.4, >= 8.1.4.1)
   rqrcode (~> 3.2)
   rubocop-rails-omakase
+  rubyzip (~> 3.7)
   selenium-webdriver
   solid_cable
   solid_cache
