@@ -1,10 +1,10 @@
 <%# Everything that changes when the plan changes. Replaced as a whole by Turbo Streams. %>
 <%# planner-drag: drag bars on the timeline, or queue rows by their handle (Slice 10). %>
-<div id="planner_board" class="space-y-6" data-controller="planner-drag" data-action="keydown@window->planner-drag#cancelOnEscape turbo:submit-end->planner-drag#submitted">
+<div id="planner_board" class="space-y-6" data-controller="planner-drag" data-action="keydown@window->planner-drag#cancelOnEscape turbo:submit-end->planner-drag#submitted"
+     data-planner-drag-queue-value="<%= drag_queue(@blocks).to_json %>">
   <% unless @read_only %>
     <%= form_with url: planner_path, method: :patch, class: "hidden", data: { planner_drag_target: "form" } do %>
       <%= hidden_field_tag :at, nil, id: nil, data: { planner_drag_target: "at" } %>
-      <%= hidden_field_tag :queue, nil, id: nil, data: { planner_drag_target: "queue" } %>
       <%= hidden_field_tag :week, @week_start.iso8601, id: nil %>
     <% end %>
   <% end %>

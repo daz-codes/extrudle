@@ -19,8 +19,19 @@ module PlannerHelper
   def drag_data(block)
     return {} unless draggable_block?(block)
 
-    { planner_drag_target: "bar", drop_url: drop_schedule_block_path(block), starts_at: block.starts_at.iso8601,
-      minutes: block.duration_minutes, action: "pointerdown->planner-drag#press" }
+    { planner_drag_target: "bar", drop_url: drop_schedule_block_path(block), block_id: block.id, starts_at: block.starts_at.iso8601,
+      minutes: block.duration_minutes, locked: block.locked?, action: "pointerdown->planner-drag#press" }
+  end
+
+  # The queue in order (unlocked blocks, automatic changeovers aside), so a
+  # drag on the timeline can show which two blocks a drop goes between. The
+  # server works the place out the same way (Schedule::Editor#move_to_time).
+  def drag_queue(blocks)
+    return [] if @read_only
+
+    blocks.reject { _1.locked? || _1.automatic? }.map do |block|
+      { id: block.id, label: block.to_s, startsAt: block.starts_at.iso8601, minutes: block.duration_minutes }
+    end
   end
 
   def draggable_block?(block)

@@ -101,41 +101,44 @@ class ScheduleBlocksControllerTest < ActionDispatch::IntegrationTest
     assert maintenance.locked?
   end
 
-  test "drop queued maintenance on the timeline pins it at that time, and the jobs move round it" do
+  test "drop maintenance between two blocks and everything after it moves later (Q80)" do
     editor = Schedule::Editor.new(@d1)
-    job = editor.add_job(@order_line, planned_g: 1_900_000, starts_at: at(MONDAY_6AM)) # 06:00–16:00
-    maintenance = editor.add(block("planned_maintenance", 120))                           # 16:00–18:00
+    first = editor.add(block("no_orders", 600, notes: "First"), starts_at: at(MONDAY_6AM)) # 06:00–16:00
+    second = editor.add(block("no_orders", 120, notes: "Second"))                        # 16:00–18:00
+    maintenance = editor.add(block("planned_maintenance", 120))                          # 18:00–20:00
 
-    patch drop_schedule_block_path(maintenance, at: "2026-11-16T10:00:00Z", week: "2026-11-16"), as: :turbo_stream
+    # Near the end of the first block: past its middle, before the second's.
+    patch drop_schedule_block_path(maintenance, at: "2026-11-16T15:30:00Z", week: "2026-11-16"), as: :turbo_stream
     assert_response :success
-    assert_match "Planned maintenance now runs Mon 16 Nov 10:00 – 12:00 (fixed at that time).", response.body
-    assert_equal [ at("2026-11-16 10:00"), true ], [ maintenance.reload.starts_at, maintenance.locked? ]
-    assert_equal at("2026-11-16 12:00"), job.reload.starts_at, "jobs aren't split, so the job it landed on runs after it"
-  end
-
-  test "maintenance dragged in the queue table is only reordered" do
-    editor = Schedule::Editor.new(@d1)
-    first = editor.add(block("no_orders", 600), starts_at: at(MONDAY_6AM)) # 06:00–16:00
-    maintenance = editor.add(block("unplanned_maintenance", 120))          # 16:00–18:00
-
-    patch drop_schedule_block_path(maintenance, at: "2026-11-16T06:00:00Z", queue: "1", week: "2026-11-16"), as: :turbo_stream
-    assert_response :success
-    assert_no_match "fixed at that time", response.body
+    assert_match "Planned maintenance now runs Mon 16 Nov 16:00 – 18:00.", response.body
     assert_not maintenance.reload.locked?
-    assert_equal [ maintenance, first ].map(&:id), @d1.schedule_blocks.ordered.map(&:id)
+    assert_equal [ first, maintenance, second ].map(&:id), @d1.schedule_blocks.ordered.map(&:id)
+    assert_equal at("2026-11-16 18:00"), second.reload.starts_at
   end
 
-  test "maintenance can't be pinned over a job that has started" do
+  test "nothing goes in ahead of a job that has started" do
     editor = Schedule::Editor.new(@d1)
     job = editor.add_job(@order_line, planned_g: 1_900_000, starts_at: at(MONDAY_6AM)) # 06:00–16:00
     maintenance = editor.add(block("planned_maintenance", 120))
+    assert ProductionRun::Start.new(schedule_block: job).tap { _1.user = users(:floor) }.save
+
+    patch drop_schedule_block_path(maintenance, at: "2026-11-16T06:00:00Z", week: "2026-11-16"), as: :turbo_stream
+    assert_response :unprocessable_content
+    assert_match "has started (it has a production log)", response.body
+    assert_equal [ job, maintenance ].map(&:id), @d1.schedule_blocks.ordered.map(&:id)
+  end
+
+  test "a locked block can't be pinned over a job that has started" do
+    editor = Schedule::Editor.new(@d1)
+    job = editor.add_job(@order_line, planned_g: 1_900_000, starts_at: at(MONDAY_6AM)) # 06:00–16:00
+    maintenance = editor.add(block("planned_maintenance", 120, locked: true, starts_at: at("2026-11-17 09:00")))
     assert ProductionRun::Start.new(schedule_block: job).tap { _1.user = users(:floor) }.save
 
     patch drop_schedule_block_path(maintenance, at: "2026-11-16T10:00:00Z", week: "2026-11-16"), as: :turbo_stream
     assert_response :unprocessable_content
     assert_match "has started and runs until Mon 16 Nov 16:00", response.body
     assert_equal at(MONDAY_6AM), job.reload.starts_at
-    assert_not maintenance.reload.locked?
+    assert_equal at("2026-11-17 09:00"), maintenance.reload.starts_at
   end
 
   test "drops that can't happen are explained" do
