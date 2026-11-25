@@ -1,6 +1,10 @@
 require "test_helper"
 
 class Stock::ReceiptTest < ActiveSupport::TestCase
+  # Lot codes carry the year, and the fixtures' lots are 2026's.
+  setup { travel_to Time.zone.parse("2026-11-25 10:00") }
+  teardown { travel_back }
+
   def receipt(line: purchase_order_lines(:albion_jade), **attrs)
     Stock::Receipt.new(purchase_order_line: line, quantity: "1,100", **attrs)
   end

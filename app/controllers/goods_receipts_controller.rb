@@ -34,7 +34,8 @@ class GoodsReceiptsController < ApplicationController
     def require_receivable
       return if @purchase_order.receivable?
 
-      redirect_to back_path, alert: "#{@purchase_order.number} is #{@purchase_order.status.humanize.downcase}, so goods can't be received against it.", status: :see_other
+      to = Current.user.floor? && !@purchase_order.received? ? floor_deliveries_path : back_path
+      redirect_to to, alert: "#{@purchase_order.number} is #{@purchase_order.status.humanize.downcase}, so goods can't be received against it.", status: :see_other
     end
 
     # quantity_unit is listed first so quantity is parsed in the chosen unit.

@@ -9,13 +9,14 @@ class FloorGoodsInTest < ApplicationSystemTestCase
     click_on "Receive goods"
     wait_for_turbo
 
+    codes = Lot.next_codes(2) # lot codes carry the year
     fill_in "Total net weight", with: "1,100"
     fill_in "Number of bags", with: "2"
     fill_in "First bag no.", with: "939"
     fill_in "Supplier batch no.", with: "CZ-77"
     click_on "Receive goods"
 
-    assert_text "Received 2 bags of JADE as L-2026-000004 to L-2026-000005. Print their labels below."
+    assert_text "Received 2 bags of JADE as #{codes.first} to #{codes.last}. Print their labels below."
     within "section[aria-labelledby=received_today]" do
       assert_text "Bag 940"
       assert_link "Print labels"

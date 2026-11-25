@@ -48,9 +48,23 @@ class Floor::DeliveriesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a received or draft order can't be received against from the floor" do
-    order = purchase_orders(:pacific_draft)
-    get new_purchase_order_receipt_path(order)
-    assert_redirected_to floor_delivery_path(order)
+    received = purchase_orders(:albion_received)
+    get new_purchase_order_receipt_path(received)
+    assert_redirected_to floor_delivery_path(received), "back to its page, where today's labels are"
+
+    draft = purchase_orders(:pacific_draft)
+    get new_purchase_order_receipt_path(draft)
+    assert_redirected_to floor_deliveries_path
+  end
+
+  test "drafts and cancelled orders aren't shown as deliveries; received ones are" do
+    get floor_delivery_path(purchase_orders(:pacific_draft))
+    assert_redirected_to floor_deliveries_path
+    assert_match "draft, so it isn't a delivery", flash[:alert]
+
+    get floor_delivery_path(purchase_orders(:albion_received))
+    assert_response :success
+    assert_select "p", /received, so nothing more can be received/
   end
 
   test "the rest of stock and purchasing stays office only" do
