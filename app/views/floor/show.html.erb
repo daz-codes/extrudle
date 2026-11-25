@@ -5,6 +5,7 @@
 <%= render "production_runs/board", board: @board %>
 
 <div class="mt-10 grid gap-4 sm:grid-cols-2">
+  <%= link_to "Goods in", floor_deliveries_path, class: "btn btn-primary min-h-20 w-full text-xl sm:col-span-2" %>
   <%= link_to "Help", help_path, class: "btn btn-secondary min-h-20 w-full text-xl" %>
   <%= link_to "Blank paper log", blank_production_runs_path(format: :pdf), class: "btn btn-secondary min-h-20 w-full text-xl", target: "_blank", data: { turbo: false } %>
 </div>

@@ -1,0 +1,52 @@
+<% content_for :title, "Goods in: #{@purchase_order.number}" %>
+
+<h1 class="page-title mb-2"><%= @purchase_order.supplier.name %></h1>
+<p class="mb-6 font-mono tabular-nums text-ink-700">
+  <%= @purchase_order.number %><%= " · #{@purchase_order.supplier_ref}" if @purchase_order.supplier_ref %> ·
+  expected <%= l(@purchase_order.expected_on, format: "%a %-d %b") %>
+</p>
+
+<section class="card max-w-3xl p-5">
+  <h2 class="section-title">On this order</h2>
+  <%= render "floor/deliveries/lines", purchase_order: @purchase_order %>
+  <% if @purchase_order.receivable? %>
+    <%= link_to "Receive goods", new_purchase_order_receipt_path(@purchase_order), class: "btn btn-accent mt-5 min-h-16 w-full text-xl sm:w-auto" %>
+  <% else %>
+    <p class="mt-4 text-ink-700">This order is <%= @purchase_order.status.humanize.downcase %>, so nothing more can be received against it.</p>
+  <% end %>
+</section>
+
+<% if @lots.any? %>
+  <section class="mt-8 max-w-3xl" aria-labelledby="received_today">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <h2 id="received_today" class="section-title">Received today</h2>
+      <%= link_to "Print labels", labels_lots_path(ids: @lots.map(&:id)), class: "btn btn-primary min-h-16 text-xl", target: "_blank" %>
+    </div>
+    <div class="card overflow-x-auto">
+      <table class="data-table w-full text-left">
+        <thead>
+          <tr>
+            <th scope="col" class="px-4 py-3">Lot</th>
+            <th scope="col" class="px-4 py-3">Material</th>
+            <th scope="col" class="px-4 py-3">Supplier batch</th>
+            <th scope="col" class="px-4 py-3 text-right">Weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @lots.each do |lot| %>
+            <tr id="<%= dom_id(lot) %>">
+              <td class="px-4 py-3 font-mono font-semibold">
+                <%= lot.code %><% if lot.bag_no %><div class="text-base font-normal text-ink-600">Bag <%= lot.bag_no %></div><% end %>
+              </td>
+              <td class="px-4 py-3"><%= lot.material %></td>
+              <td class="px-4 py-3"><%= lot.supplier_lot_ref || "—" %></td>
+              <td class="px-4 py-3 text-right tabular-nums"><%= Weight.format_kg(lot.initial_g) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<% end %>
+
+<%= link_to "All deliveries", floor_deliveries_path, class: "btn btn-secondary mt-8 min-h-16 w-full sm:w-auto" %>

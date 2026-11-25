@@ -1,0 +1,11 @@
+<%# locals: (purchase_order:) %>
+<ul class="mt-3 space-y-1">
+  <% purchase_order.lines.each do |line| %>
+    <li class="flex flex-wrap justify-between gap-x-4">
+      <span><%= line.material %></span>
+      <span class="tabular-nums text-ink-700">
+        <%= order_quantity(line.received_g, unit: line.quantity_unit) %> of <%= order_quantity(line.quantity_g, unit: line.quantity_unit) %> in
+      </span>
+    </li>
+  <% end %>
+</ul>

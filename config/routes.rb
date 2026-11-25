@@ -92,6 +92,9 @@ Rails.application.routes.draw do
   resources :sage_exports, path: "dispatch/sage", only: %i[ index create show ]
 
   get "floor" => "floor#show", as: :floor_root
+  namespace :floor do
+    resources :deliveries, only: %i[ index show ]
+  end
   get "help" => "help#show", as: :help
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
