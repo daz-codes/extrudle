@@ -73,3 +73,6 @@ gem "prawn", "~> 2.5"
 gem "prawn-table", "~> 0.2.2"
 
 gem "rqrcode", "~> 3.2"
+
+# Reading .docx order attachments (Slice 13): a .docx is a zip of XML files.
+gem "rubyzip", "~> 3.7"

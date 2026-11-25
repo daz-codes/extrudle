@@ -13,6 +13,7 @@ Full plan and phases: `PLAN.md` (in the repo root, next to this file). Work thro
 - Minitest + fixtures, system tests with Capybara
 - PDFs: Prawn (prawn, prawn-table)
 - QR codes: rqrcode
+- Reading order emails (Slice 13): rubyzip for .docx, and `pdftotext` from poppler-utils (in the Docker image and CI; `brew install poppler` locally)
 - Deploy: Kamal to a single VPS or on-site box. The database lives on a persistent volume mounted at `storage/`
 - Backups: Litestream streaming continuously to Cloudflare R2 (see `docs/backups.md`)
 - No SPA, no React. No extra gems without a clear reason.
