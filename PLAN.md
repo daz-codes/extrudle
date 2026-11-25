@@ -155,8 +155,12 @@ Goal: replace the Word production plan and give a live stock figure.
   - UI: `POST /planner/optimise` (`PlanOptimisationsController`), on the live plan (starts a draft) and on a draft. The notice gives late orders and changeovers before and after, the late orders, jobs added and moved, and order lines no line has a rate for.
   - Tests: `Schedule::Optimise` unit tests (date order, both lines, same-spec runs, urgent first, unplanned order lines, rates per line, locked and started blocks, same seed same plan, publish after a move), controller and system tests. Help page (Prepare a new plan) and CLAUDE.md updated.
 
+- [x] **Slice 12 – Goods in on the floor** (first item of Phase 2, 25 Nov 2026): the floor home gets a big **Goods in** button. Operators pick a delivery from the purchase orders still to come in, receive it on the same form as the office, and print the bag labels straight away. The rest of that Phase 2 item is already on the floor: **Start log**, **Enter reels** (finishing a reel) and **Load material** are on each line's card.
+  - UI: `Floor::DeliveriesController` (`/floor/deliveries`): index lists sent and part-received POs, the expected ones first (supplier, PO number, expected date, each material with received and ordered weight; no prices, Q82); show is one PO with a big **Receive goods** button and the bags received against it today, with **Print labels**. `GoodsReceiptsController` lets floor users in (Q81), uses `FloorOrOfficeLayout`, and sends them back to the delivery page after receiving. `LotsController#labels` is open to floor users too (labels only, the rest of Stock stays office-only).
+  - Tests: controller tests for the floor deliveries pages and floor goods in (no prices shown, office pages still closed), a system test receiving a delivery on the floor. Help page (floor section) and CLAUDE.md updated.
+
 ## 7. Phase 2 — Shop floor & scanning
-- [ ] `/floor` touch UI: big-button screens for "Load material", "Start run", "Finish reel", "Goods in".
+- [ ] `/floor` touch UI: big-button screens for "Load material", "Start run", "Finish reel", "Goods in". Start, reels and materials are on the floor board already; goods in is Slice 12.
 - [ ] Scanner input: a Stimulus controller that captures fast keyboard input ending in Enter and routes it (lot code → lot, reel code → reel).
 - [ ] Zebra ZPL label printing for goods-in bags, reels and pallets (per-customer label templates from spec labelling instructions).
 - [ ] Hopper/drier load tracking by scan.
@@ -245,7 +249,7 @@ We're building ahead of some answers. Each question has a **best guess** that th
 - [ ] **Q28. What are the stock locations in practice?** (Where is "storage"? Is stock ever held at the supplier or bought while in transit? Do you need named bays, silos or the drier?) Guess: the four fixed locations from the plan (on site, storage, at supplier, in transit), and bags always move whole. Update: `Lot::LOCATIONS`, or a locations table if he needs named places.
 - [ ] **Q29. What labels can he print on today?** Guess: A4 sheets of 8 sticky labels (99 × 68 mm, Avery L7165 layout) on an ordinary printer, until Zebra label printers arrive in Phase 2. Update: the `.lot-sheet` CSS for a different sheet.
 - [ ] **Q30. Is there an existing lot or bag numbering scheme we should use?** Guess: our own codes, `L-2026-000123`, restarting each year; the supplier's batch and bag numbers are kept alongside. Update: `Lot.next_codes`.
-- [ ] **Q31. Who does goods in?** Guess: office staff for now, on the office screens. The floor goods-in screen comes in Phase 2. Update: allow `floor` in `GoodsReceiptsController` if operators receive deliveries.
+- [ ] **Q31. Who does goods in?** Guess: office staff, and operators on the floor screens since Slice 12 (Q81). Update: allow `floor` in `GoodsReceiptsController` if operators receive deliveries.
 - [ ] **Q32. How will opening stock be counted at go-live?** Guess: a stock count of every bag on site, entered with "Add stock without a PO" (one entry per material and batch), and labelled then. Update: Master data › Import › Opening stock (Slice 9) takes the count as a CSV.
 
 ### Slice 7a (production log) assumptions
@@ -314,3 +318,7 @@ We're building ahead of some answers. Each question has a **best guess** that th
 - [ ] **Q77. Should Optimise also plan orders that aren't on the plan yet?** Guess: yes, every order line still to make gets a job for its unplanned weight, on a line with a rate for its spec. Lines no line has a rate for are listed and left off. Update: `Schedule::Optimise#add_unplanned_tasks`.
 - [ ] **Q78. Do urgent orders always go first?** Guess: yes, their jobs go ahead of every other job not started on their line, whatever the dates. Update: `Schedule::Optimise#allowed_places`.
 - [ ] **Q79. What happens to blocks Optimise can't move?** Guess: locked blocks keep their time; started jobs, maintenance and "no orders" blocks in the queue keep their place in it. Changeovers the planner added by hand are dropped, because the job order around them changes; automatic ones are rebuilt. Update: `Schedule::Optimise#read_line`.
+
+### Slice 12 (goods in on the floor) assumptions
+- [ ] **Q81. Can operators do goods in?** Guess: yes, any signed-in user, on the floor screens, against a purchase order that's been sent. Stock without a PO (opening stock, regrind), adjustments and moves stay in the office. Update: `GoodsReceiptsController`, `Floor::DeliveriesController`.
+- [ ] **Q82. What should operators see of a purchase order?** Guess: supplier, PO number, supplier's reference, expected date, and each material's ordered and received weight. No prices or incoterms. Update: `app/views/floor/deliveries`.

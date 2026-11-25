@@ -6,7 +6,7 @@ class StockControllerTest < ActionDispatch::IntegrationTest
   test "floor users are kept out" do
     sign_out
     sign_in_as users(:floor)
-    [ stock_path, lots_path, lot_path(lots(:jade_opening)), new_purchase_order_receipt_path(purchase_orders(:albion_sent)) ].each do |path|
+    [ stock_path, lots_path, lot_path(lots(:jade_opening)), new_lot_path, purchase_order_path(purchase_orders(:albion_sent)) ].each do |path|
       get path
       assert_redirected_to floor_root_path
     end

@@ -1,0 +1,25 @@
+<% content_for :title, "Goods in" %>
+
+<h1 class="page-title mb-2">Goods in</h1>
+<p class="mb-6 text-ink-600">Choose the delivery that's come in. Deliveries expected first.</p>
+
+<div class="grid gap-4 md:grid-cols-2">
+  <% @purchase_orders.each do |order| %>
+    <%= link_to floor_delivery_path(order), id: dom_id(order), class: "card block min-h-12 p-5 hover:bg-lemon-100 active:bg-lemon-100" do %>
+      <div class="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 class="text-2xl font-semibold text-ink-900"><%= order.supplier.name %></h2>
+        <% if order.part_received? %><span class="badge badge-lemon">Part received</span><% end %>
+      </div>
+      <p class="font-mono tabular-nums text-ink-700">
+        <%= order.number %><%= " · #{order.supplier_ref}" if order.supplier_ref %> ·
+        expected <%= l(order.expected_on, format: "%a %-d %b") %>
+      </p>
+      <%= render "floor/deliveries/lines", purchase_order: order %>
+    <% end %>
+  <% end %>
+</div>
+<% if @purchase_orders.none? %>
+  <p class="card p-5 text-ink-700">No deliveries are expected. Ask the office to send the purchase order first.</p>
+<% end %>
+
+<%= link_to "Back to the floor", floor_root_path, class: "btn btn-secondary mt-8 min-h-16 w-full sm:w-auto" %>

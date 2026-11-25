@@ -1,5 +1,6 @@
 class LotsController < ApplicationController
-  require_role :admin, :office
+  # Floor users can print labels after goods in (Slice 12); the rest of Stock is office only.
+  require_role :admin, :office, except: :labels
   before_action :set_lot, only: %i[ show move ]
 
   def index
