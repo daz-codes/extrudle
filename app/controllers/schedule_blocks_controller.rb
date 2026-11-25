@@ -54,18 +54,15 @@ class ScheduleBlocksController < ApplicationController
     failed e.message
   end
 
-  # Dragged on the timeline to a new start (Slice 10). A queued block moves to
-  # that place in the queue and the line reflows (§11 Q74). A locked block, or
-  # maintenance dragged on the timeline, is pinned at the new time and jobs move
-  # round it (§11 Q75, Q80). A row dragged in the queue table sends "queue", so
-  # maintenance there is only reordered.
+  # Dragged on the planner (Slice 10). A queued block, job or maintenance, is
+  # fitted in between the blocks either side of "at" and everything after it
+  # moves later (§11 Q74, Q80). A locked block is pinned at the new time (Q75).
   def drop
     at = time_param(:at) || raise(ArgumentError, "Choose a time to move it to")
     editor = Schedule::Editor.new(@line, plan: @plan)
-    pin = @block.locked? || (@block.maintenance? && params[:queue].blank?)
-    pin ? editor.lock(@block, starts_at: at) : editor.move_to_time(@block, at)
+    @block.locked? ? editor.lock(@block, starts_at: at) : editor.move_to_time(@block, at)
     @block.reload
-    done "#{@block} now runs #{helpers.plan_range(@block)}#{" (fixed at that time)" if pin}."
+    done "#{@block} now runs #{helpers.plan_range(@block)}#{" (fixed at that time)" if @block.locked?}."
   rescue Schedule::Error, ArgumentError => e
     failed e.message
   end

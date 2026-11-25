@@ -28,16 +28,68 @@ class PlannerDragTest < ApplicationSystemTestCase
     lines(:d1).schedule_blocks.reload.ordered.map(&:id)
   end
 
-  test "drag a bar onto an earlier one and the queue reorders" do
+  test "drag a bar onto the start of an earlier one and it goes in first" do
     visit planner_path(line: "D1", week: "2026-11-16")
     wait_for_turbo
 
-    # Picked up at its middle (11:00, an hour in) and dropped on the middle of the
-    # first bar (07:00): the new start, 06:00, is before the first bar's midpoint.
-    bar(@c).drag_to(bar(@a))
+    # Over the left half of the first bar (06:00–08:00): before it.
+    first = bar(@a).native
+    pointer.click_and_hold(bar(@c).native).move_by(-20, 0).perform
+    pointer.move_to(first, -first.size.width / 4, 0).perform
+    assert_selector ".timeline-insert", text: "First, before No orders"
+    pointer.release.perform
+
     assert_text "No orders now runs Mon 16 Nov 06:00 – 08:00"
     assert_equal [ @c, @a, @b ].map(&:id), queue_order
     assert_selector "#planner_board tbody tr:first-child", text: "Third"
+  end
+
+  test "drag maintenance between two blocks and the rest move along" do
+    maintenance = Schedule::Editor.new(lines(:d1)).add(block("planned_maintenance", 60)) # 12:00–13:00
+    visit planner_path(line: "D1", week: "2026-11-16")
+    wait_for_turbo
+
+    # Over the right half of the first bar: between it and the changeover.
+    first = bar(@a).native
+    pointer.click_and_hold(bar(maintenance).native).move_by(-20, 0).perform
+    pointer.move_to(first, first.size.width / 4, 0).perform
+    assert_selector ".timeline-insert", text: "Between No orders and Changeover · Mon 16 Nov, 08:00"
+    pointer.release.perform
+
+    assert_text "Planned maintenance now runs Mon 16 Nov 08:00 – 09:00."
+    assert_equal [ @a, maintenance, @b, @c ].map(&:id), queue_order
+    assert_not maintenance.reload.locked?
+    assert_equal at("2026-11-16 09:00"), @b.reload.starts_at
+  end
+
+  test "the line says when a drop would pass a job that has started, and nothing is sent" do
+    job = Schedule::Editor.new(lines(:d1)).add_job(sales_order_lines(:bf_open_700), planned_g: 380_000) # 12:00–14:00
+    maintenance = Schedule::Editor.new(lines(:d1)).add(block("planned_maintenance", 60))                 # 14:00–15:00
+    assert ProductionRun::Start.new(schedule_block: job).tap { _1.user = users(:floor) }.save
+    visit planner_path(line: "D1", week: "2026-11-16")
+    wait_for_turbo
+
+    first = bar(@a).native
+    pointer.click_and_hold(bar(maintenance).native).move_by(-20, 0).perform
+    pointer.move_to(first, -first.size.width / 4, 0).perform
+    assert_selector ".timeline-insert.is-blocked", text: "Can't go here: SO-00001 BF-700-250 has started"
+    pointer.release.perform
+    wait_for_turbo
+
+    assert_no_text "now runs"
+    assert_equal [ @a, @b, @c, job, maintenance ].map(&:id), queue_order
+  end
+
+  test "dropping a bar back where it is changes nothing" do
+    visit planner_path(line: "D1", week: "2026-11-16")
+    wait_for_turbo
+
+    pointer.click_and_hold(bar(@b).native).move_by(-20, 0).perform
+    assert_selector ".timeline-insert", text: "Stays here"
+    pointer.release.perform
+    wait_for_turbo
+    assert_no_text "now runs"
+    assert_equal [ @a, @b, @c ].map(&:id), queue_order
   end
 
   test "drag a queue row by its handle" do
@@ -93,11 +145,11 @@ class PlannerDragTest < ApplicationSystemTestCase
     wait_for_turbo
 
     pointer.click_and_hold(bar(@c).native).move_by(-40, 0).perform
-    assert_selector ".timeline-ghost"
+    assert_selector ".timeline-insert"
     # Level with Monday's track, but just past its right-hand end.
     monday = find(".timeline-track[data-day-start^='2026-11-16']")
     pointer.move_to(monday.native, monday.native.size.width / 2 + 6, 0).perform
-    assert_no_selector ".timeline-ghost"
+    assert_no_selector ".timeline-insert"
     pointer.release.perform
 
     wait_for_turbo
@@ -110,9 +162,9 @@ class PlannerDragTest < ApplicationSystemTestCase
     wait_for_turbo
 
     pointer.click_and_hold(bar(@a).native).move_by(40, 0).perform
-    assert_selector ".timeline-ghost"
+    assert_selector ".timeline-insert"
     pointer.send_keys(:escape).perform
-    assert_no_selector ".timeline-ghost"
+    assert_no_selector ".timeline-insert"
     pointer.move_to(bar(@a).native).release.perform
 
     wait_for_turbo

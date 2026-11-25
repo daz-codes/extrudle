@@ -378,6 +378,26 @@
   .timeline-ghost-label {
     @apply absolute -top-6 left-0 rounded-sm bg-ink-900 px-1.5 py-0.5 font-mono text-[0.7rem] whitespace-nowrap text-white tabular-nums;
   }
+  /* Where a dragged block will be fitted in: a line on the join between two blocks. */
+  .timeline-insert {
+    @apply pointer-events-none relative z-30 -ml-0.5 border-l-4 border-ink-900;
+    grid-row: 1;
+  }
+  .timeline-insert.at-end {
+    @apply -mr-0.5 ml-0 border-r-4 border-l-0;
+  }
+  .timeline-insert.off-week {
+    @apply border-0;
+  }
+  .timeline-insert.is-blocked {
+    @apply border-dashed border-bad-600;
+  }
+  .timeline-insert.is-blocked .timeline-ghost-label {
+    @apply bg-bad-700;
+  }
+  .timeline-insert.at-end .timeline-ghost-label {
+    @apply right-0 left-auto;
+  }
   .queue-handle {
     @apply -my-2 -ml-2 flex min-h-12 w-8 cursor-grab touch-none items-center justify-center rounded-md text-lg text-ink-500 select-none hover:bg-ink-100 active:bg-ink-200;
   }

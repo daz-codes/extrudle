@@ -251,23 +251,25 @@ end
 
 # --- Production plan ---------------------------------------------------------
 # Both lines start at 06:00 today (UK time). Order lines are planned in
-# required-date order, alternating lines; changeovers are added automatically.
-# D1 also has a locked engineer visit the day after tomorrow.
+# required-date order, alternating lines (D1 only for specs D2 can't run);
+# changeovers are added automatically.
+# Nothing is locked, so dragging any block shunts the others along. D1 has an
+# engineer visit in the queue after its second job.
 if ScheduleBlock.none?
   start = Time.zone.parse("06:00", Date.current)
   d1, d2 = lines.fetch("D1"), lines.fetch("D2")
   editors = { d1 => Schedule::Editor.new(d1), d2 => Schedule::Editor.new(d2) }
 
-  editors[d1].add(ScheduleBlock.new(kind: "planned_maintenance", duration_minutes: 240, locked: true,
-                                     starts_at: start + 2.days + 8.hours, notes: "Engineer visit: screw inspection"))
-
   plannable = SalesOrderLine.joins(:sales_order).merge(SalesOrder.where(status: "open").by_required_date)
     .includes(product_spec: :line_rates).to_a
   plannable.first(8).each_with_index do |order_line, index|
     line = index.even? ? d1 : d2
-    line = d1 unless order_line.product_spec.rate_for(d2) # e.g. specs that only run on D1
-    first_on_line = line.schedule_blocks.where(locked: false).none?
+    line = d1 unless order_line.product_spec.kg_per_hour_on(d2) # own rate or the line's default
+    first_on_line = line.schedule_blocks.none?
     editors[line].add_job(order_line, starts_at: (start if first_on_line))
+    if line == d1 && d1.schedule_blocks.jobs.count == 2
+      editors[d1].add(ScheduleBlock.new(kind: "planned_maintenance", duration_minutes: 240, notes: "Engineer visit: screw inspection"))
+    end
   end
 
   editors[d2].add(ScheduleBlock.new(kind: "no_orders", duration_minutes: 480, notes: "Nothing to run yet"))

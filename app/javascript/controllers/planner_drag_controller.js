@@ -2,14 +2,15 @@ import { Controller } from "@hotwired/stimulus"
 
 // Drag and drop on the planner board (Slice 10).
 //
-// Bars on the week timeline can be dragged to a new start; queue rows can be
-// dragged by their handle. Either way the drop sends PATCH …/drop with the new
-// start time ("at"), and the server decides what that means: a queued block
-// moves to that place in the queue and the line reflows (§11 Q74), a locked
-// block is pinned at the new time (§11 Q75), and so is maintenance dragged on
-// the timeline (§11 Q80). Queue rows send "queue", so a row dragged in the
-// table is only reordered. Nothing is planned in the browser; the board comes
-// back as a Turbo Stream.
+// Bars on the week timeline and queue rows (by their handle) can be dragged.
+// The drop sends PATCH …/drop with a time ("at"), and the server decides what
+// it means. A queued block, job or maintenance, is fitted in between two
+// blocks and everything after it moves later (§11 Q74, Q80): on the timeline a
+// line marks the join it will go in, named in its label, worked out from the
+// queue value the way the server does (before the first other queued block
+// whose midpoint is after the time under the pointer). A locked block is
+// pinned at a new time (§11 Q75), shown by a ghost bar. Nothing is planned in
+// the browser; the board comes back as a Turbo Stream.
 //
 // Pointer events cover mouse, pen and touch. A mouse drag starts after a few
 // pixels, so a click still opens the block. On touch a bar needs a short
@@ -31,7 +32,8 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", {
 })
 
 export default class extends Controller {
-  static targets = ["form", "at", "queue", "track", "bar", "row", "scroller"]
+  static targets = ["form", "at", "track", "bar", "row", "scroller"]
+  static values = { queue: Array }
 
   connect() {
     this.onMove = this.move.bind(this)
@@ -88,7 +90,7 @@ export default class extends Controller {
     const drag = this.drag
     if (drag && event.type === "pointerup") {
       this.swallowNextClick()
-      if (drag.at && drag.at !== drag.from) return this.submit(drag.url, drag.at, !!drag.row)
+      if (drag.at && drag.at !== drag.from) return this.submit(drag.url, drag.at)
     }
     this.cancel()
   }
@@ -111,7 +113,8 @@ export default class extends Controller {
   // Private
 
   over(point) {
-    this.drag.row ? this.overRow(point) : this.overTimeline(point)
+    if (this.drag.row) return this.overRow(point)
+    this.drag.pin ? this.overTimeline(point) : this.overInsert(point)
   }
 
   // While dragging, scroll when the pointer has rested near the window's top
@@ -157,7 +160,14 @@ export default class extends Controller {
     this.edgeSince = null
     this.frame = requestAnimationFrame((time) => this.autoScroll(time))
 
-    if (!row) {
+    if (!row && handle.dataset.locked !== "true") {
+      this.drag.id = Number(handle.dataset.blockId)
+      this.ghost = document.createElement("div")
+      this.ghost.className = "timeline-insert"
+      this.ghost.innerHTML = '<span class="timeline-ghost-label"></span>'
+      this.overInsert(event)
+    } else if (!row) {
+      this.drag.pin = true
       const startsAt = Date.parse(handle.dataset.startsAt)
       const pointerAt = this.timeAt(this.pending.x, this.pending.y) // where it was picked up
       this.drag.minutes = Number(handle.dataset.minutes)
@@ -187,6 +197,66 @@ export default class extends Controller {
     this.ghost.firstChild.textContent = timeFormat.format(start)
     if (this.ghost.parentElement !== track) track.append(this.ghost)
     this.drag.at = new Date(start).toISOString()
+  }
+
+  // Where a queued block dropped here would go: between the two queued blocks
+  // either side of the time under the pointer, by the server's midpoint rule.
+  overInsert(event) {
+    const pointerAt = this.timeAt(event.clientX, event.clientY)
+    if (pointerAt === null) return this.clearTarget()
+
+    const queue = this.queueValue
+    const others = queue.filter((b) => b.id !== this.drag.id)
+    const index = others.findIndex((b) => this.midpoint(b) > pointerAt)
+    const before = index === -1 ? others.at(-1) : others[index - 1]
+    const after = index === -1 ? null : others[index]
+    if (!before && !after) return this.clearTarget()
+
+    const here = queue.findIndex((b) => b.id === this.drag.id)
+    const unchanged = queue[here - 1]?.id === before?.id && queue[here + 1]?.id === after?.id
+    const join = after ? Date.parse(after.startsAt) : this.endOf(before)
+    const where = !before ? `First, before ${after.label}` : !after ? `Last, after ${before.label}` : `Between ${before.label} and ${after.label}`
+    // The server won't move a block past a job that has started (or whose order
+    // is finished), so say so here rather than after the drop.
+    const to = index === -1 ? others.length : index
+    const passed = to < here ? others.slice(to, here) : others.slice(here, to)
+    const stuck = unchanged ? null : passed.find((b) => b.stuck)
+    const label = unchanged ? `Stays here: ${where.toLowerCase()}`
+      : stuck ? `Can't go here: ${stuck.label} ${stuck.stuck}`
+      : `${where} · ${timeFormat.format(join)}`
+    this.placeInsert(join, pointerAt, label)
+    this.ghost.classList.toggle("is-blocked", !!stuck)
+    this.drag.at = unchanged || stuck ? null : new Date(pointerAt).toISOString()
+  }
+
+  // The line goes on the join if it's on this week, or else just the label
+  // goes under the pointer.
+  placeInsert(join, pointerAt, label) {
+    let track = this.trackTargets.find((t) => join >= this.dayStart(t) && join < this.dayEnd(t))
+    let column, atEnd = false
+    if (track) {
+      column = Math.round((join - this.dayStart(track)) / SLOT_MS) + 1
+    } else if ((track = this.trackTargets.find((t) => join === this.dayEnd(t)))) {
+      column = Number(track.dataset.slots)
+      atEnd = true
+    } else {
+      track = this.trackTargets.find((t) => pointerAt >= this.dayStart(t) && pointerAt < this.dayEnd(t))
+      column = Math.round((pointerAt - this.dayStart(track)) / SLOT_MS) + 1
+    }
+    const offWeek = !this.trackTargets.some((t) => join >= this.dayStart(t) && join <= this.dayEnd(t))
+    this.ghost.classList.toggle("at-end", atEnd)
+    this.ghost.classList.toggle("off-week", offWeek)
+    this.ghost.style.gridColumn = `${column} / span 1`
+    this.ghost.firstChild.textContent = label
+    if (this.ghost.parentElement !== track) track.append(this.ghost)
+  }
+
+  midpoint(block) {
+    return Date.parse(block.startsAt) + block.minutes * 30000
+  }
+
+  endOf(block) {
+    return Date.parse(block.startsAt) + block.minutes * 60000
   }
 
   // A row dragged onto another goes before it when moving up and after it when
@@ -233,10 +303,9 @@ export default class extends Controller {
     this.drag.at = null
   }
 
-  submit(url, at, queue) {
+  submit(url, at) {
     this.formTarget.action = url
     this.atTarget.value = at
-    this.queueTarget.value = queue ? "1" : ""
     this.submitting = true
     this.element.setAttribute("aria-busy", "true")
     this.cancel()
